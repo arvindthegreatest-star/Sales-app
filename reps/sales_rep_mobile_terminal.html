@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sri Govinda Sales - Rep Terminal</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Tone.js for Micro-Haptics and Audio Cues -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Sri Govinda Central Cloud Config -->
+  <script src="../config.js"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @media print {
+      body * { visibility: hidden !important; }
+      #print-thermal-receipt, #print-thermal-receipt * { visibility: visible !important; }
+      #print-thermal-receipt {
+        position: absolute; left: 0; top: 0; width: 100%;
+        display: block !important; margin: 0; padding: 12px; background: white !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-36">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-950 text-white sticky top-0 z-40 border-b border-slate-800 shadow-md">
+    <div class="max-w-3xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Rep Indicator -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-bold text-white shadow-inner flex-shrink-0">
+          <i data-lucide="zap" class="w-4 h-4 text-emerald-100"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-sm tracking-tight text-white">Sri Govinda Sales</span>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              Field Terminal
+            </span>
+          </div>
+          <button type="button" onclick="openRepCloudModal()" class="text-[10px] text-slate-400 flex items-center gap-1.5 hover:text-slate-200 transition text-left cursor-pointer" title="Supabase Cloud Connection">
+            <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="cloud-status-text">Connecting...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sales Rep Profile Picker -->
+      <div class="flex items-center gap-1.5">
+        <select id="sales-rep-select" onchange="onSalesRepChanged(this.value)" class="bg-slate-900 border border-slate-700 text-xs font-bold text-emerald-400 rounded-xl py-1 px-2 focus:ring-1 focus:ring-emerald-400 outline-none">
+          <!-- Injected via JS -->
+        </select>
+        <button onclick="toggleRouteHistoryDrawer(true)" class="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition" title="Today's Orders & Samples">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span id="nav-rep-order-count" class="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 font-mono text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Rep Target & Performance Ribbon -->
+  <div class="bg-slate-900 border-b border-slate-800 text-white px-3 py-2 text-xs font-mono">
+    <div class="max-w-3xl mx-auto flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-3 text-slate-300">
+        <span>Target: <b id="rep-target-progress-text" class="text-white">₹0 / ₹50,000</b></span>
+        <span>•</span>
+        <span>Cash: <b id="rep-cash-in-bag" class="text-emerald-400">₹0</b></span>
+        <span>•</span>
+        <span>Samples: <b id="rep-samples-given" class="text-purple-400">0</b></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div id="rep-target-progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+        <span id="rep-target-percent" class="text-[10px] text-emerald-400 font-bold">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN ORDER ENTRY INTERFACE -->
+  <main class="max-w-3xl w-full mx-auto px-3 py-3 space-y-3">
+    
+    <!-- COMMERCIAL SALE VS FREE SAMPLE TOGGLE -->
+    <section class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200">
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="setRepOrderType('COMMERCIAL')" id="btn-type-commercial" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-xs transition">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span>Commercial Order</span>
+        </button>
+        <button type="button" onclick="setRepOrderType('SAMPLE')" id="btn-type-sample" class="py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+          <i data-lucide="gift" class="w-4 h-4 text-purple-600"></i>
+          <span>Free Sample / Tasting</span>
+        </button>
+      </div>
+
+      <!-- Sample Reason Selector (Shown in Sample Mode) -->
+      <div id="rep-sample-reason-strip" class="hidden mt-2.5 pt-2.5 border-t border-slate-100 space-y-1">
+        <label class="text-[10px] font-black uppercase text-purple-700 flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3 h-3"></i> Purpose of Sample Giveaway (₹0 Billed):
+        </label>
+        <select id="rep-sample-reason" class="w-full text-xs font-semibold p-2 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 focus:outline-none focus:ring-1 focus:ring-purple-400">
+          <option value="Chef Tasting & Menu Trial">👨‍🍳 Chef Tasting & Menu Trial</option>
+          <option value="New Counter Retail Shelf Display">🛒 New Counter Retail Shelf Display</option>
+          <option value="Quality Evaluation / New Blend Pitch">⭐ Quality Evaluation / New Blend Pitch</option>
+          <option value="Replacement for Torn / Damaged Pack">📦 Replacement for Torn / Damaged Pack</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- STEP 1: ROUTE, BUYER & SERVICING -->
+    <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200 space-y-3">
+      <div class="flex items-center justify-between">
+        <label class="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+          Route, Store & Delivery Beat
+        </label>
+        <div class="flex items-center gap-1.5">
+          <span id="rep-buyer-home-badge" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+            Home Route
+          </span>
+          <span id="rep-buyer-tier-badge" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+            HoReCa
+          </span>
+        </div>
+      </div>
+
+      <!-- Filter Stores by Route Chips -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="text-slate-500 font-semibold flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3 h-3 text-emerald-600"></i> Store Route Filter:
+          </span>
+          <span id="rep-store-count-label" class="text-[10px] font-mono text-slate-400">0 stores</span>
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" id="rep-store-route-chips">
+          <!-- Dynamic Route Chips -->
+        </div>
+      </div>
+
+      <!-- Buyer Live Search & Dropdown Picker -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+        <div class="sm:col-span-8 space-y-1.5">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="rep-buyer-search-input" oninput="onRepBuyerSearch(this.value)" placeholder="Search store name, contact, or address..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-600 focus:bg-white transition">
+            <button onclick="clearRepBuyerSearch()" id="rep-buyer-search-clear" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <select id="rep-buyer-select" onchange="onRepBuyerSelected(this.value)" class="w-full pl-3 pr-8 py-2.5 bg-emerald-50/40 border-2 border-emerald-500/40 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-emerald-600 transition">
+            <!-- Injected dynamically -->
+          </select>
+        </div>
+
+        <!-- Dues Snapshot -->
+        <div class="sm:col-span-4 flex sm:flex-col justify-between sm:justify-center bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs gap-1">
+          <div class="flex justify-between sm:justify-start sm:gap-2 items-baseline">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Outstanding:</span>
+            <span id="rep-buyer-outstanding" class="font-mono font-black text-rose-600 text-xs sm:text-sm">₹0</span>
+          </div>
+          <div class="flex justify-between sm:justify-start sm:gap-2 items-baseline">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Credit Limit:</span>
+            <span id="rep-buyer-credit-limit" class="font-mono font-bold text-slate-700 text-xs">₹0</span>
+          </div>
+          <div class="flex justify-between sm:justify-start sm:gap-2 items-baseline">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Phone:</span>
+            <span id="rep-buyer-phone" class="font-mono text-slate-600 text-[11px]">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PER-ORDER DISPATCH ROUTE & FULFILLMENT -->
+      <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 p-3 rounded-xl border border-emerald-200/80 space-y-2">
+        <div class="flex items-center justify-between flex-wrap gap-1">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="truck" class="w-4 h-4 text-emerald-700"></i>
+            <span class="text-xs font-bold text-slate-800">Dispatch Route for this Delivery:</span>
+          </div>
+          <span id="rep-route-alignment-badge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Aligned Beat Run
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Assign Delivery Beat</label>
+            <select id="rep-order-route-select" onchange="onRepOrderRouteChanged(this.value)" class="w-full py-1.5 px-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
+              <!-- Injected dynamically -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Fulfillment Plan</label>
+            <select id="rep-order-fulfillment-select" onchange="onRepFulfillmentPlanChanged(this.value)" class="w-full py-1.5 px-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
+              <option value="auto">⚡ AI Recommended Optimal Plan</option>
+              <option value="same_day_van">🚐 Today Cross-Route Van (Evening Run)</option>
+              <option value="scheduled_beat">📅 Next Scheduled Beat Run</option>
+              <option value="spot_urgent">⚡ Emergency Spot Dispatch (Direct Runner)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Contract Pricing Override Banner -->
+        <div id="rep-contract-banner" class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1 rounded-lg text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-1.5 truncate">
+            <i data-lucide="badge-percent" class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0"></i>
+            <span id="rep-contract-text">Standard Tier Pricing active.</span>
+          </span>
+          <span id="rep-contract-pill" class="text-[10px] font-mono bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">0 Overrides</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STEP 2: CATALOG & QUANTITY STEPPERS -->
+    <section class="space-y-2 sticky top-[53px] z-30 bg-slate-100/95 backdrop-blur-md pt-1 pb-1">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="rep-catalog-search" oninput="filterRepCatalog()" placeholder="Search product name, SKU, pack size..." class="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+          <button onclick="clearRepCatalogSearch()" id="rep-clear-search-btn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <button onclick="toggleRepCartOnly()" id="rep-filter-cart-toggle" class="p-2 rounded-xl bg-white border border-slate-300 text-slate-600 text-xs font-bold flex items-center gap-1.5 shadow-xs whitespace-nowrap active:scale-95 transition">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span id="rep-cart-badge-count" class="font-mono font-bold text-emerald-700">0</span>
+        </button>
+      </div>
+
+      <!-- Dynamic Category Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="rep-category-pills">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+    <!-- CATALOG PRODUCT CARDS -->
+    <section id="rep-products-container" class="space-y-2.5">
+      <!-- Products Injected Dynamically -->
+    </section>
+
+  </main>
+
+  <!-- STEP 3: STICKY BOTTOM CHECKOUT DRAWER -->
+  <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-2xl safe-area-inset">
+    <div class="max-w-3xl mx-auto px-3.5 py-2.5 space-y-2">
+      
+      <!-- Drawer Header Bar -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div id="rep-sticky-badge-icon" class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
+            <span id="rep-sticky-item-count">0</span>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-bold text-slate-400">Total Billed Units</div>
+            <div class="text-xs font-bold text-slate-800 font-mono">
+              <span id="rep-sticky-total-qty">0</span> units (<span id="rep-sticky-line-count">0</span> items)
+            </div>
+          </div>
+        </div>
+
+        <div class="text-right flex items-center gap-3">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Payable</span>
+            <span id="rep-sticky-net-total" class="font-mono font-black text-lg sm:text-xl text-emerald-700">₹0</span>
+          </div>
+          <button type="button" onclick="toggleRepPaymentDrawer()" id="rep-btn-toggle-drawer" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 active:scale-95 transition">
+            <i data-lucide="chevron-up" id="rep-drawer-chevron" class="w-4 h-4 transition-transform duration-200"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable Payment Terms -->
+      <div id="rep-checkout-expanded" class="space-y-2 pt-2 border-t border-slate-100 hidden">
+        <div id="rep-payment-mode-section">
+          <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+            Payment Terms & Settlement
+          </label>
+          <div class="grid grid-cols-4 gap-1.5" id="rep-payment-modes">
+            <button type="button" onclick="setRepPaymentMode('Cash')" class="rep-pay-btn active py-2 px-1 text-center rounded-xl border text-[11px] font-bold bg-slate-900 text-white border-slate-900 shadow-xs transition">
+              💵 Cash Spot
+            </button>
+            <button type="button" onclick="setRepPaymentMode('UPI / QR')" class="rep-pay-btn py-2 px-1 text-center rounded-xl border text-[11px] font-semibold bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition">
+              📱 UPI QR
+            </button>
+            <button type="button" onclick="setRepPaymentMode('Credit (15 Days)')" class="rep-pay-btn py-2 px-1 text-center rounded-xl border text-[11px] font-semibold bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition">
+              ⏳ 15d Udhaar
+            </button>
+            <button type="button" onclick="setRepPaymentMode('Credit (30 Days)')" class="rep-pay-btn py-2 px-1 text-center rounded-xl border text-[11px] font-semibold bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition">
+              ⏳ 30d Udhaar
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div id="rep-rebate-box">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Special Rebate (₹)</label>
+            <input type="number" id="rep-order-rebate" value="0" min="0" oninput="calculateRepTotals()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-slate-800">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Delivery Note / Memo</label>
+            <input type="text" id="rep-order-notes" placeholder="e.g. Back door, urgent" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTON -->
+      <button type="button" onclick="submitRepOrder()" id="rep-btn-submit-order" class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm tracking-wide shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:pointer-events-none">
+        <i data-lucide="check-circle-2" id="rep-submit-icon" class="w-5 h-5 text-emerald-200"></i>
+        <span id="rep-submit-label">BOOK & SCHEDULE DISPATCH</span>
+        <span class="text-xs bg-emerald-800/80 px-2 py-0.5 rounded-lg font-mono font-bold" id="rep-btn-net-badge">₹0</span>
+      </button>
+
+    </div>
+  </footer>
+
+  <!-- POST ORDER MODAL -->
+  <div id="post-order-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 space-y-4 text-center border border-slate-200">
+      <div id="modal-badge-container" class="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="check" id="modal-badge-icon" class="w-9 h-9 stroke-[3]"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-slate-900" id="modal-success-heading">Order Dispatched & Synced!</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Reference <span id="modal-invoice-id" class="font-mono font-bold text-slate-800">#ORD</span></p>
+      </div>
+      <div class="bg-slate-50 rounded-2xl p-3 text-left text-xs font-mono space-y-1.5 border border-slate-200">
+        <div class="flex justify-between text-slate-500">
+          <span>Amount Billed:</span>
+          <span id="modal-total-amt" class="font-bold text-emerald-700 text-sm">₹0</span>
+        </div>
+        <div class="flex justify-between text-slate-500">
+          <span>Terms:</span>
+          <span id="modal-pay-mode" class="font-semibold text-slate-800">Cash Spot</span>
+        </div>
+      </div>
+      <div class="space-y-2 pt-1">
+        <button onclick="shareModalOrderWhatsApp()" class="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span id="modal-btn-wa-text">Send WhatsApp Receipt to Buyer</span>
+        </button>
+        <button onclick="closePostOrderModalAndNext()" class="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+          Next Order Entry <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SUPABASE CLOUD CONNECTION (MOBILE) -->
+  <div id="modal-rep-cloud-config" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+            <i data-lucide="cloud" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-900">Cloud Sync Connection</h3>
+            <p class="text-[10px] text-slate-500">Supabase Database Settings</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeRepCloudModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Project URL</label>
+          <input type="text" id="rep-supabase-url-input" placeholder="https://your-project.supabase.co" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Anon Public Key</label>
+          <input type="password" id="rep-supabase-key-input" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] outline-none">
+        </div>
+        <button type="button" onclick="saveRepCloudCredentials()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+          <i data-lucide="check" class="w-4 h-4"></i> Save & Connect
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUTE HISTORY DRAWER -->
+  <div id="route-history-drawer" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex justify-end hidden">
+    <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col justify-between">
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base flex items-center gap-2">
+            <i data-lucide="route" class="w-5 h-5 text-emerald-400"></i> Rep Daily Activity Ledger
+          </h3>
+          <p class="text-xs text-slate-400" id="drawer-rep-name">Active Rep</p>
+        </div>
+        <button onclick="toggleRouteHistoryDrawer(false)" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-3" id="drawer-orders-list"></div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] uppercase font-bold text-slate-400 block">Today Commercial Sales</span>
+          <span id="drawer-total-sales" class="font-mono font-black text-emerald-700 text-base">₹0</span>
+        </div>
+        <button onclick="toggleRouteHistoryDrawer(false)" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs">
+          Close Ledger
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC (PURGED OF ALL ADMIN ROUTINES) -->
+  <script>
+    const INITIAL_REPS = [
+      { id: 'rep_1', name: 'Ramesh Kumar', phone: '9820123456', defaultBase: 'Route 1: Central Commercial / MG Road', target: 50000 },
+      { id: 'rep_2', name: 'Suresh Verma', phone: '9830234567', defaultBase: 'Route 2: West Wholesale / Rajajinagar', target: 75000 },
+      { id: 'rep_3', name: 'Priya Sharma', phone: '9840345678', defaultBase: 'Route 3: South Tech Hub / Koramangala', target: 60000 }
+    ];
+
+    const INITIAL_ROUTES = [
+      { id: 'all', name: 'All Routes / Unfiltered', short: 'All Stores', hub: 'Central Depot', cutoff: '4:30 PM' },
+      { id: 'Route 1: Central Commercial / MG Road', name: 'Route 1: Central Commercial / MG Road', short: 'R1: Central', cutoff: '5:00 PM' },
+      { id: 'Route 2: West Wholesale / Rajajinagar', name: 'Route 2: West Wholesale / Rajajinagar', short: 'R2: West Wholesale', cutoff: '4:00 PM' },
+      { id: 'Route 3: South Tech Hub / Koramangala', name: 'Route 3: South Tech Hub / Koramangala', short: 'R3: South Tech', cutoff: '3:30 PM' }
+    ];
+
+    const INITIAL_BUYERS = [
+      { id: 'b_1', name: 'Hotel Grand Royal & Suites', tier: 'HoReCa', phone: '9845012345', homeRoute: 'Route 1: Central Commercial / MG Road', creditLimit: 75000, pendingUdhaar: 18500 },
+      { id: 'b_2', name: 'Balaji Wholesale Mart', tier: 'Wholesale', phone: '9845023456', homeRoute: 'Route 2: West Wholesale / Rajajinagar', creditLimit: 150000, pendingUdhaar: 42000 },
+      { id: 'b_3', name: 'Laxmi Super Kirana Store', tier: 'Retail', phone: '9845034567', homeRoute: 'Route 1: Central Commercial / MG Road', creditLimit: 30000, pendingUdhaar: 4500 }
+    ];
+
+    const INITIAL_PRODUCTS = [
+      { id: 'p_1', sku: 'GM-500', name: 'Royal Garam Masala', category: 'Blended Masalas', unitSize: '500g pouch', baseRate: 210 },
+      { id: 'p_2', sku: 'GM-1K', name: 'Royal Garam Masala (Foodservice)', category: 'Blended Masalas', unitSize: '1kg pack', baseRate: 395 },
+      { id: 'p_3', sku: 'CM-1K', name: 'Deggi Mirch Kashmiri Powder', category: 'Pure Spices', unitSize: '1kg bag', baseRate: 460 },
+      { id: 'p_4', sku: 'DH-1K', name: 'Coriander Seed Powder (Special)', category: 'Pure Spices', unitSize: '1kg bag', baseRate: 240 }
+    ];
+
+    function loadStorage(key, fallback) {
+      try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; } catch (e) { return fallback; }
+    }
+    function saveStorage(key, val) {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    }
+
+    let supabaseClient = null;
+    let supabaseUrl = (window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '';
+    let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || '';
+
+    let reps = loadStorage('sg_reps', INITIAL_REPS);
+    let routes = loadStorage('sg_routes', INITIAL_ROUTES);
+    let buyers = loadStorage('sg_buyers', INITIAL_BUYERS);
+    let products = loadStorage('sg_products', INITIAL_PRODUCTS);
+    let contractPrices = loadStorage('sg_contracts', []);
+    let orders = loadStorage('sg_orders', []);
+    let sampleGiveaways = loadStorage('sg_samples', []);
+
+    let activeRepId = loadStorage('sg_active_rep_id', reps[0]?.id || 'rep_1');
+    let repStoreFilterRoute = 'all';
+    let repSelectedBuyerId = buyers[0]?.id || 'b_1';
+    let repOrderAssignedRoute = routes[1]?.id || INITIAL_ROUTES[1].id;
+    let repOrderFulfillmentMode = 'auto';
+    let repActiveCategory = 'all';
+    let repFilterCartOnly = false;
+    let repSelectedPaymentMode = 'Cash';
+    let repOrderType = 'COMMERCIAL';
+    let repCart = {};
+    let latestOrderBooked = null;
+
+    const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+
+    function openRepCloudModal() {
+      document.getElementById('rep-supabase-url-input').value = supabaseUrl;
+      document.getElementById('rep-supabase-key-input').value = supabaseKey;
+      document.getElementById('modal-rep-cloud-config').classList.remove('hidden');
+    }
+
+    function closeRepCloudModal() {
+      document.getElementById('modal-rep-cloud-config').classList.add('hidden');
+    }
+
+    async function saveRepCloudCredentials() {
+      supabaseUrl = document.getElementById('rep-supabase-url-input').value.trim();
+      supabaseKey = document.getElementById('rep-supabase-key-input').value.trim();
+      localStorage.setItem('sg_supabase_url', supabaseUrl);
+      localStorage.setItem('sg_supabase_key', supabaseKey);
+      closeRepCloudModal();
+      await initSupabase();
+    }
+
+    async function initSupabase() {
+      if (!supabaseUrl || !supabaseKey) {
+        document.getElementById('cloud-status-dot').className = "w-2 h-2 rounded-full bg-amber-400";
+        document.getElementById('cloud-status-text').innerText = "Offline Mode";
+        return;
+      }
+      try {
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        document.getElementById('cloud-status-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        document.getElementById('cloud-status-text').innerText = "Live Cloud Synced";
+
+        const { data: dbRoutes } = await supabaseClient.from('routes').select('*');
+        if (dbRoutes?.length > 0) { routes = dbRoutes; saveStorage('sg_routes', routes); }
+
+        const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
+        if (dbBuyers?.length > 0) { buyers = dbBuyers; saveStorage('sg_buyers', buyers); }
+
+        const { data: dbProducts } = await supabaseClient.from('products').select('*');
+        if (dbProducts?.length > 0) { products = dbProducts; saveStorage('sg_products', products); }
+
+        const { data: dbContracts } = await supabaseClient.from('contract_pricing').select('*');
+        if (dbContracts?.length > 0) { contractPrices = dbContracts; saveStorage('sg_contracts', contractPrices); }
+
+        const { data: dbReps } = await supabaseClient.from('reps').select('*');
+        if (dbReps?.length > 0) { reps = dbReps; saveStorage('sg_reps', reps); }
+
+        refreshRepTerminal();
+
+        // Realtime updates from Manager PC
+        supabaseClient
+          .channel('sg-sales-realtime-rep')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
+            const { data } = await supabaseClient.from('buyers').select('*');
+            if (data?.length > 0) { buyers = data; saveStorage('sg_buyers', buyers); updateRepBuyerSnapshot(); populateRepBuyerDropdown(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
+            const { data } = await supabaseClient.from('products').select('*');
+            if (data?.length > 0) { products = data; saveStorage('sg_products', products); filterRepCatalog(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_pricing' }, async () => {
+            const { data } = await supabaseClient.from('contract_pricing').select('*');
+            if (data?.length > 0) { contractPrices = data; saveStorage('sg_contracts', contractPrices); updateRepBuyerSnapshot(); filterRepCatalog(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'reps' }, async () => {
+            const { data } = await supabaseClient.from('reps').select('*');
+            if (data?.length > 0) { reps = data; saveStorage('sg_reps', reps); refreshRepTerminal(); }
+          })
+          .subscribe();
+
+      } catch (err) {
+        document.getElementById('cloud-status-text').innerText = "Local Fallback";
+      }
+    }
+
+    function resolvePrice(productId, buyerId) {
+      if (repOrderType === 'SAMPLE') return { rate: 0, isOverride: false };
+      const prod = products.find(p => p.id === productId);
+      if (!prod) return { rate: 0, isOverride: false };
+
+      const override = contractPrices.find(cp => cp.buyerId === buyerId && cp.productId === productId);
+      if (override) return { rate: Number(override.overrideRate), isOverride: true };
+
+      const buyer = buyers.find(b => b.id === buyerId);
+      const tier = buyer ? buyer.tier : 'Retail';
+      let rate = Number(prod.baseRate);
+      if (tier === 'HoReCa') rate = Math.round(prod.baseRate * 0.92);
+      else if (tier === 'Wholesale') rate = Math.round(prod.baseRate * 0.88);
+      return { rate, isOverride: false };
+    }
+
+    function setRepOrderType(type) {
+      repOrderType = type;
+      const btnCom = document.getElementById('btn-type-commercial');
+      const btnSmp = document.getElementById('btn-type-sample');
+      const sampleStrip = document.getElementById('rep-sample-reason-strip');
+      const paySection = document.getElementById('rep-payment-mode-section');
+      const rebateBox = document.getElementById('rep-rebate-box');
+      const submitLabel = document.getElementById('rep-submit-label');
+
+      if (type === 'SAMPLE') {
+        btnSmp.className = "py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-purple-600 text-white shadow-xs transition";
+        btnCom.className = "py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+        sampleStrip.classList.remove('hidden');
+        paySection.classList.add('hidden');
+        rebateBox.classList.add('hidden');
+        submitLabel.innerText = "RECORD FREE SAMPLE GIVEAWAY";
+      } else {
+        btnCom.className = "py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-xs transition";
+        btnSmp.className = "py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+        sampleStrip.classList.add('hidden');
+        paySection.classList.remove('hidden');
+        rebateBox.classList.remove('hidden');
+        submitLabel.innerText = "BOOK & SCHEDULE DISPATCH";
+      }
+
+      filterRepCatalog();
+      calculateRepTotals();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function refreshRepTerminal() {
+      document.getElementById('sales-rep-select').innerHTML = reps.map(r => `
+        <option value="${r.id}" ${r.id === activeRepId ? 'selected' : ''}>${escapeHtml(r.name)}</option>
+      `).join('');
+
+      renderRepRouteFilterChips();
+      populateRepBuyerDropdown();
+      populateRepOrderRouteDropdown();
+      updateRepBuyerSnapshot();
+      filterRepCatalog();
+      calculateRepTotals();
+      updateRepMetricsHeader();
+    }
+
+    function onSalesRepChanged(repId) {
+      activeRepId = repId;
+      saveStorage('sg_active_rep_id', repId);
+      refreshRepTerminal();
+    }
+
+    function renderRepRouteFilterChips() {
+      const container = document.getElementById('rep-store-route-chips');
+      container.innerHTML = routes.map(r => {
+        const count = r.id === 'all' ? buyers.length : buyers.filter(b => b.homeRoute === r.id).length;
+        const isActive = repStoreFilterRoute === r.id;
+        return `
+          <button type="button" onclick="setRepStoreFilterRoute('${escapeHtml(r.id)}')" 
+            class="px-2.5 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 
+            ${isActive ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-50 text-slate-700 hover:bg-slate-200 border border-slate-200'}">
+            <span>${escapeHtml(r.short || r.name.split(':')[0])}</span>
+            <span class="text-[10px] font-mono px-1 rounded ${isActive ? 'bg-slate-800 text-emerald-400' : 'bg-slate-200 text-slate-600'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setRepStoreFilterRoute(routeId) {
+      repStoreFilterRoute = routeId;
+      renderRepRouteFilterChips();
+      populateRepBuyerDropdown();
+    }
+
+    function populateRepBuyerDropdown() {
+      const select = document.getElementById('rep-buyer-select');
+      const q = (document.getElementById('rep-buyer-search-input')?.value || '').toLowerCase().trim();
+
+      const filtered = buyers.filter(b => {
+        const matchesRoute = (repStoreFilterRoute === 'all' || b.homeRoute === repStoreFilterRoute);
+        const matchesSearch = !q || b.name.toLowerCase().includes(q) || b.phone.includes(q);
+        return matchesRoute && matchesSearch;
+      });
+
+      document.getElementById('rep-store-count-label').innerText = `${filtered.length} stores`;
+      if (filtered.length === 0) {
+        select.innerHTML = '<option value="">-- No matching stores --</option>';
+        return;
+      }
+
+      select.innerHTML = filtered.map(b => `
+        <option value="${b.id}" ${b.id === repSelectedBuyerId ? 'selected' : ''}>
+          ${escapeHtml(b.name)} [${escapeHtml((b.homeRoute || '').split(':')[0])}] • Due: ${formatINR(b.pendingUdhaar || 0)}
+        </option>
+      `).join('');
+
+      if (!filtered.some(b => b.id === repSelectedBuyerId)) repSelectedBuyerId = filtered[0].id;
+      updateRepBuyerSnapshot();
+    }
+
+    function onRepBuyerSearch(val) {
+      document.getElementById('rep-buyer-search-clear').classList.toggle('hidden', !val.trim());
+      populateRepBuyerDropdown();
+    }
+
+    function clearRepBuyerSearch() {
+      document.getElementById('rep-buyer-search-input').value = '';
+      document.getElementById('rep-buyer-search-clear').classList.add('hidden');
+      populateRepBuyerDropdown();
+    }
+
+    function onRepBuyerSelected(buyerId) {
+      if (!buyerId) return;
+      repSelectedBuyerId = buyerId;
+      updateRepBuyerSnapshot();
+      filterRepCatalog();
+    }
+
+    function updateRepBuyerSnapshot() {
+      const buyer = buyers.find(b => b.id === repSelectedBuyerId);
+      if (!buyer) return;
+
+      document.getElementById('rep-buyer-home-badge').innerText = (buyer.homeRoute || 'Unassigned').split(':')[0];
+      document.getElementById('rep-buyer-tier-badge').innerText = buyer.tier;
+      document.getElementById('rep-buyer-outstanding').innerText = formatINR(buyer.pendingUdhaar || 0);
+      document.getElementById('rep-buyer-credit-limit').innerText = formatINR(buyer.creditLimit || 0);
+      document.getElementById('rep-buyer-phone').innerText = buyer.phone || '-';
+
+      const overrides = contractPrices.filter(cp => cp.buyerId === buyer.id);
+      const banner = document.getElementById('rep-contract-banner');
+      const bannerText = document.getElementById('rep-contract-text');
+      const bannerPill = document.getElementById('rep-contract-pill');
+
+      if (repOrderType === 'SAMPLE') {
+        bannerText.innerText = "Free Sample Mode: All items ₹0.";
+        bannerPill.innerText = "Sample Log";
+      } else if (overrides.length > 0) {
+        bannerText.innerText = `Special Contract! ${overrides.length} products discounted for this buyer.`;
+        bannerPill.innerText = `${overrides.length} Rates`;
+      } else {
+        bannerText.innerText = `Standard ${buyer.tier} Tier Rates apply.`;
+        bannerPill.innerText = `0 Overrides`;
+      }
+    }
+
+    function populateRepOrderRouteDropdown() {
+      const select = document.getElementById('rep-order-route-select');
+      select.innerHTML = routes.filter(r => r.id !== 'all').map(r => `
+        <option value="${escapeHtml(r.id)}" ${r.id === repOrderAssignedRoute ? 'selected' : ''}>${escapeHtml(r.name)}</option>
+      `).join('');
+    }
+
+    function onRepOrderRouteChanged(val) { repOrderAssignedRoute = val; }
+    function onRepFulfillmentPlanChanged(val) { repOrderFulfillmentMode = val; }
+
+    function filterRepCatalog() {
+      const container = document.getElementById('rep-products-container');
+      const search = (document.getElementById('rep-catalog-search')?.value || '').toLowerCase().trim();
+      document.getElementById('rep-clear-search-btn').classList.toggle('hidden', !search);
+
+      const filtered = products.filter(p => {
+        const matchesSearch = !search || p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        const matchesCartOnly = !repFilterCartOnly || ((repCart[p.id] || 0) > 0);
+        return matchesSearch && matchesCartOnly;
+      });
+
+      container.innerHTML = filtered.map(p => {
+        const qty = repCart[p.id] || 0;
+        const priceInfo = resolvePrice(p.id, repSelectedBuyerId);
+
+        return `
+          <div class="bg-white rounded-2xl p-3 border ${qty > 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'} shadow-xs flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <span class="font-mono text-[10px] text-slate-400 font-bold">${escapeHtml(p.sku)}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">📦 ${escapeHtml(p.unitSize)}</span>
+              <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
+              <div class="font-mono font-black text-sm text-slate-900 mt-1">
+                ${repOrderType === 'SAMPLE' ? '₹0.00 (Free)' : formatINR(priceInfo.rate)}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button type="button" onclick="adjustRepQty('${p.id}', -1)" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg flex items-center justify-center disabled:opacity-40" ${qty === 0 ? 'disabled' : ''}>-</button>
+              <input type="number" min="0" value="${qty}" onchange="setRepQty('${p.id}', this.value)" class="w-12 h-9 text-center font-mono font-black text-sm rounded-xl border border-slate-200">
+              <button type="button" onclick="adjustRepQty('${p.id}', 1)" class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function adjustRepQty(productId, delta) {
+      const current = repCart[productId] || 0;
+      const next = Math.max(0, current + delta);
+      if (next === 0) delete repCart[productId];
+      else repCart[productId] = next;
+      filterRepCatalog();
+      calculateRepTotals();
+    }
+
+    function setRepQty(productId, val) {
+      const next = Math.max(0, parseInt(val) || 0);
+      if (next === 0) delete repCart[productId];
+      else repCart[productId] = next;
+      filterRepCatalog();
+      calculateRepTotals();
+    }
+
+    function toggleRepCartOnly() {
+      repFilterCartOnly = !repFilterCartOnly;
+      filterRepCatalog();
+    }
+
+    function clearRepCatalogSearch() {
+      document.getElementById('rep-catalog-search').value = '';
+      filterRepCatalog();
+    }
+
+    function toggleRepPaymentDrawer() {
+      document.getElementById('rep-checkout-expanded').classList.toggle('hidden');
+    }
+
+    function setRepPaymentMode(mode) {
+      repSelectedPaymentMode = mode;
+      document.querySelectorAll('.rep-pay-btn').forEach(b => {
+        b.className = b.innerText.includes(mode)
+          ? "rep-pay-btn active py-2 px-1 text-center rounded-xl border text-[11px] font-bold bg-slate-900 text-white border-slate-900 shadow-xs"
+          : "rep-pay-btn py-2 px-1 text-center rounded-xl border text-[11px] font-semibold bg-slate-50 text-slate-700 border-slate-200";
+      });
+    }
+
+    function calculateRepTotals() {
+      let totalUnits = 0;
+      let lineItemsCount = 0;
+      let itemsSubtotal = 0;
+
+      Object.keys(repCart).forEach(pId => {
+        const qty = repCart[pId];
+        if (qty > 0) {
+          totalUnits += qty;
+          lineItemsCount++;
+          itemsSubtotal += (qty * resolvePrice(pId, repSelectedBuyerId).rate);
+        }
+      });
+
+      const extraRebate = (repOrderType === 'COMMERCIAL') ? (parseFloat(document.getElementById('rep-order-rebate')?.value) || 0) : 0;
+      const netPayable = (repOrderType === 'SAMPLE') ? 0 : Math.max(0, itemsSubtotal - extraRebate);
+
+      document.getElementById('rep-sticky-item-count').innerText = lineItemsCount;
+      document.getElementById('rep-sticky-total-qty').innerText = totalUnits;
+      document.getElementById('rep-sticky-line-count').innerText = lineItemsCount;
+      document.getElementById('rep-sticky-net-total').innerText = (repOrderType === 'SAMPLE') ? '₹0 (Sample)' : formatINR(netPayable);
+      document.getElementById('rep-btn-net-badge').innerText = (repOrderType === 'SAMPLE') ? 'FREE' : formatINR(netPayable);
+      document.getElementById('rep-cart-badge-count').innerText = lineItemsCount;
+
+      const submitBtn = document.getElementById('rep-btn-submit-order');
+      submitBtn.disabled = (totalUnits === 0);
+    }
+
+    async function submitRepOrder() {
+      const buyer = buyers.find(b => b.id === repSelectedBuyerId);
+      const rep = reps.find(r => r.id === activeRepId) || reps[0];
+      if (!buyer || !rep) return;
+
+      const orderItems = [];
+      let itemsSubtotal = 0;
+      let totalUnits = 0;
+
+      Object.keys(repCart).forEach(pId => {
+        const qty = repCart[pId];
+        if (qty > 0) {
+          const prod = products.find(p => p.id === pId);
+          const priceObj = resolvePrice(pId, buyer.id);
+          const lineTotal = qty * priceObj.rate;
+          orderItems.push({
+            productId: pId, sku: prod.sku, name: prod.name, unitSize: prod.unitSize,
+            qty, rate: priceObj.rate, baseRate: prod.baseRate, isOverride: priceObj.isOverride,
+            isSample: repOrderType === 'SAMPLE', total: lineTotal
+          });
+          itemsSubtotal += lineTotal;
+          totalUnits += qty;
+        }
+      });
+
+      if (orderItems.length === 0) { alert("Please select at least 1 unit."); return; }
+
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const notes = document.getElementById('rep-order-notes').value.trim();
+
+      if (repOrderType === 'SAMPLE') {
+        const sampleReason = document.getElementById('rep-sample-reason').value;
+        const sampleRecords = [];
+
+        orderItems.forEach((it, idx) => {
+          const sampleId = 'SMP-' + Math.floor(1000 + Math.random() * 9000) + '-' + (idx + 1);
+          const record = {
+            id: sampleId, date: dateStr, product_sku: it.sku, product_name: it.name,
+            unit_size: it.unitSize, quantity_units: it.qty, store_name: buyer.name,
+            rep_name: rep.name, sample_reason: sampleReason, feedback_status: 'Pending Follow-up'
+          };
+          sampleGiveaways.unshift(record);
+          sampleRecords.push(record);
+        });
+
+        saveStorage('sg_samples', sampleGiveaways);
+        if (supabaseClient) {
+          try { await supabaseClient.from('sample_giveaways').insert(sampleRecords); } catch (e) {}
+        }
+
+        latestOrderBooked = {
+          id: 'SMP-' + Math.floor(1000 + Math.random() * 9000), isSample: true,
+          buyerName: buyer.name, buyerPhone: buyer.phone, repName: rep.name,
+          sampleReason, items: orderItems, totalUnits, netPayable: 0,
+          paymentMode: 'Free Sample ($0)'
+        };
+        showModalPostSubmit(true);
+        updateRepMetricsHeader();
+        return;
+      }
+
+      const extraRebate = parseFloat(document.getElementById('rep-order-rebate').value) || 0;
+      const netPayable = Math.max(0, itemsSubtotal - extraRebate);
+      const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+
+      const newOrder = {
+        id: orderId, repId: rep.id, repName: rep.name, buyerId: buyer.id,
+        buyerName: buyer.name, buyerPhone: buyer.phone, buyerTier: buyer.tier,
+        buyerHomeRoute: buyer.homeRoute, dispatchRoute: repOrderAssignedRoute,
+        date: dateStr, time: timeStr, items: orderItems, totalUnits,
+        itemsSubtotal, logisticsFee: 0, extraRebate, netPayable,
+        paymentMode: repSelectedPaymentMode, notes
+      };
+
+      orders.unshift(newOrder);
+      saveStorage('sg_orders', orders);
+
+      if (repSelectedPaymentMode.includes('Credit')) {
+        buyer.pendingUdhaar = Number(buyer.pendingUdhaar || 0) + netPayable;
+        saveStorage('sg_buyers', buyers);
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').insert([newOrder]);
+          if (repSelectedPaymentMode.includes('Credit')) {
+            await supabaseClient.from('buyers').update({ pendingUdhaar: buyer.pendingUdhaar }).eq('id', buyer.id);
+          }
+        } catch (e) {}
+      }
+
+      latestOrderBooked = newOrder;
+      showModalPostSubmit(false);
+      updateRepMetricsHeader();
+    }
+
+    function showModalPostSubmit(isSample) {
+      document.getElementById('modal-invoice-id').innerText = '#' + latestOrderBooked.id;
+      document.getElementById('modal-total-amt').innerText = isSample ? '₹0 (Sample)' : formatINR(latestOrderBooked.netPayable);
+      document.getElementById('modal-pay-mode').innerText = latestOrderBooked.paymentMode;
+      document.getElementById('post-order-modal').classList.remove('hidden');
+    }
+
+    function updateRepMetricsHeader() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const repOrdersToday = orders.filter(o => o.repId === activeRepId && o.date === todayStr);
+      const repSamplesToday = sampleGiveaways.filter(s => s.rep_name === (reps.find(r => r.id === activeRepId)?.name) && s.date === todayStr);
+
+      const totalSales = repOrdersToday.reduce((s, o) => s + Number(o.netPayable), 0);
+      const cashBag = repOrdersToday.filter(o => o.paymentMode === 'Cash').reduce((s, o) => s + Number(o.netPayable), 0);
+      const totalSampleUnits = repSamplesToday.reduce((s, x) => s + Number(x.quantity_units), 0);
+
+      const rep = reps.find(r => r.id === activeRepId) || reps[0];
+      const target = rep ? (Number(rep.target) || 50000) : 50000;
+      const pct = Math.min(100, Math.round((totalSales / target) * 100));
+
+      document.getElementById('rep-target-progress-text').innerText = `${formatINR(totalSales)} / ${formatINR(target)}`;
+      document.getElementById('rep-target-progress-bar').style.width = pct + '%';
+      document.getElementById('rep-target-percent').innerText = pct + '%';
+      document.getElementById('rep-cash-in-bag').innerText = formatINR(cashBag);
+      document.getElementById('rep-samples-given').innerText = `${totalSampleUnits}`;
+      document.getElementById('nav-rep-order-count').innerText = repOrdersToday.length + repSamplesToday.length;
+
+      document.getElementById('drawer-rep-name').innerText = rep.name;
+      document.getElementById('drawer-total-sales').innerText = formatINR(totalSales);
+
+      const listEl = document.getElementById('drawer-orders-list');
+      listEl.innerHTML = repOrdersToday.map(o => `
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+          <div class="flex justify-between">
+            <span class="font-bold text-slate-900">${escapeHtml(o.buyerName)}</span>
+            <span class="font-bold text-emerald-700">${formatINR(o.netPayable)}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1">${o.id} • ${o.paymentMode}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleRouteHistoryDrawer(open) {
+      document.getElementById('route-history-drawer').classList.toggle('hidden', !open);
+    }
+
+    function closePostOrderModalAndNext() {
+      document.getElementById('post-order-modal').classList.add('hidden');
+      repCart = {};
+      document.getElementById('rep-order-rebate').value = '0';
+      document.getElementById('rep-order-notes').value = '';
+      document.getElementById('rep-checkout-expanded').classList.add('hidden');
+      setRepPaymentMode('Cash');
+      setRepOrderType('COMMERCIAL');
+      filterRepCatalog();
+      calculateRepTotals();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function shareModalOrderWhatsApp() {
+      if (!latestOrderBooked) return;
+      const o = latestOrderBooked;
+      let text = `*SRI GOVINDA SALES PROJECT*\nRef: *#${o.id}*\nBuyer: *${o.buyerName}*\nTotal: *${formatINR(o.netPayable)}*\nPayment: *${o.paymentMode}*\nThank you!`;
+      const url = o.buyerPhone ? `https://wa.me/91${o.buyerPhone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      refreshRepTerminal();
+      if (window.lucide) lucide.createIcons();
+      await initSupabase();
+    });
+  </script>
+</body>
+</html>
