@@ -81,3 +81,4 @@ To access the app from any mobile phone or computer:
    ```
    * Sales reps can bookmark `https://arvindthegreatest-star.github.io/Sales-app/reps/sales_rep_mobile_terminal.html` on their smartphones.
    * Managers can access `https://arvindthegreatest-star.github.io/Sales-app/sri_govinda_admin_manager_platform.html` on PCs/tablets.
+
