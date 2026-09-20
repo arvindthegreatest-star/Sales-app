@@ -466,6 +466,7 @@
     }
 
     let supabaseClient = null;
+    let repRealtimeChannel = null;
     let supabaseUrl = (window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '';
     let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || '';
 
@@ -518,7 +519,17 @@
         return;
       }
       try {
-        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        if (repRealtimeChannel) {
+          try { repRealtimeChannel.unsubscribe(); } catch (e) {}
+          repRealtimeChannel = null;
+        }
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        });
         document.getElementById('cloud-status-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
         document.getElementById('cloud-status-text').innerText = "Live Cloud Synced";
 
@@ -540,8 +551,8 @@
         refreshRepTerminal();
 
         // Realtime updates from Manager PC
-        supabaseClient
-          .channel('sg-sales-realtime-rep')
+        repRealtimeChannel = supabaseClient.channel('sg-sales-realtime-rep');
+        repRealtimeChannel
           .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
             const { data } = await supabaseClient.from('buyers').select('*');
             if (data?.length > 0) { buyers = data; saveStorage('sg_buyers', buyers); updateRepBuyerSnapshot(); populateRepBuyerDropdown(); }

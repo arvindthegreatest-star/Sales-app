@@ -1145,7 +1145,17 @@
       }
       try {
         if (window.supabase) {
-          supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+          if (realtimeChannel) {
+            try { realtimeChannel.unsubscribe(); } catch (e) {}
+            realtimeChannel = null;
+          }
+          supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false
+            }
+          });
           updateCloudStatusUI(true, 'Connecting...');
           const { data, error } = await supabaseClient.from('orders').select('id').limit(1);
           if (error && error.code !== 'PGRST116') {
