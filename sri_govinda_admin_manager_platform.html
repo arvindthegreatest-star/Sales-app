@@ -1120,7 +1120,16 @@
     let isCloudConnected = false;
     let realtimeChannel = null;
 
-    let supabaseUrl = (window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '';
+    function sanitizeSupabaseUrl(raw) {
+      if (!raw) return '';
+      let u = String(raw).trim();
+      u = u.replace(/\/+$/, '');
+      u = u.replace(/\/rest\/v1\/?$/i, '');
+      u = u.replace(/\/auth\/v1\/?$/i, '');
+      return u;
+    }
+
+    let supabaseUrl = sanitizeSupabaseUrl((window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '');
     let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || '';
 
     let currentRole = 'manager';
@@ -1142,6 +1151,8 @@
     function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
 
     async function initSupabase() {
+      supabaseUrl = sanitizeSupabaseUrl(supabaseUrl);
+      if (supabaseUrl) localStorage.setItem('sg_supabase_url', supabaseUrl);
       if (!supabaseUrl || !supabaseKey) {
         updateCloudStatusUI(false, 'Local Demo Mode');
         return;
@@ -1955,12 +1966,21 @@
         alert("Supabase is not connected. Please check config.js.");
         return;
       }
-      const { data, error } = await supabaseClient.from('products').upsert(products);
+      const payload = products.map(p => ({
+        id: p.id || ('p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
+        sku: String(p.sku || '').trim().toUpperCase(),
+        name: String(p.name || '').trim(),
+        category: String(p.category || 'General').trim(),
+        unitSize: String(p.unitSize || '1kg pack').trim(),
+        baseRate: Number(p.baseRate) || 0,
+        initialStock: Number(p.initialStock) || 0
+      }));
+      const { data, error } = await supabaseClient.from('products').upsert(payload);
       if (error) {
         console.error("Supabase sync error:", error);
         alert("Failed to sync catalog to Supabase: " + error.message);
       } else {
-        alert(`Successfully synced ${products.length} products to Supabase cloud!`);
+        alert(`Successfully synced ${payload.length} products to Supabase cloud!`);
       }
     }
 
@@ -2293,7 +2313,7 @@
     }
 
     async function saveSupabaseCredentials() {
-      supabaseUrl = document.getElementById('supabase-url-input').value.trim();
+      supabaseUrl = sanitizeSupabaseUrl(document.getElementById('supabase-url-input').value);
       supabaseKey = document.getElementById('supabase-key-input').value.trim();
       localStorage.setItem('sg_supabase_url', supabaseUrl);
       localStorage.setItem('sg_supabase_key', supabaseKey);

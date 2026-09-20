@@ -465,9 +465,18 @@
       try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
     }
 
+    function sanitizeSupabaseUrl(raw) {
+      if (!raw) return '';
+      let u = String(raw).trim();
+      u = u.replace(/\/+$/, '');
+      u = u.replace(/\/rest\/v1\/?$/i, '');
+      u = u.replace(/\/auth\/v1\/?$/i, '');
+      return u;
+    }
+
     let supabaseClient = null;
     let repRealtimeChannel = null;
-    let supabaseUrl = (window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '';
+    let supabaseUrl = sanitizeSupabaseUrl((window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '');
     let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || '';
 
     let reps = loadStorage('sg_reps', INITIAL_REPS);
@@ -504,7 +513,7 @@
     }
 
     async function saveRepCloudCredentials() {
-      supabaseUrl = document.getElementById('rep-supabase-url-input').value.trim();
+      supabaseUrl = sanitizeSupabaseUrl(document.getElementById('rep-supabase-url-input').value);
       supabaseKey = document.getElementById('rep-supabase-key-input').value.trim();
       localStorage.setItem('sg_supabase_url', supabaseUrl);
       localStorage.setItem('sg_supabase_key', supabaseKey);
@@ -513,6 +522,8 @@
     }
 
     async function initSupabase() {
+      supabaseUrl = sanitizeSupabaseUrl(supabaseUrl);
+      if (supabaseUrl) localStorage.setItem('sg_supabase_url', supabaseUrl);
       if (!supabaseUrl || !supabaseKey) {
         document.getElementById('cloud-status-dot').className = "w-2 h-2 rounded-full bg-amber-400";
         document.getElementById('cloud-status-text').innerText = "Offline Mode";
