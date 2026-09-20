@@ -510,7 +510,10 @@
             <h2 class="text-lg font-bold text-slate-900">Product Packaging & Master Catalog</h2>
             <p class="text-xs text-slate-500">Configure SKUs, packaging units (e.g. 500g, 25kg bag), and standard rates</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="syncEntireCatalogToSupabase()" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition" title="Upload all current catalog items to Supabase">
+              <i data-lucide="cloud-upload" class="w-4 h-4"></i> Sync to Supabase
+            </button>
             <button onclick="downloadCSVTemplate()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold flex items-center gap-1 transition">
               <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Sample CSV
             </button>
@@ -1947,6 +1950,20 @@
       document.getElementById('modal-product').classList.add('hidden');
     }
 
+    async function syncEntireCatalogToSupabase() {
+      if (!supabaseClient) {
+        alert("Supabase is not connected. Please check config.js.");
+        return;
+      }
+      const { data, error } = await supabaseClient.from('products').upsert(products);
+      if (error) {
+        console.error("Supabase sync error:", error);
+        alert("Failed to sync catalog to Supabase: " + error.message);
+      } else {
+        alert(`Successfully synced ${products.length} products to Supabase cloud!`);
+      }
+    }
+
     async function handleSaveProduct(e) {
       e.preventDefault();
       const editId = document.getElementById('product-edit-id').value;
@@ -1963,7 +1980,11 @@
 
       saveStorage('sg_products', products);
       if (supabaseClient) {
-        try { await supabaseClient.from('products').upsert([prodRecord]); } catch (e) {}
+        const { error } = await supabaseClient.from('products').upsert([prodRecord]);
+        if (error) {
+          console.error("Supabase error saving product:", error);
+          alert("Notice: Could not sync to Supabase: " + error.message);
+        }
       }
 
       closeProductModal();
@@ -1974,7 +1995,10 @@
       if (confirm("Delete product from catalog?")) {
         products = products.filter(p => p.id !== prodId);
         saveStorage('sg_products', products);
-        if (supabaseClient) supabaseClient.from('products').delete().eq('id', prodId);
+        if (supabaseClient) {
+          const { error } = await supabaseClient.from('products').delete().eq('id', prodId);
+          if (error) console.error("Supabase error deleting product:", error);
+        }
         refreshManagerHub();
       }
     }
@@ -2023,7 +2047,11 @@
           });
           saveStorage('sg_products', products);
           if (supabaseClient) {
-            try { await supabaseClient.from('products').upsert(products); } catch (err) {}
+            const { error } = await supabaseClient.from('products').upsert(products);
+            if (error) {
+              console.error("Supabase error importing CSV products:", error);
+              alert("Error syncing products to Supabase: " + error.message);
+            }
           }
           alert(`Imported ${results.data.length} products!`);
           refreshManagerHub();
