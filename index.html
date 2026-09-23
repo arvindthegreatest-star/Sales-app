@@ -832,7 +832,7 @@
         <p class="text-xs text-slate-400 mt-0.5">Enter 4-digit Master Security PIN</p>
       </div>
 
-      <input type="password" id="pin-input" maxlength="4" placeholder="••••" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-center font-mono font-black text-lg tracking-widest text-white outline-none focus:border-indigo-500">
+      <input type="password" id="pin-input" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitPin()" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-center font-mono font-black text-lg tracking-widest text-white outline-none focus:border-indigo-500">
       
       <div id="pin-error" class="text-xs font-bold text-rose-400 hidden">Incorrect Security PIN</div>
 
@@ -872,8 +872,15 @@
        APPLICATION LOGIC
        ============================================================================== -->
   <script>
-    // 1. STATE MANAGEMENT
-    const DEFAULT_MASTER_PIN = '3121';
+    // 1. STATE MANAGEMENT (PIN STORED AS SECURE SHA-256 HASH)
+    const MASTER_PIN_HASH = '37af3f678ecf438491e342ee31996a7b294101b781c20221158017a1203db302';
+
+    async function hashPin(val) {
+      const enc = new TextEncoder().encode(String(val || '').trim());
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
 
     let products = [];
@@ -1073,16 +1080,18 @@
       document.getElementById('modal-pin').classList.add('hidden');
     }
 
-    function submitPin() {
+    async function submitPin() {
       const entered = document.getElementById('pin-input').value;
-      if (entered === DEFAULT_MASTER_PIN) {
+      const h = await hashPin(entered);
+      if (h === MASTER_PIN_HASH) {
         isManager = true;
         sessionStorage.setItem('sg_is_manager', 'true');
         closePinModal();
         updateManagerUI();
-        alert("Manager mode unlocked! Product, Route, and Inward Stock management are now active.");
       } else {
         document.getElementById('pin-error').classList.remove('hidden');
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-input').focus();
       }
     }
 
