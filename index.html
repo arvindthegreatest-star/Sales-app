@@ -2,113 +2,2077 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sri Govinda Sales Project - Cloud Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sri Govinda Sales & Inventory</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- PapaParse for CSV catalog import -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Config file with Supabase URL & anon key -->
+  <script src="./config.js"></script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    * { -webkit-tap-highlight-color: transparent; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+<body class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-20 sm:pb-12">
 
-  <!-- Header -->
-  <header class="border-b border-slate-800/80 px-4 py-4 bg-slate-900/50 backdrop-blur-md">
-    <div class="max-w-4xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center font-black text-white shadow-lg">
-          <i data-lucide="shield-check" class="w-5 h-5"></i>
+  <!-- ==============================================================================
+       TOP HEADER & NAVIGATION
+       ============================================================================== -->
+  <header class="bg-slate-950 text-white sticky top-0 z-40 border-b border-slate-800 shadow-md">
+    <div class="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center gap-2.5 flex-shrink-0">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center font-black text-white shadow-inner flex-shrink-0">
+          <i data-lucide="package" class="w-4 h-4"></i>
         </div>
         <div>
-          <h1 class="font-extrabold text-base tracking-tight text-white">Sri Govinda Food Products</h1>
-          <p class="text-[11px] text-slate-400 font-medium">Commercial Sales & Realtime Distribution Suite</p>
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-sm tracking-tight text-white">Sri Govinda</span>
+            <span id="role-badge" class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              Sales Hub
+            </span>
+          </div>
+          <div class="text-[10px] text-slate-400 flex items-center gap-1.5">
+            <span id="cloud-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="cloud-text">Connecting...</span>
+          </div>
         </div>
       </div>
-      <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> v2.0 Cloud Synced
-      </span>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+        <button onclick="setTab('dashboard')" id="nav-dashboard" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white">
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Dashboard</span>
+        </button>
+        <button onclick="setTab('order')" id="nav-order" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+          <span>Order</span>
+        </button>
+        <button onclick="setTab('customers')" id="nav-customers" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span>Customers</span>
+        </button>
+        <button onclick="setTab('orders')" id="nav-orders" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
+          <span>History</span>
+        </button>
+        <button onclick="setTab('samples')" id="nav-samples" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="gift" class="w-3.5 h-3.5"></i>
+          <span>Samples</span>
+        </button>
+
+        <!-- Admin Only Tabs (Hidden by default until Manager Login) -->
+        <button onclick="setTab('inward')" id="nav-inward" class="tab-btn hidden px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800">
+          <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Inward</span>
+        </button>
+        <button onclick="setTab('products')" id="nav-products" class="tab-btn hidden px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800">
+          <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Products</span>
+        </button>
+        <button onclick="setTab('routes')" id="nav-routes" class="tab-btn hidden px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800">
+          <i data-lucide="map" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Routes</span>
+        </button>
+      </nav>
+
     </div>
   </header>
 
-  <!-- Main Hero / Portal Cards -->
-  <main class="max-w-4xl mx-auto px-4 py-12 flex-1 flex flex-col justify-center">
-    <div class="text-center space-y-3 mb-10">
-      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 mb-2">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Field Sales & Inventory Management
+  <!-- ==============================================================================
+       MAIN WORKSPACE AREA
+       ============================================================================== -->
+  <main class="max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 flex-1">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="view-dashboard" class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Sales & Inventory Overview</h1>
+          <p class="text-xs text-slate-500">Live progress tracking, stock deductions, and order review</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openSampleModal()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i data-lucide="gift" class="w-3.5 h-3.5"></i> Log Sample
+          </button>
+          <button onclick="setTab('order')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> New Order
+          </button>
+        </div>
       </div>
-      <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">Select Application Terminal</h2>
-      <p class="text-sm text-slate-400 max-w-lg mx-auto">
-        Choose your operational role to launch the optimized workspace. Powered by Supabase Realtime and offline resilience.
-      </p>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto w-full">
-      <!-- Manager Hub Card -->
-      <a href="sri_govinda_admin_manager_platform.html" class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-3xl p-6 transition-all duration-200 hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col justify-between space-y-6">
-        <div class="space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center group-hover:scale-105 transition">
-            <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
+      <!-- Low Stock Alert Banner (conditionally displayed if any low stock) -->
+      <div id="low-stock-alert-banner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-xs text-rose-800 space-y-1">
+        <div class="font-bold flex items-center gap-1.5">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
+          <span>Inventory Attention Required: Low or Out-of-Stock SKUs</span>
+        </div>
+        <div id="low-stock-alert-list" class="text-[11px] text-rose-700 flex flex-wrap gap-2 pt-0.5"></div>
+      </div>
+
+      <!-- KPI Metric Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Sales</span>
+          <div id="kpi-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Orders</span>
+          <div id="kpi-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Units Sold</span>
+          <div id="kpi-total-units-sold" class="font-mono font-black text-lg text-slate-900">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Samples Given</span>
+          <div id="kpi-total-samples" class="font-mono font-black text-lg text-amber-600">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Inward Receipts</span>
+          <div id="kpi-total-inward" class="font-mono font-black text-lg text-indigo-600">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Customers</span>
+          <div id="kpi-total-customers" class="font-mono font-black text-lg text-slate-900">0</div>
+        </div>
+      </div>
+
+      <!-- Quick Dual Stream: Recent Orders & Recent Samples -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Recent Orders Stream -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Recent Orders
+            </h3>
+            <button onclick="setTab('orders')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">View All →</button>
+          </div>
+          <div id="recent-orders-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Recent Samples Stream -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i> Recent Free Samples
+            </h3>
+            <button onclick="setTab('samples')" class="text-xs font-bold text-amber-600 hover:text-amber-700">View All →</button>
+          </div>
+          <div id="recent-samples-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. NEW ORDER FORM VIEW (CONNECTED WITH LIVE STOCK) -->
+    <section id="view-order" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
+          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
+            <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-600"></i> New Order Booking
+          </h2>
+          <button type="button" onclick="openCustomerModal()" class="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add New Customer
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Select Customer *</label>
+            <select id="order-customer-select" onchange="onOrderCustomerChanged()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500">
+              <!-- Populated by JS -->
+            </select>
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-xl font-bold text-white group-hover:text-indigo-300 transition">Manager Cockpit</h3>
-              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">PIN 7890</span>
-            </div>
-            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-              Executive dashboard, live stock inward & tally, free samples tracker, route beat assignment, customer credit limit, and master order ledger.
-            </p>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Dispatch Route Beat</label>
+            <select id="order-route-select" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500">
+              <!-- Populated by JS -->
+            </select>
           </div>
         </div>
 
-        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
-          <span>Launch Manager Hub</span>
-          <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition"></i>
+        <!-- Customer Snapshot -->
+        <div id="order-customer-snapshot" class="bg-slate-50 rounded-xl p-2.5 text-xs text-slate-600 flex items-center justify-between flex-wrap gap-2 font-mono">
+          <div>Tier: <b id="snap-tier" class="text-slate-900">-</b> • Route: <span id="snap-route">-</span></div>
+          <div>Outstanding Due: <b id="snap-due" class="text-rose-600">₹0</b></div>
         </div>
-      </a>
+      </div>
 
-      <!-- Sales Rep Field Terminal Card -->
-      <a href="rep.html" class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-3xl p-6 transition-all duration-200 hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col justify-between space-y-6">
-        <div class="space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition">
-            <i data-lucide="smartphone" class="w-7 h-7"></i>
+      <!-- Product Catalog Item Selector with Live Stock Badges -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Select Products</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ⚡ Real-Time Warehouse Stock
+            </span>
+          </div>
+          <input type="text" id="order-catalog-search" oninput="renderOrderCatalog()" placeholder="Search product name or SKU..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-52 outline-none">
+        </div>
+        <div id="order-catalog-container" class="space-y-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Cart Bottom Bar & Checkout -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 sticky bottom-3 z-30">
+        <div class="flex items-center justify-between text-xs">
+          <div>
+            <span class="text-slate-500 font-semibold">Total Items: <b id="cart-item-count" class="text-slate-900">0</b></span>
+            <span class="text-slate-300 mx-1.5">•</span>
+            <span class="text-slate-500 font-semibold">Total Units: <b id="cart-total-qty" class="text-slate-900">0</b></span>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Net Payable</span>
+            <span id="cart-net-total" class="font-mono font-black text-emerald-600 text-lg">₹0</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Payment Mode</label>
+            <select id="order-payment-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+              <option value="Cash">Cash</option>
+              <option value="UPI / QR">UPI / QR</option>
+              <option value="Credit / Udhaar">Credit / Udhaar</option>
+              <option value="Cheque">Cheque</option>
+            </select>
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-xl font-bold text-white group-hover:text-emerald-300 transition">Sales Rep Terminal</h3>
-              <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Mobile First</span>
-            </div>
-            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-              Field order taking on bikes/vans, quota progress bar, cash-in-bag tracker, tier & contract pricing engine, thermal receipt, and 1-click WhatsApp bills.
-            </p>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Extra Rebate (₹)</label>
+            <input type="number" id="order-rebate" value="0" min="0" oninput="calculateOrderTotals()" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Rep Name / Note</label>
+            <input type="text" id="order-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
           </div>
         </div>
 
-        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-bold text-emerald-400 group-hover:text-emerald-300">
-          <span>Launch Field Terminal</span>
-          <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition"></i>
+        <button type="button" id="btn-submit-order" onclick="submitOrder()" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4"></i> CONFIRM & FULFILL ORDER
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. CUSTOMERS DATABASE VIEW (REPS & MANAGERS) -->
+    <section id="view-customers" class="hidden space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Customer Database</h2>
+          <p class="text-xs text-slate-500">Store directory, contact details, and credit balance</p>
         </div>
-      </a>
-    </div>
+        <button onclick="openCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Customer
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="text" id="customer-search-input" oninput="renderCustomersTable()" placeholder="Search customer name, phone, or address..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-full max-w-sm outline-none">
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Store Name & Address</th>
+                <th class="p-3">Tier</th>
+                <th class="p-3">Route Beat</th>
+                <th class="p-3">Phone</th>
+                <th class="p-3 text-right">Outstanding Due</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ORDERS DATABASE VIEW -->
+    <section id="view-orders" class="hidden space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Order Database & History</h2>
+          <p class="text-xs text-slate-500">Audit trail of all commercial sales transactions</p>
+        </div>
+        <input type="text" id="order-history-search" oninput="renderOrdersHistoryTable()" placeholder="Search by Order ID or customer..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-52 outline-none">
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Order ID & Time</th>
+                <th class="p-3">Customer</th>
+                <th class="p-3">Route</th>
+                <th class="p-3 text-right">Units</th>
+                <th class="p-3 text-right">Net Amount</th>
+                <th class="p-3">Payment</th>
+                <th class="p-3 text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. SAMPLES TRACKER VIEW (REPS & MANAGERS) -->
+    <section id="view-samples" class="hidden space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Samples Tracker</h2>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Field Trial Register</span>
+          </div>
+          <p class="text-xs text-slate-500">Free samples distributed for chef tastings, trials & client acquisition</p>
+        </div>
+        <button onclick="openSampleModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i> Log Free Sample
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="text" id="sample-search-input" oninput="renderSamplesTable()" placeholder="Search store name, product SKU, or rep..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-full max-w-sm outline-none">
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Date</th>
+                <th class="p-3">Customer / Store</th>
+                <th class="p-3">Product Sample</th>
+                <th class="p-3 text-right">Qty</th>
+                <th class="p-3">Reason / Purpose</th>
+                <th class="p-3">Field Rep</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="samples-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. INWARD INVENTORY & STOCK RECONCILIATION VIEW (MANAGER ONLY) -->
+    <section id="view-inward" class="hidden space-y-5">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Inward Inventory & Stock Reconciliation</h2>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager</span>
+          </div>
+          <p class="text-xs text-slate-500">Live formula: Initial + Inward Receipts - Commercial Orders - Free Samples = Live Balance</p>
+        </div>
+        <button onclick="openInwardModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i> Log Inward Stock
+        </button>
+      </div>
+
+      <!-- Live Reconciliation Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs space-y-2 p-4">
+        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i> Master Stock Balance Reconciliation
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">SKU</th>
+                <th class="p-2.5">Product Name</th>
+                <th class="p-2.5 text-right">Initial Stock</th>
+                <th class="p-2.5 text-right text-indigo-600 font-bold">Inward (+)</th>
+                <th class="p-2.5 text-right text-rose-600 font-bold">Sold (-)</th>
+                <th class="p-2.5 text-right text-amber-600 font-bold">Samples (-)</th>
+                <th class="p-2.5 text-right font-black">Live Available</th>
+                <th class="p-2.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="stock-tally-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Inward Receipts Log -->
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs space-y-2 p-4">
+        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-emerald-600"></i> Inward Batch Receipts Log
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Date</th>
+                <th class="p-2.5">SKU & Product</th>
+                <th class="p-2.5 text-right">Inward Qty</th>
+                <th class="p-2.5">Lot / Batch #</th>
+                <th class="p-2.5">Supplier / Source</th>
+                <th class="p-2.5">Notes</th>
+                <th class="p-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inward-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. PRODUCTS DATABASE VIEW (MANAGER ONLY) -->
+    <section id="view-products" class="hidden space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Product Database</h2>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager</span>
+          </div>
+          <p class="text-xs text-slate-500">Master product catalog, packaging units, base rates, and initial stock baseline</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> CSV Import
+            <input type="file" accept=".csv" onchange="handleProductCSV(event)" class="hidden">
+          </label>
+          <button onclick="openProductModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Product
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">SKU</th>
+                <th class="p-3">Product Name</th>
+                <th class="p-3">Category</th>
+                <th class="p-3">Packaging Unit</th>
+                <th class="p-3 text-right">Base Rate (₹)</th>
+                <th class="p-3 text-right">Initial Stock</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. ROUTES DATABASE VIEW (MANAGER ONLY) -->
+    <section id="view-routes" class="hidden space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Delivery Beats & Routes</h2>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager</span>
+          </div>
+          <p class="text-xs text-slate-500">Distribution zones, depot hubs, and cutoff schedules</p>
+        </div>
+        <button onclick="openRouteModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Route
+        </button>
+      </div>
+
+      <div id="routes-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
   </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
-    <div class="max-w-4xl mx-auto flex items-center justify-between flex-wrap gap-2">
-      <span>Sri Govinda Food Products © 2026</span>
-      <div class="flex items-center gap-3">
-        <a href="supabase_schema.sql" class="hover:text-slate-400 font-mono text-[11px] underline">SQL Schema</a>
+  <!-- ==============================================================================
+       MODALS
+       ============================================================================== -->
+
+  <!-- MODAL: ADD / EDIT CUSTOMER -->
+  <div id="modal-customer" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-900" id="modal-customer-title">Add New Customer</h3>
+        <button onclick="closeCustomerModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-customer" onsubmit="handleSaveCustomer(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="cust-id" value="">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store / Business Name *</label>
+          <input type="text" id="cust-name" required placeholder="e.g. Hotel Grand Royal" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Tier *</label>
+            <select id="cust-tier" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+              <option value="Retail">Retail</option>
+              <option value="HoReCa">HoReCa</option>
+              <option value="Wholesale">Wholesale</option>
+              <option value="Caterer">Caterer</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Phone Number *</label>
+            <input type="tel" id="cust-phone" required placeholder="10-digit mobile" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Assigned Route Beat</label>
+          <select id="cust-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+            <!-- Routes populated by JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store Address / Area</label>
+          <input type="text" id="cust-address" placeholder="e.g. MG Road, Bengaluru" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Credit Limit (₹)</label>
+            <input type="number" id="cust-credit-limit" value="50000" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Outstanding Due (₹)</label>
+            <input type="number" id="cust-pending-due" value="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition mt-2">
+          Save Customer
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOG FREE SAMPLE (REPS & MANAGERS) -->
+  <div id="modal-sample" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i> Log Free Sample Giveaway
+        </h3>
+        <button onclick="closeSampleModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-sample" onsubmit="handleSaveSample(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store / Customer Name *</label>
+          <input type="text" id="sample-store-name" required placeholder="Select or type store name..." list="sample-customers-list" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+          <datalist id="sample-customers-list"></datalist>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Product Sample *</label>
+          <select id="sample-product-select" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Sample Qty (Units) *</label>
+            <input type="number" id="sample-qty" value="1" min="1" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Field Rep Name</label>
+            <input type="text" id="sample-rep-name" placeholder="Rep name" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Sample Purpose / Reason</label>
+          <select id="sample-reason" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+            <option value="Chef Tasting & Menu Trial">Chef Tasting & Menu Trial</option>
+            <option value="Shelf Display & Merchandising">Shelf Display & Merchandising</option>
+            <option value="Quality Comparison vs Competitor">Quality Comparison vs Competitor</option>
+            <option value="Festival Promotional Giveaway">Festival Promotional Giveaway</option>
+            <option value="New Product Launch Trial">New Product Launch Trial</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Follow-up / Feedback Note</label>
+          <input type="text" id="sample-notes" placeholder="e.g. Tasting scheduled with Head Chef on Friday" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md transition mt-2">
+          Deduct from Live Stock & Record Sample
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: LOG INWARD STOCK (MANAGER) -->
+  <div id="modal-inward" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-indigo-600"></i> Log Inward Factory Stock
+        </h3>
+        <button onclick="closeInwardModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-inward" onsubmit="handleSaveInward(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Select Product *</label>
+          <select id="inward-product-select" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Quantity Units *</label>
+            <input type="number" id="inward-qty" min="1" required placeholder="e.g. 50" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Lot / Batch Number</label>
+            <input type="text" id="inward-batch" placeholder="e.g. LOT-202" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Supplier / Factory Source</label>
+          <input type="text" id="inward-supplier" placeholder="e.g. In-House Grinding Plant, APMC Yard" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Receipt Notes</label>
+          <input type="text" id="inward-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
+          Credit to Warehouse Stock
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT PRODUCT (MANAGER) -->
+  <div id="modal-product" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-900" id="modal-product-title">Add New Product</h3>
+        <button onclick="closeProductModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-product" onsubmit="handleSaveProduct(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="prod-id" value="">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">SKU Code *</label>
+            <input type="text" id="prod-sku" required placeholder="e.g. GM-500" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold uppercase">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Category</label>
+            <input type="text" id="prod-category" placeholder="e.g. Masalas" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Product Name *</label>
+          <input type="text" id="prod-name" required placeholder="e.g. Royal Garam Masala" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Packaging Unit Size *</label>
+            <input type="text" id="prod-unit-size" required placeholder="e.g. 500g pouch, 1kg pack" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Base Rate (₹) *</label>
+            <input type="number" id="prod-rate" required min="0" step="any" placeholder="0.00" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Initial Stock Baseline (Units)</label>
+          <input type="number" id="prod-initial-stock" min="0" value="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
+          Save Product
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT ROUTE (MANAGER) -->
+  <div id="modal-route" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="font-bold text-base text-slate-900" id="modal-route-title">Add New Route Beat</h3>
+        <button onclick="closeRouteModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-route" onsubmit="handleSaveRoute(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="route-id" value="">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Route Beat Name *</label>
+          <input type="text" id="route-name" required placeholder="e.g. Route 1: Central Commercial / MG Road" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Short Code</label>
+            <input type="text" id="route-short" placeholder="e.g. R1: Central" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Depot / Hub</label>
+            <input type="text" id="route-hub" placeholder="e.g. Central Depot" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Daily Cutoff Time</label>
+            <input type="text" id="route-cutoff" value="4:30 PM" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Vehicle</label>
+            <input type="text" id="route-vehicle" placeholder="e.g. Tata Ace, Bike" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
+          Save Route Beat
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: POST-ORDER CONFIRMATION -->
+  <div id="modal-order-success" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 space-y-4 text-center border border-slate-200">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="check" class="w-8 h-8 stroke-[3]"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-black text-slate-900">Order Booked & Stock Deducted!</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Invoice Reference: <span id="success-order-id" class="font-mono font-bold text-slate-800">#ORD</span></p>
+      </div>
+      <div class="bg-slate-50 rounded-2xl p-3 text-left text-xs font-mono space-y-1 border border-slate-200">
+        <div class="flex justify-between text-slate-500"><span>Customer:</span> <b id="success-cust-name" class="text-slate-900">-</b></div>
+        <div class="flex justify-between text-slate-500"><span>Net Amount:</span> <b id="success-net-amount" class="text-emerald-700 text-sm">₹0</b></div>
+        <div class="flex justify-between text-slate-500"><span>Payment:</span> <b id="success-pay-mode" class="text-slate-900">-</b></div>
+      </div>
+      <div class="space-y-2 pt-1">
+        <button onclick="shareWhatsApp()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition">
+          <i data-lucide="message-circle" class="w-4 h-4"></i> Share WhatsApp Bill
+        </button>
+        <button onclick="closeOrderSuccessModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          Done / Next Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MANAGER PIN LOGIN -->
+  <div id="modal-pin" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-slate-900 rounded-3xl shadow-2xl max-w-xs w-full p-6 space-y-4 border border-slate-800 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-base font-extrabold text-white">Manager Access</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Enter 4-digit Master Security PIN</p>
+      </div>
+
+      <input type="password" id="pin-input" maxlength="4" placeholder="••••" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-center font-mono font-black text-lg tracking-widest text-white outline-none focus:border-indigo-500">
+      
+      <div id="pin-error" class="text-xs font-bold text-rose-400 hidden">Incorrect Security PIN</div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onclick="closePinModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          Cancel
+        </button>
+        <button type="button" onclick="submitPin()" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition">
+          Unlock
+        </button>
+      </div>
+      <div class="text-[10px] text-slate-500">Default PIN: <span class="font-mono">7890</span></div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       FOOTER (ADMIN LINK AT BOTTOM)
+       ============================================================================== -->
+  <footer class="mt-auto border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-700">Sri Govinda Food Products</span>
         <span>•</span>
-        <a href="config.js" class="hover:text-slate-400 font-mono text-[11px] underline">config.js</a>
+        <span>Sales & Inventory Hub</span>
+      </div>
+
+      <!-- Admin Manager Footer Link -->
+      <div class="flex items-center gap-2">
+        <button id="btn-footer-admin" onclick="handleFooterAdminClick()" class="font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span id="footer-admin-label">Manager Login</span>
+        </button>
       </div>
     </div>
   </footer>
 
+  <!-- ==============================================================================
+       APPLICATION LOGIC
+       ============================================================================== -->
   <script>
-    if (window.lucide) lucide.createIcons();
+    // 1. STATE MANAGEMENT
+    const DEFAULT_MASTER_PIN = '7890';
+    let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
+
+    let products = [];
+    let customers = [];
+    let orders = [];
+    let routes = [];
+    let inwardEntries = [];
+    let sampleGiveaways = [];
+    let cart = {};
+    let latestOrder = null;
+
+    const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+
+    function sanitizeSupabaseUrl(raw) {
+      if (!raw) return '';
+      let u = String(raw).trim();
+      u = u.replace(/\/+$/, '');
+      u = u.replace(/\/rest\/v1\/?$/i, '');
+      u = u.replace(/\/auth\/v1\/?$/i, '');
+      return u;
+    }
+
+    // 2. LIVE INVENTORY RECONCILIATION ENGINE
+    // Live Balance = Initial Stock + Total Inward - Total Sold - Total Samples Given
+    function getProductStock(prod) {
+      if (!prod) return { initial: 0, inward: 0, sold: 0, samples: 0, balance: 0 };
+      const initial = Number(prod.initialStock || 0);
+
+      // Inward units
+      const inward = inwardEntries
+        .filter(e => e.product_sku === prod.sku)
+        .reduce((sum, e) => sum + Number(e.quantity_units || 0), 0);
+
+      // Units sold across commercial orders
+      let sold = 0;
+      orders.forEach(o => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach(it => {
+            if (it.sku === prod.sku || it.productId === prod.id) {
+              sold += Number(it.qty || 0);
+            }
+          });
+        }
+      });
+
+      // Free sample giveaway units
+      const samples = sampleGiveaways
+        .filter(s => s.product_sku === prod.sku)
+        .reduce((sum, s) => sum + Number(s.quantity_units || 0), 0);
+
+      const balance = initial + inward - sold - samples;
+      return { initial, inward, sold, samples, balance };
+    }
+
+    // 3. SUPABASE INITIALIZATION & REALTIME
+    let supabaseClient = null;
+    let supabaseUrl = sanitizeSupabaseUrl((window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || '');
+    let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || '';
+
+    async function initSupabase() {
+      if (!supabaseUrl || !supabaseKey) {
+        document.getElementById('cloud-dot').className = "w-2 h-2 rounded-full bg-amber-400";
+        document.getElementById('cloud-text').innerText = "Offline Mode";
+        return;
+      }
+      try {
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+        });
+        document.getElementById('cloud-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        document.getElementById('cloud-text').innerText = "Live Cloud Synced";
+
+        await loadAllData();
+
+        // Realtime sync across all connected mobile & PC devices
+        supabaseClient
+          .channel('sg-sales-realtime-channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+            const { data } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+            if (data) { orders = data; refreshAllUI(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
+            const { data } = await supabaseClient.from('buyers').select('*');
+            if (data) { customers = data; refreshAllUI(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
+            const { data } = await supabaseClient.from('products').select('*');
+            if (data) { products = data; refreshAllUI(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, async () => {
+            const { data } = await supabaseClient.from('routes').select('*');
+            if (data) { routes = data; refreshAllUI(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_inward' }, async () => {
+            const { data } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
+            if (data) { inwardEntries = data; refreshAllUI(); }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'sample_giveaways' }, async () => {
+            const { data } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
+            if (data) { sampleGiveaways = data; refreshAllUI(); }
+          })
+          .subscribe();
+
+      } catch (e) {
+        console.error("Connection error:", e);
+        document.getElementById('cloud-text').innerText = "Local Fallback";
+      }
+    }
+
+    async function loadAllData() {
+      if (!supabaseClient) return;
+      try {
+        const { data: dbProducts } = await supabaseClient.from('products').select('*');
+        if (dbProducts) products = dbProducts;
+
+        const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
+        if (dbBuyers) customers = dbBuyers;
+
+        const { data: dbRoutes } = await supabaseClient.from('routes').select('*');
+        if (dbRoutes) routes = dbRoutes;
+
+        const { data: dbOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+        if (dbOrders) orders = dbOrders;
+
+        const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
+        if (dbInward) inwardEntries = dbInward;
+
+        const { data: dbSamples } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
+        if (dbSamples) sampleGiveaways = dbSamples;
+
+        refreshAllUI();
+      } catch (err) {
+        console.error("Error loading data from Supabase:", err);
+      }
+    }
+
+    function refreshAllUI() {
+      renderDashboard();
+      populateDropdowns();
+      renderOrderCatalog();
+      renderCustomersTable();
+      renderOrdersHistoryTable();
+      renderSamplesTable();
+      renderInwardTables();
+      renderProductsTable();
+      renderRoutesGrid();
+      updateManagerUI();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 4. TAB NAVIGATION
+    function setTab(tabId) {
+      document.querySelectorAll('section[id^="view-"]').forEach(el => el.classList.add('hidden'));
+      const activeSec = document.getElementById(`view-${tabId}`);
+      if (activeSec) activeSec.classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-600', 'text-white', 'bg-indigo-600');
+        btn.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        const isMgrTab = ['products', 'routes', 'inward'].includes(tabId);
+        activeBtn.classList.add(isManager && isMgrTab ? 'bg-indigo-600' : 'bg-emerald-600', 'text-white');
+      }
+
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'inward') renderInwardTables();
+      if (tabId === 'samples') renderSamplesTable();
+      if (window.lucide) lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 5. MANAGER PIN & SECURITY
+    function handleFooterAdminClick() {
+      if (isManager) {
+        if (confirm("Lock Manager controls and return to Sales Rep mode?")) {
+          isManager = false;
+          sessionStorage.setItem('sg_is_manager', 'false');
+          updateManagerUI();
+          setTab('dashboard');
+        }
+      } else {
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').classList.add('hidden');
+        document.getElementById('modal-pin').classList.remove('hidden');
+        setTimeout(() => document.getElementById('pin-input').focus(), 100);
+      }
+    }
+
+    function closePinModal() {
+      document.getElementById('modal-pin').classList.add('hidden');
+    }
+
+    function submitPin() {
+      const entered = document.getElementById('pin-input').value;
+      if (entered === DEFAULT_MASTER_PIN) {
+        isManager = true;
+        sessionStorage.setItem('sg_is_manager', 'true');
+        closePinModal();
+        updateManagerUI();
+        alert("Manager mode unlocked! Product, Route, and Inward Stock management are now active.");
+      } else {
+        document.getElementById('pin-error').classList.remove('hidden');
+      }
+    }
+
+    function updateManagerUI() {
+      const navInward = document.getElementById('nav-inward');
+      const navProd = document.getElementById('nav-products');
+      const navRts = document.getElementById('nav-routes');
+      const roleBadge = document.getElementById('role-badge');
+      const footerLabel = document.getElementById('footer-admin-label');
+      const footerBtn = document.getElementById('btn-footer-admin');
+
+      if (isManager) {
+        navInward.classList.remove('hidden'); navInward.classList.add('flex');
+        navProd.classList.remove('hidden'); navProd.classList.add('flex');
+        navRts.classList.remove('hidden'); navRts.classList.add('flex');
+        roleBadge.innerText = "Manager Hub";
+        roleBadge.className = "text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+        footerLabel.innerText = "Manager Active (Lock / Exit)";
+        footerBtn.className = "font-bold text-xs text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer";
+      } else {
+        navInward.classList.add('hidden'); navInward.classList.remove('flex');
+        navProd.classList.add('hidden'); navProd.classList.remove('flex');
+        navRts.classList.add('hidden'); navRts.classList.remove('flex');
+        roleBadge.innerText = "Sales Hub";
+        roleBadge.className = "text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700";
+        footerLabel.innerText = "Manager Login";
+        footerBtn.className = "font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer";
+      }
+      renderCustomersTable();
+      renderSamplesTable();
+    }
+
+    // 6. DASHBOARD VIEW LOGIC
+    function renderDashboard() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayOrders = orders.filter(o => o.date === todayStr);
+      const todaySales = todayOrders.reduce((s, o) => s + Number(o.netPayable || 0), 0);
+      const totalUnitsSold = orders.reduce((s, o) => s + Number(o.totalUnits || 0), 0);
+      const totalSampleUnits = sampleGiveaways.reduce((s, g) => s + Number(g.quantity_units || 0), 0);
+      const totalInwardUnits = inwardEntries.reduce((s, i) => s + Number(i.quantity_units || 0), 0);
+
+      document.getElementById('kpi-today-sales').innerText = formatINR(todaySales);
+      document.getElementById('kpi-today-orders').innerText = todayOrders.length;
+      document.getElementById('kpi-total-units-sold').innerText = totalUnitsSold;
+      document.getElementById('kpi-total-samples').innerText = totalSampleUnits + ' units';
+      document.getElementById('kpi-total-inward').innerText = totalInwardUnits + ' units';
+      document.getElementById('kpi-total-customers').innerText = customers.length;
+
+      // Low Stock Alerts check
+      const lowStockItems = [];
+      products.forEach(p => {
+        const stock = getProductStock(p);
+        if (stock.balance <= 10) {
+          lowStockItems.push({ sku: p.sku, name: p.name, balance: stock.balance });
+        }
+      });
+
+      const alertBanner = document.getElementById('low-stock-alert-banner');
+      const alertList = document.getElementById('low-stock-alert-list');
+      if (lowStockItems.length > 0) {
+        alertBanner.classList.remove('hidden');
+        alertList.innerHTML = lowStockItems.map(item => `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg ${item.balance <= 0 ? 'bg-rose-200 text-rose-900 font-bold' : 'bg-amber-100 text-amber-900 font-semibold'}">
+            <span>${escapeHtml(item.name)} (${escapeHtml(item.sku)})</span>:
+            <b class="font-mono">${item.balance <= 0 ? 'OUT OF STOCK' : item.balance + ' left'}</b>
+          </span>
+        `).join('');
+      } else {
+        alertBanner.classList.add('hidden');
+      }
+
+      // Recent Orders stream
+      const recentOrdersContainer = document.getElementById('recent-orders-list');
+      if (orders.length === 0) {
+        recentOrdersContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">No orders booked yet. Click <b>New Order</b> to begin!</div>`;
+      } else {
+        recentOrdersContainer.innerHTML = orders.slice(0, 5).map(o => `
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs hover:bg-slate-100/80 transition">
+            <div>
+              <div class="font-bold text-slate-900">${escapeHtml(o.buyerName)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">#${o.id} • ${o.date} ${o.time} • ${escapeHtml(o.paymentMode)}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-black text-emerald-600 text-sm">${formatINR(o.netPayable)}</div>
+              <div class="text-[10px] text-slate-500">${o.totalUnits} units</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Recent Samples stream
+      const recentSamplesContainer = document.getElementById('recent-samples-list');
+      if (sampleGiveaways.length === 0) {
+        recentSamplesContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">No samples logged yet. Click <b>Log Sample</b> to track tastings.</div>`;
+      } else {
+        recentSamplesContainer.innerHTML = sampleGiveaways.slice(0, 5).map(s => `
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs hover:bg-slate-100/80 transition">
+            <div>
+              <div class="font-bold text-slate-900">${escapeHtml(s.store_name)}</div>
+              <div class="text-[10px] text-slate-500 font-mono">${escapeHtml(s.product_name || s.product_sku)} • ${escapeHtml(s.sample_reason)}</div>
+            </div>
+            <div class="text-right">
+              <span class="font-mono font-bold text-amber-600 text-xs">${s.quantity_units} unit${s.quantity_units > 1 ? 's' : ''}</span>
+              <div class="text-[9px] text-slate-400">${s.date}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 7. ORDER BOOKING & CATALOG WITH LIVE STOCK DEDUCTION
+    function populateDropdowns() {
+      // Order customer select
+      const custSelect = document.getElementById('order-customer-select');
+      if (customers.length === 0) {
+        custSelect.innerHTML = `<option value="">-- No customers registered yet --</option>`;
+      } else {
+        custSelect.innerHTML = customers.map(c => `
+          <option value="${c.id}">${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]</option>
+        `).join('');
+      }
+
+      // Datalist for Sample customer name
+      const sampleCustList = document.getElementById('sample-customers-list');
+      sampleCustList.innerHTML = customers.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+
+      // Route select
+      const routeSelect = document.getElementById('order-route-select');
+      if (routes.length === 0) {
+        routeSelect.innerHTML = `<option value="General Route">General Delivery Route</option>`;
+      } else {
+        routeSelect.innerHTML = routes.map(r => `
+          <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
+        `).join('');
+      }
+
+      // Sample product select
+      const sampleProdSelect = document.getElementById('sample-product-select');
+      sampleProdSelect.innerHTML = products.map(p => `
+        <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
+      `).join('');
+
+      // Inward product select
+      const inwardProdSelect = document.getElementById('inward-product-select');
+      inwardProdSelect.innerHTML = products.map(p => `
+        <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
+      `).join('');
+
+      onOrderCustomerChanged();
+    }
+
+    function onOrderCustomerChanged() {
+      const custId = document.getElementById('order-customer-select').value;
+      const c = customers.find(x => x.id === custId);
+      if (c) {
+        document.getElementById('snap-tier').innerText = c.tier || 'Retail';
+        document.getElementById('snap-route').innerText = c.homeRoute || 'Not assigned';
+        document.getElementById('snap-due').innerText = formatINR(c.pendingUdhaar || 0);
+        if (c.homeRoute) document.getElementById('order-route-select').value = c.homeRoute;
+      } else {
+        document.getElementById('snap-tier').innerText = '-';
+        document.getElementById('snap-route').innerText = '-';
+        document.getElementById('snap-due').innerText = '₹0';
+      }
+    }
+
+    function renderOrderCatalog() {
+      const container = document.getElementById('order-catalog-container');
+      const q = (document.getElementById('order-catalog-search')?.value || '').toLowerCase().trim();
+
+      const filtered = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 rounded-2xl border border-slate-200 text-center text-xs text-slate-400">
+          No products found. ${isManager ? '<button onclick="openProductModal()" class="text-indigo-600 font-bold underline">Add a Product</button>' : 'Ask manager to add products.'}
+        </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => {
+        const qty = cart[p.id] || 0;
+        const stock = getProductStock(p);
+
+        // Stock badge formatting
+        let stockBadgeHtml = '';
+        if (stock.balance <= 0) {
+          stockBadgeHtml = `<span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">Out of Stock (0)</span>`;
+        } else if (stock.balance <= 10) {
+          stockBadgeHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">Low Stock: ${stock.balance} left</span>`;
+        } else {
+          stockBadgeHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">${stock.balance} in stock</span>`;
+        }
+
+        return `
+          <div class="bg-white rounded-2xl p-3 border ${qty > 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200'} shadow-xs flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-mono text-[10px] text-slate-400 font-bold">${escapeHtml(p.sku)}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">📦 ${escapeHtml(p.unitSize)}</span>
+                ${stockBadgeHtml}
+              </div>
+              <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
+              <div class="font-mono font-black text-sm text-emerald-700 mt-0.5">${formatINR(p.baseRate)}</div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button type="button" onclick="adjustQty('${p.id}', -1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg flex items-center justify-center disabled:opacity-30" ${qty === 0 ? 'disabled' : ''}>-</button>
+              <input type="number" min="0" value="${qty}" onchange="setQty('${p.id}', this.value)" class="w-12 h-8 text-center font-mono font-black text-sm rounded-xl border border-slate-200">
+              <button type="button" onclick="adjustQty('${p.id}', 1)" class="w-8 h-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg flex items-center justify-center">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      calculateOrderTotals();
+    }
+
+    function adjustQty(prodId, delta) {
+      const cur = cart[prodId] || 0;
+      const next = Math.max(0, cur + delta);
+      if (next === 0) delete cart[prodId];
+      else cart[prodId] = next;
+      renderOrderCatalog();
+    }
+
+    function setQty(prodId, val) {
+      const next = Math.max(0, parseInt(val) || 0);
+      if (next === 0) delete cart[prodId];
+      else cart[prodId] = next;
+      renderOrderCatalog();
+    }
+
+    function calculateOrderTotals() {
+      let totalUnits = 0;
+      let lineItems = 0;
+      let subtotal = 0;
+
+      Object.keys(cart).forEach(pId => {
+        const qty = cart[pId];
+        if (qty > 0) {
+          const prod = products.find(p => p.id === pId);
+          if (prod) {
+            totalUnits += qty;
+            lineItems++;
+            subtotal += (qty * Number(prod.baseRate));
+          }
+        }
+      });
+
+      const rebate = parseFloat(document.getElementById('order-rebate')?.value) || 0;
+      const netPayable = Math.max(0, subtotal - rebate);
+
+      document.getElementById('cart-item-count').innerText = lineItems;
+      document.getElementById('cart-total-qty').innerText = totalUnits;
+      document.getElementById('cart-net-total').innerText = formatINR(netPayable);
+      document.getElementById('btn-submit-order').disabled = (totalUnits === 0);
+    }
+
+    // ORDER FULFILLMENT & INVENTORY DEDUCTION
+    async function submitOrder() {
+      const custId = document.getElementById('order-customer-select').value;
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) { alert("Please select a customer."); return; }
+
+      const items = [];
+      let totalUnits = 0;
+      let itemsSubtotal = 0;
+
+      Object.keys(cart).forEach(pId => {
+        const qty = cart[pId];
+        if (qty > 0) {
+          const prod = products.find(p => p.id === pId);
+          if (prod) {
+            const lineTotal = qty * Number(prod.baseRate);
+            items.push({ productId: pId, sku: prod.sku, name: prod.name, unitSize: prod.unitSize, qty, rate: prod.baseRate, total: lineTotal });
+            totalUnits += qty;
+            itemsSubtotal += lineTotal;
+          }
+        }
+      });
+
+      if (items.length === 0) { alert("Cart is empty."); return; }
+
+      const rebate = parseFloat(document.getElementById('order-rebate').value) || 0;
+      const netPayable = Math.max(0, itemsSubtotal - rebate);
+      const payMode = document.getElementById('order-payment-mode').value;
+      const notes = document.getElementById('order-notes').value.trim();
+      const route = document.getElementById('order-route-select').value;
+
+      const now = new Date();
+      const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      const orderRecord = {
+        id: orderId,
+        repName: 'Field Sales',
+        buyerId: cust.id,
+        buyerName: cust.name,
+        buyerPhone: cust.phone,
+        dispatchRoute: route,
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        items,
+        totalUnits,
+        itemsSubtotal,
+        extraRebate: rebate,
+        netPayable,
+        paymentMode: payMode,
+        notes
+      };
+
+      orders.unshift(orderRecord);
+
+      // If booked on credit, update customer pending balance
+      if (payMode === 'Credit / Udhaar') {
+        cust.pendingUdhaar = Number(cust.pendingUdhaar || 0) + netPayable;
+      }
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').insert([orderRecord]);
+          if (payMode === 'Credit / Udhaar') {
+            await supabaseClient.from('buyers').update({ pendingUdhaar: cust.pendingUdhaar }).eq('id', cust.id);
+          }
+        } catch (e) {
+          console.error("Supabase order insert error:", e);
+        }
+      }
+
+      latestOrder = orderRecord;
+      showOrderSuccess(orderRecord);
+
+      // Reset cart
+      cart = {};
+      document.getElementById('order-rebate').value = '0';
+      document.getElementById('order-notes').value = '';
+      
+      // Real-time stock refresh: order units are instantly deducted!
+      renderOrderCatalog();
+      renderDashboard();
+      renderOrdersHistoryTable();
+      renderInwardTables();
+    }
+
+    function showOrderSuccess(o) {
+      document.getElementById('success-order-id').innerText = '#' + o.id;
+      document.getElementById('success-cust-name').innerText = o.buyerName;
+      document.getElementById('success-net-amount').innerText = formatINR(o.netPayable);
+      document.getElementById('success-pay-mode').innerText = o.paymentMode;
+      document.getElementById('modal-order-success').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeOrderSuccessModal() {
+      document.getElementById('modal-order-success').classList.add('hidden');
+    }
+
+    function shareWhatsApp() {
+      if (!latestOrder) return;
+      const o = latestOrder;
+      const lines = (o.items || []).map(i => `• ${i.name} (${i.unitSize}) x${i.qty} = ${formatINR(i.total)}`).join('\n');
+      const text = `*SRI GOVINDA FOOD PRODUCTS*\nOrder Ref: *#${o.id}*\nCustomer: *${o.buyerName}*\nDate: ${o.date} ${o.time}\n\n*Items:*\n${lines}\n\n*Total Payable: ${formatINR(o.netPayable)}*\nPayment Mode: ${o.paymentMode}\nThank you!`;
+      const url = o.buyerPhone ? `https://wa.me/91${o.buyerPhone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // 8. SAMPLES TRACKER (REPS & MANAGERS)
+    function renderSamplesTable() {
+      const tbody = document.getElementById('samples-table-body');
+      const q = (document.getElementById('sample-search-input')?.value || '').toLowerCase().trim();
+
+      const filtered = sampleGiveaways.filter(s => 
+        !q || 
+        (s.store_name && s.store_name.toLowerCase().includes(q)) || 
+        (s.product_sku && s.product_sku.toLowerCase().includes(q)) ||
+        (s.product_name && s.product_name.toLowerCase().includes(q)) ||
+        (s.rep_name && s.rep_name.toLowerCase().includes(q))
+      );
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No free samples recorded. Click <b>Log Free Sample</b> to record chef tastings.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-mono text-slate-500 whitespace-nowrap">${s.date}</td>
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${escapeHtml(s.store_name)}</div>
+            ${s.notes ? `<div class="text-[10px] text-slate-400">${escapeHtml(s.notes)}</div>` : ''}
+          </td>
+          <td class="p-3">
+            <div class="font-bold text-slate-800">${escapeHtml(s.product_name || s.product_sku)}</div>
+            <div class="text-[10px] font-mono text-slate-400">${escapeHtml(s.product_sku)} • ${escapeHtml(s.unit_size || '')}</div>
+          </td>
+          <td class="p-3 font-mono font-bold text-right text-amber-700">${s.quantity_units}</td>
+          <td class="p-3"><span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">${escapeHtml(s.sample_reason)}</span></td>
+          <td class="p-3 text-slate-600">${escapeHtml(s.rep_name || 'Field Rep')}</td>
+          <td class="p-3 text-right">
+            ${isManager ? `
+              <button onclick="deleteSampleConfirm('${s.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Sample Entry">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : '-'}
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openSampleModal() {
+      document.getElementById('form-sample').reset();
+      populateDropdowns();
+      document.getElementById('modal-sample').classList.remove('hidden');
+    }
+
+    function closeSampleModal() {
+      document.getElementById('modal-sample').classList.add('hidden');
+    }
+
+    async function handleSaveSample(e) {
+      e.preventDefault();
+      const storeName = document.getElementById('sample-store-name').value.trim();
+      const sku = document.getElementById('sample-product-select').value;
+      const qty = parseFloat(document.getElementById('sample-qty').value) || 1;
+      const repName = document.getElementById('sample-rep-name').value.trim() || 'Field Sales';
+      const reason = document.getElementById('sample-reason').value;
+      const notes = document.getElementById('sample-notes').value.trim();
+
+      const prod = products.find(p => p.sku === sku);
+      const record = {
+        id: 'smp_' + Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        product_sku: sku,
+        product_name: prod ? prod.name : sku,
+        unit_size: prod ? prod.unitSize : '',
+        quantity_units: qty,
+        store_name: storeName,
+        rep_name: repName,
+        sample_reason: reason,
+        feedback_status: 'Pending Follow-up',
+        notes
+      };
+
+      sampleGiveaways.unshift(record);
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('sample_giveaways').insert([record]);
+          if (error) console.error("Supabase sample insert error:", error);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      closeSampleModal();
+      // Instantly deducts sample quantity from available stock!
+      renderSamplesTable();
+      renderDashboard();
+      renderOrderCatalog();
+      renderInwardTables();
+    }
+
+    async function deleteSampleConfirm(sampleId) {
+      if (!confirm("Delete this sample entry? (Stock will be credited back)")) return;
+      sampleGiveaways = sampleGiveaways.filter(s => s.id !== sampleId);
+      if (supabaseClient) {
+        try { await supabaseClient.from('sample_giveaways').delete().eq('id', sampleId); } catch (e) {}
+      }
+      renderSamplesTable();
+      renderDashboard();
+      renderOrderCatalog();
+      renderInwardTables();
+    }
+
+    // 9. INWARD INVENTORY & STOCK TALLY (MANAGER ONLY)
+    function renderInwardTables() {
+      // 1. Stock Reconciliation Table
+      const tallyTbody = document.getElementById('stock-tally-table-body');
+      if (products.length === 0) {
+        tallyTbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No products configured yet.</td></tr>`;
+      } else {
+        tallyTbody.innerHTML = products.map(p => {
+          const s = getProductStock(p);
+          let statusBadge = '';
+          if (s.balance <= 0) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800">Out of Stock</span>`;
+          } else if (s.balance <= 10) {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Low Stock (${s.balance})</span>`;
+          } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Healthy (${s.balance})</span>`;
+          }
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2.5 font-mono font-bold text-slate-600">${escapeHtml(p.sku)}</td>
+              <td class="p-2.5 font-bold text-slate-900">${escapeHtml(p.name)} <span class="text-[10px] text-slate-400 font-normal">(${escapeHtml(p.unitSize)})</span></td>
+              <td class="p-2.5 font-mono text-right text-slate-500">${s.initial}</td>
+              <td class="p-2.5 font-mono text-right text-indigo-600 font-bold">+${s.inward}</td>
+              <td class="p-2.5 font-mono text-right text-rose-600 font-bold">-${s.sold}</td>
+              <td class="p-2.5 font-mono text-right text-amber-600 font-bold">-${s.samples}</td>
+              <td class="p-2.5 font-mono text-right font-black text-sm ${s.balance <= 0 ? 'text-rose-600' : s.balance <= 10 ? 'text-amber-600' : 'text-emerald-700'}">${s.balance}</td>
+              <td class="p-2.5 text-center">${statusBadge}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 2. Inward Receipts Log
+      const inwardTbody = document.getElementById('inward-table-body');
+      if (inwardEntries.length === 0) {
+        inwardTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No inward batch receipts recorded yet. Click <b>Log Inward Stock</b>.</td></tr>`;
+      } else {
+        inwardTbody.innerHTML = inwardEntries.map(e => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-2.5 font-mono text-slate-500 whitespace-nowrap">${e.date}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900">${escapeHtml(e.product_name || e.product_sku)}</div>
+              <div class="text-[10px] font-mono text-slate-400">${escapeHtml(e.product_sku)}</div>
+            </td>
+            <td class="p-2.5 font-mono font-black text-right text-indigo-700">+${e.quantity_units}</td>
+            <td class="p-2.5 font-mono text-slate-600">${escapeHtml(e.batch_number || '-')}</td>
+            <td class="p-2.5 text-slate-700">${escapeHtml(e.supplier_or_source || 'In-House')}</td>
+            <td class="p-2.5 text-slate-400 text-[11px]">${escapeHtml(e.notes || '-')}</td>
+            <td class="p-2.5 text-right">
+              ${isManager ? `
+                <button onclick="deleteInwardConfirm('${e.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Inward Batch">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : '-'}
+            </td>
+          </tr>
+        `).join('');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openInwardModal() {
+      document.getElementById('form-inward').reset();
+      populateDropdowns();
+      document.getElementById('modal-inward').classList.remove('hidden');
+    }
+
+    function closeInwardModal() {
+      document.getElementById('modal-inward').classList.add('hidden');
+    }
+
+    async function handleSaveInward(e) {
+      e.preventDefault();
+      const sku = document.getElementById('inward-product-select').value;
+      const qty = parseFloat(document.getElementById('inward-qty').value) || 0;
+      const batch = document.getElementById('inward-batch').value.trim();
+      const supplier = document.getElementById('inward-supplier').value.trim() || 'Factory Receipt';
+      const notes = document.getElementById('inward-notes').value.trim();
+
+      const prod = products.find(p => p.sku === sku);
+      const record = {
+        id: 'inw_' + Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        product_sku: sku,
+        product_name: prod ? prod.name : sku,
+        unit_size: prod ? prod.unitSize : '',
+        quantity_units: qty,
+        batch_number: batch,
+        supplier_or_source: supplier,
+        notes
+      };
+
+      inwardEntries.unshift(record);
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('inventory_inward').insert([record]);
+          if (error) console.error("Supabase inward insert error:", error);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      closeInwardModal();
+      // Instantly credits inward stock!
+      renderInwardTables();
+      renderDashboard();
+      renderOrderCatalog();
+    }
+
+    async function deleteInwardConfirm(inwardId) {
+      if (!confirm("Delete this inward stock entry? (Stock will be deducted)")) return;
+      inwardEntries = inwardEntries.filter(e => e.id !== inwardId);
+      if (supabaseClient) {
+        try { await supabaseClient.from('inventory_inward').delete().eq('id', inwardId); } catch (e) {}
+      }
+      renderInwardTables();
+      renderDashboard();
+      renderOrderCatalog();
+    }
+
+    // 10. CUSTOMERS CRUD (REPS & MANAGERS)
+    function renderCustomersTable() {
+      const tbody = document.getElementById('customers-table-body');
+      const q = (document.getElementById('customer-search-input')?.value || '').toLowerCase().trim();
+
+      const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.address && c.address.toLowerCase().includes(q)));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${escapeHtml(c.name)}</div>
+            <div class="text-[10px] text-slate-400">${escapeHtml(c.address || 'Address not listed')}</div>
+          </td>
+          <td class="p-3 font-semibold text-slate-700">${escapeHtml(c.tier || 'Retail')}</td>
+          <td class="p-3 font-mono text-slate-600">${escapeHtml((c.homeRoute || '-').split(':')[0])}</td>
+          <td class="p-3 font-mono text-slate-600">${escapeHtml(c.phone || '-')}</td>
+          <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
+          <td class="p-3 text-right space-x-1 whitespace-nowrap">
+            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer">
+              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+            </button>
+            ${isManager ? `
+              <button onclick="deleteCustomerConfirm('${c.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Customer">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openCustomerModal(editId = '') {
+      document.getElementById('form-customer').reset();
+      document.getElementById('cust-id').value = editId;
+
+      // Populate route select
+      const routeSelect = document.getElementById('cust-route');
+      routeSelect.innerHTML = `<option value="">-- Select Home Route --</option>` + routes.map(r => `
+        <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
+      `).join('');
+
+      if (editId) {
+        const c = customers.find(x => x.id === editId);
+        if (c) {
+          document.getElementById('modal-customer-title').innerText = "Edit Customer Details";
+          document.getElementById('cust-name').value = c.name;
+          document.getElementById('cust-tier').value = c.tier || 'Retail';
+          document.getElementById('cust-phone').value = c.phone || '';
+          document.getElementById('cust-route').value = c.homeRoute || '';
+          document.getElementById('cust-address').value = c.address || '';
+          document.getElementById('cust-credit-limit').value = c.creditLimit || 50000;
+          document.getElementById('cust-pending-due').value = c.pendingUdhaar || 0;
+        }
+      } else {
+        document.getElementById('modal-customer-title').innerText = "Add New Customer";
+      }
+
+      document.getElementById('modal-customer').classList.remove('hidden');
+    }
+
+    function closeCustomerModal() {
+      document.getElementById('modal-customer').classList.add('hidden');
+    }
+
+    async function handleSaveCustomer(e) {
+      e.preventDefault();
+      const editId = document.getElementById('cust-id').value;
+      const name = document.getElementById('cust-name').value.trim();
+      const tier = document.getElementById('cust-tier').value;
+      const phone = document.getElementById('cust-phone').value.trim();
+      const homeRoute = document.getElementById('cust-route').value;
+      const address = document.getElementById('cust-address').value.trim();
+      const creditLimit = parseFloat(document.getElementById('cust-credit-limit').value) || 0;
+      const pendingUdhaar = parseFloat(document.getElementById('cust-pending-due').value) || 0;
+
+      const record = {
+        id: editId || ('cust_' + Date.now()),
+        name,
+        tier,
+        phone,
+        homeRoute,
+        address,
+        creditLimit,
+        pendingUdhaar
+      };
+
+      if (editId) customers = customers.map(c => c.id === editId ? record : c);
+      else customers.push(record);
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('buyers').upsert([record]);
+          if (error) console.error("Supabase customer save error:", error);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      closeCustomerModal();
+      renderCustomersTable();
+      populateDropdowns();
+      renderDashboard();
+    }
+
+    async function deleteCustomerConfirm(custId) {
+      if (!confirm("Are you sure you want to delete this customer?")) return;
+      customers = customers.filter(c => c.id !== custId);
+      if (supabaseClient) {
+        try { await supabaseClient.from('buyers').delete().eq('id', custId); } catch (e) {}
+      }
+      renderCustomersTable();
+      populateDropdowns();
+      renderDashboard();
+    }
+
+    // 11. ORDERS HISTORY DATABASE
+    function renderOrdersHistoryTable() {
+      const tbody = document.getElementById('orders-table-body');
+      const q = (document.getElementById('order-history-search')?.value || '').toLowerCase().trim();
+
+      const filtered = orders.filter(o => !q || o.id.toLowerCase().includes(q) || o.buyerName.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No orders found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(o => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-mono font-bold text-slate-800">
+            #${o.id}<br><span class="text-[10px] text-slate-400 font-normal">${o.date} ${o.time}</span>
+          </td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(o.buyerName)}</td>
+          <td class="p-3 font-mono text-slate-500">${escapeHtml((o.dispatchRoute || '-').split(':')[0])}</td>
+          <td class="p-3 font-mono text-right font-bold">${o.totalUnits}</td>
+          <td class="p-3 font-mono font-black text-right text-emerald-600">${formatINR(o.netPayable)}</td>
+          <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${escapeHtml(o.paymentMode)}</span></td>
+          <td class="p-3 text-right">
+            <button onclick="viewOrderDetails('${o.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Inspect Items">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function viewOrderDetails(orderId) {
+      const o = orders.find(x => x.id === orderId);
+      if (!o) return;
+      const lines = (o.items || []).map(i => `${i.name} (${i.unitSize}) x${i.qty} = ${formatINR(i.total)}`).join('\n');
+      alert(`Order #${o.id}\nCustomer: ${o.buyerName}\nDate: ${o.date} ${o.time}\nPayment: ${o.paymentMode}\n\nItems:\n${lines}\n\nNet Amount: ${formatINR(o.netPayable)}`);
+    }
+
+    // 12. PRODUCTS CRUD (MANAGER ONLY)
+    function renderProductsTable() {
+      const tbody = document.getElementById('products-table-body');
+      if (products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No products in catalog. Click <b>Add Product</b> to create one.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = products.map(p => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-mono font-bold text-slate-500 uppercase">${escapeHtml(p.sku)}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(p.name)}</td>
+          <td class="p-3 text-slate-600">${escapeHtml(p.category || 'General')}</td>
+          <td class="p-3 font-mono">${escapeHtml(p.unitSize)}</td>
+          <td class="p-3 font-mono font-black text-right text-emerald-700">${formatINR(p.baseRate)}</td>
+          <td class="p-3 font-mono text-right text-slate-600">${p.initialStock || 0}</td>
+          <td class="p-3 text-right space-x-1 whitespace-nowrap">
+            <button onclick="openProductModal('${p.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Product">
+              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="deleteProductConfirm('${p.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Product">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openProductModal(prodId = '') {
+      document.getElementById('form-product').reset();
+      document.getElementById('prod-id').value = prodId;
+
+      if (prodId) {
+        const p = products.find(x => x.id === prodId);
+        if (p) {
+          document.getElementById('modal-product-title').innerText = "Edit Product";
+          document.getElementById('prod-sku').value = p.sku;
+          document.getElementById('prod-name').value = p.name;
+          document.getElementById('prod-category').value = p.category || '';
+          document.getElementById('prod-unit-size').value = p.unitSize;
+          document.getElementById('prod-rate').value = p.baseRate;
+          document.getElementById('prod-initial-stock').value = p.initialStock || 0;
+        }
+      } else {
+        document.getElementById('modal-product-title').innerText = "Add New Product";
+      }
+
+      document.getElementById('modal-product').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('modal-product').classList.add('hidden');
+    }
+
+    async function handleSaveProduct(e) {
+      e.preventDefault();
+      const editId = document.getElementById('prod-id').value;
+      const sku = document.getElementById('prod-sku').value.trim().toUpperCase();
+      const name = document.getElementById('prod-name').value.trim();
+      const category = document.getElementById('prod-category').value.trim() || 'General';
+      const unitSize = document.getElementById('prod-unit-size').value.trim();
+      const baseRate = parseFloat(document.getElementById('prod-rate').value) || 0;
+      const initialStock = parseFloat(document.getElementById('prod-initial-stock').value) || 0;
+
+      const record = {
+        id: editId || ('p_' + Date.now()),
+        sku,
+        name,
+        category,
+        unitSize,
+        baseRate,
+        initialStock
+      };
+
+      if (editId) products = products.map(p => p.id === editId ? record : p);
+      else products.push(record);
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('products').upsert([record]);
+          if (error) alert("Supabase save error: " + error.message);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      closeProductModal();
+      refreshAllUI();
+    }
+
+    async function deleteProductConfirm(prodId) {
+      if (!confirm("Delete product from catalog?")) return;
+      products = products.filter(p => p.id !== prodId);
+      if (supabaseClient) {
+        try { await supabaseClient.from('products').delete().eq('id', prodId); } catch (e) {}
+      }
+      refreshAllUI();
+    }
+
+    function handleProductCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const newItems = [];
+          results.data.forEach(row => {
+            if (row.sku && row.name && row.baseRate) {
+              const sku = row.sku.trim().toUpperCase();
+              const existing = products.find(p => p.sku === sku);
+              const rec = {
+                id: existing ? existing.id : ('p_' + Date.now() + Math.floor(Math.random() * 100)),
+                sku,
+                name: row.name.trim(),
+                category: row.category ? row.category.trim() : 'General',
+                unitSize: row.unitSize ? row.unitSize.trim() : '1kg pack',
+                baseRate: parseFloat(row.baseRate) || 0,
+                initialStock: parseFloat(row.initialStock) || 0
+              };
+              if (existing) Object.assign(existing, rec);
+              else products.push(rec);
+              newItems.push(rec);
+            }
+          });
+
+          if (supabaseClient && newItems.length > 0) {
+            try { await supabaseClient.from('products').upsert(newItems); } catch (err) {}
+          }
+          alert(`Imported ${newItems.length} products!`);
+          refreshAllUI();
+        }
+      });
+    }
+
+    // 13. ROUTES CRUD (MANAGER ONLY)
+    function renderRoutesGrid() {
+      const container = document.getElementById('routes-grid-container');
+      if (routes.length === 0) {
+        container.innerHTML = `<div class="col-span-full bg-white p-6 rounded-2xl border border-slate-200 text-center text-xs text-slate-400">No routes registered yet. Click <b>Add Route</b> to create one.</div>`;
+        return;
+      }
+      container.innerHTML = routes.map(r => `
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">${escapeHtml(r.short || 'Route')}</span>
+              <h4 class="font-bold text-slate-900 text-sm mt-1">${escapeHtml(r.name)}</h4>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="openRouteModal('${r.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteRouteConfirm('${r.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+          <div class="text-xs text-slate-500 font-mono space-y-0.5 pt-1 border-t border-slate-100">
+            <div>Hub: <b class="text-slate-700">${escapeHtml(r.hub || 'Depot')}</b></div>
+            <div>Cutoff: <b class="text-slate-700">${escapeHtml(r.cutoff || '4:30 PM')}</b> • Vehicle: ${escapeHtml(r.vehicle || 'Van')}</div>
+          </div>
+        </div>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openRouteModal(routeId = '') {
+      document.getElementById('form-route').reset();
+      document.getElementById('route-id').value = routeId;
+
+      if (routeId) {
+        const r = routes.find(x => x.id === routeId);
+        if (r) {
+          document.getElementById('modal-route-title').innerText = "Edit Route Beat";
+          document.getElementById('route-name').value = r.name;
+          document.getElementById('route-short').value = r.short || '';
+          document.getElementById('route-hub').value = r.hub || '';
+          document.getElementById('route-cutoff').value = r.cutoff || '4:30 PM';
+          document.getElementById('route-vehicle').value = r.vehicle || '';
+        }
+      } else {
+        document.getElementById('modal-route-title').innerText = "Add New Route Beat";
+      }
+
+      document.getElementById('modal-route').classList.remove('hidden');
+    }
+
+    function closeRouteModal() {
+      document.getElementById('modal-route').classList.add('hidden');
+    }
+
+    async function handleSaveRoute(e) {
+      e.preventDefault();
+      const editId = document.getElementById('route-id').value;
+      const name = document.getElementById('route-name').value.trim();
+      const short = document.getElementById('route-short').value.trim() || name.slice(0, 10);
+      const hub = document.getElementById('route-hub').value.trim();
+      const cutoff = document.getElementById('route-cutoff').value.trim() || '4:30 PM';
+      const vehicle = document.getElementById('route-vehicle').value.trim() || 'Van';
+
+      const record = { id: editId || name, name, short, hub, cutoff, vehicle };
+
+      if (editId) routes = routes.map(r => r.id === editId ? record : r);
+      else routes.push(record);
+
+      if (supabaseClient) {
+        try {
+          if (editId && editId !== name) await supabaseClient.from('routes').delete().eq('id', editId);
+          await supabaseClient.from('routes').upsert([record]);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      closeRouteModal();
+      renderRoutesGrid();
+      populateDropdowns();
+    }
+
+    async function deleteRouteConfirm(routeId) {
+      if (!confirm("Delete this delivery beat?")) return;
+      routes = routes.filter(r => r.id !== routeId);
+      if (supabaseClient) {
+        try { await supabaseClient.from('routes').delete().eq('id', routeId); } catch (e) {}
+      }
+      renderRoutesGrid();
+      populateDropdowns();
+    }
+
+    // 14. BOOTSTRAP
+    window.addEventListener('DOMContentLoaded', async () => {
+      setTab('dashboard');
+      updateManagerUI();
+      if (window.lucide) lucide.createIcons();
+      await initSupabase();
+    });
   </script>
 </body>
 </html>
-
