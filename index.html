@@ -15,6 +15,12 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Config file with Supabase URL & anon key -->
   <script src="./config.js"></script>
+  <!-- html2canvas for JPEG snapshot export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF for vector/image PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- QRCode.js for dynamic UPI payment QR codes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,6 +47,13 @@
     input[type=number] { -moz-appearance: textfield; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      .printable-section, .printable-section * { visibility: visible !important; }
+      .printable-section { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 15mm !important; border: none !important; box-shadow: none !important; }
+      .no-print { display: none !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-20 sm:pb-12">
@@ -1073,6 +1086,17 @@
         <button onclick="shareWhatsApp()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition">
           <i data-lucide="message-circle" class="w-4 h-4"></i> Share WhatsApp Bill
         </button>
+        <button type="button" onclick="openInvoiceModal(latestOrder ? latestOrder.id : null)" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+          <i data-lucide="file-text" class="w-4 h-4"></i> View & Print Tax Invoice
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="downloadInvoicePdf(latestOrder ? latestOrder.id : null)" class="py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center justify-center gap-1 transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF Invoice
+          </button>
+          <button type="button" onclick="downloadInvoiceJpeg(latestOrder ? latestOrder.id : null)" class="py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1 transition">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i> JPEG Invoice
+          </button>
+        </div>
         <button type="button" id="success-btn-fulfill-now" onclick="closeOrderSuccessModal(); if(latestOrder) openDeliveryConfirmModal(latestOrder.id);" class="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
           <i data-lucide="truck" class="w-4 h-4"></i> Confirm Delivery Now
         </button>
@@ -1110,18 +1134,461 @@
   </div>
 
   <!-- ==============================================================================
-       FOOTER (ADMIN LINK AT BOTTOM)
+       MODAL: DEDICATED CUSTOMER PRICE LIST & BULK PRICING (ALL PRODUCTS AS OPEN LIST)
+       ============================================================================== -->
+  <div id="modal-customer-pricing" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 rounded-xl bg-indigo-100 text-indigo-700"><i data-lucide="tag" class="w-5 h-5"></i></span>
+            <h3 class="text-base sm:text-lg font-black text-slate-900">Customized Customer Price List</h3>
+            <span id="cust-pricing-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">0 Overrides</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            Customer: <b id="cust-pricing-customer-name" class="text-slate-900">-</b> • 
+            Tier: <span id="cust-pricing-customer-tier" class="font-semibold text-slate-700">-</span> • 
+            Route: <span id="cust-pricing-customer-route" class="font-semibold text-slate-700">-</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openQuotationModal(currentPricingCustomerId)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Generate Quotation
+          </button>
+          <button type="button" onclick="closeCustomerPricingModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Filter & Bulk Actions Bar -->
+      <div class="p-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="relative flex-1 min-w-[200px]">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="cust-bulk-pricing-search" oninput="filterCustomerBulkPricingTable()" placeholder="Search catalog by product name or SKU..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500">
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-slate-500 font-semibold text-[11px]">Quick Discount:</span>
+          <button type="button" onclick="applyBulkDiscountToCustomerPricing(5)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-bold text-[11px] border border-slate-200 transition">-5% MRP</button>
+          <button type="button" onclick="applyBulkDiscountToCustomerPricing(10)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-bold text-[11px] border border-slate-200 transition">-10% MRP</button>
+          <button type="button" onclick="applyBulkDiscountToCustomerPricing(15)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-bold text-[11px] border border-slate-200 transition">-15% MRP</button>
+          <button type="button" onclick="resetAllCustomerPricingToBase()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-[11px] border border-slate-200 transition">Reset All</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Product Price Table (All products as a visible open list, NOT a dropdown) -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-4">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10">
+              <tr>
+                <th class="p-2.5 rounded-l-xl">Product / SKU</th>
+                <th class="p-2.5">Pack Size</th>
+                <th class="p-2.5 text-right">Stock</th>
+                <th class="p-2.5 text-right">Standard MRP</th>
+                <th class="p-2.5 text-center">Decided Custom Price (₹)</th>
+                <th class="p-2.5 text-center">Variance / Discount</th>
+                <th class="p-2.5 text-center rounded-r-xl">Action</th>
+              </tr>
+            </thead>
+            <tbody id="cust-bulk-pricing-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer Bar with Save At Once -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
+        <div class="text-xs text-slate-500">
+          💡 Alter any product's price directly and click <b>Save All Prices At Once</b>. All orders for this customer will automatically use these rates.
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeCustomerPricingModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
+            Close
+          </button>
+          <button type="button" onclick="saveAllCustomerPricesAtOnce()" id="btn-save-cust-prices" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="check-check" class="w-4 h-4"></i> Save All Prices At Once
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: OFFICIAL QUOTATION VIEW & EXPORT (JPEG / PDF / WHATSAPP / PRINT)
+       ============================================================================== -->
+  <div id="modal-quotation-view" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Header Toolbar -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Official Price Quotation</h3>
+            <p class="text-[11px] text-slate-400">Sri Govinda's Food Products • Decided Pricing</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="downloadQuotationPdf()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
+          </button>
+          <button type="button" onclick="downloadQuotationJpeg()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i> JPEG
+          </button>
+          <button type="button" onclick="shareQuotationWhatsApp()" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+          </button>
+          <button type="button" onclick="printQuotationCard()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" onclick="closeQuotationModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Printable Card Area -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
+        <!-- A4 Printable Quotation Card -->
+        <div id="quotation-printable-card" class="bg-white rounded-2xl shadow-md border border-slate-300 w-full max-w-2xl p-6 sm:p-8 font-sans text-slate-900 printable-section space-y-6">
+          
+          <!-- Company & Quotation Header -->
+          <div class="flex justify-between items-start border-b-2 border-slate-900 pb-5 gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-xl bg-indigo-700 text-white flex items-center justify-center font-black text-lg">SG</div>
+                <div>
+                  <h1 class="text-xl font-black tracking-tight text-slate-950 uppercase" id="quote-company-name">Sri Govinda's Food Products</h1>
+                  <p class="text-xs font-mono font-bold text-indigo-700">GSTIN: <span id="quote-company-gstin">29AFVPD7658B1Z1</span></p>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-2 max-w-sm" id="quote-company-address">Food Industrial Area, Bengaluru, Karnataka</p>
+              <p class="text-[11px] text-slate-500 font-mono" id="quote-company-contact">Phone: +91 98450 12345 | Email: orders@srigovindafoods.com</p>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <span class="inline-block px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 font-black text-xs uppercase tracking-wider">
+                Price Quotation
+              </span>
+              <div class="text-xs font-mono font-bold text-slate-800 mt-2" id="quote-ref-number">QTN-1001</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Date: <span id="quote-date" class="font-mono text-slate-800">-</span></div>
+              <div class="text-[11px] text-slate-500">Valid For: <span class="font-mono text-slate-800">30 Days</span></div>
+            </div>
+          </div>
+
+          <!-- Customer Quoted Details -->
+          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex justify-between items-start gap-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quotation Prepared For:</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-0.5" id="quote-cust-name">-</h3>
+              <p class="text-xs text-slate-600 mt-0.5" id="quote-cust-address">-</p>
+              <p class="text-xs font-mono text-slate-600 mt-0.5" id="quote-cust-phone">-</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer Category</span>
+              <div class="text-xs font-bold text-slate-800 mt-0.5" id="quote-cust-tier">Retail Partner</div>
+              <div class="text-[11px] text-slate-500 mt-1">Route Beat: <span id="quote-cust-route" class="font-semibold text-slate-700">-</span></div>
+            </div>
+          </div>
+
+          <!-- Product Price Schedule Table -->
+          <div>
+            <div class="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2">Agreed Pricing Schedule</div>
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b-2 border-slate-200 text-slate-600 text-[10px] uppercase font-bold">
+                  <th class="py-2 pr-2 text-center w-8">#</th>
+                  <th class="py-2 px-2">Product Description</th>
+                  <th class="py-2 px-2">Pack Size</th>
+                  <th class="py-2 px-2 text-right">Standard MRP</th>
+                  <th class="py-2 px-2 text-right">Quoted Rate</th>
+                  <th class="py-2 pl-2 text-right">Discount</th>
+                </tr>
+              </thead>
+              <tbody id="quote-items-tbody" class="divide-y divide-slate-100 font-mono text-xs">
+                <!-- Quotation items rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Banking & Dynamic UPI QR Code Section -->
+          <div class="pt-2 border-t border-slate-200">
+            <div class="bg-gradient-to-br from-slate-50 to-indigo-50/40 rounded-2xl p-4 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="space-y-1 text-xs flex-1">
+                <div class="text-[10px] uppercase font-black text-indigo-700 tracking-wider">Official Bank Account for Transfers</div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Name:</span> <b id="quote-bank-acc-name">Sri Govinda's Food Products</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Bank Name:</span> <b id="quote-bank-name">State Bank of India</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Number:</span> <b id="quote-bank-acc-num" class="font-mono">38920194820</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">IFSC Code:</span> <b id="quote-bank-ifsc" class="font-mono">SBIN0001234</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">UPI ID:</span> <b id="quote-bank-upi" class="font-mono text-indigo-700">srigovinda@sbi</b></div>
+              </div>
+              <div class="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex-shrink-0 text-center">
+                <div id="quote-upi-qrcode" class="w-[100px] h-[100px] flex items-center justify-center"></div>
+                <span class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Scan to Pay via UPI</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms & Authorized Signatory Footer -->
+          <div class="pt-3 border-t border-slate-200 flex justify-between items-end text-xs">
+            <div class="text-[10px] text-slate-500 space-y-0.5 max-w-xs">
+              <p class="font-bold text-slate-700">Terms & Conditions:</p>
+              <p>• Prices quoted are valid for 30 days from date of issue.</p>
+              <p>• Goods once sold will not be taken back unless damaged upon receipt.</p>
+              <p>• Subject to Bengaluru jurisdiction.</p>
+            </div>
+            <div class="text-center">
+              <div class="w-36 border-b border-slate-400 mb-1"></div>
+              <span class="text-[10px] font-bold uppercase text-slate-700 block">Authorized Signatory</span>
+              <span class="text-[9px] text-slate-400">Sri Govinda's Food Products</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: OFFICIAL TAX INVOICE VIEW & EXPORT (JPEG / PDF / WHATSAPP / PRINT)
+       ============================================================================== -->
+  <div id="modal-invoice-view" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Header Toolbar -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white"><i data-lucide="file-check" class="w-4 h-4"></i></div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">GST Tax Invoice</h3>
+            <p class="text-[11px] text-slate-400">Sri Govinda's Food Products • Official Invoice</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="downloadInvoicePdf()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
+          </button>
+          <button type="button" onclick="downloadInvoiceJpeg()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i> JPEG
+          </button>
+          <button type="button" onclick="shareCurrentInvoiceWhatsApp()" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+          </button>
+          <button type="button" onclick="printInvoiceCard()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" onclick="closeInvoiceModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Printable Card Area -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
+        <!-- A4 Printable Invoice Card -->
+        <div id="invoice-printable-card" class="bg-white rounded-2xl shadow-md border border-slate-300 w-full max-w-2xl p-6 sm:p-8 font-sans text-slate-900 printable-section space-y-5">
+          
+          <!-- Company & Tax Invoice Header -->
+          <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4 gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-black text-lg">SG</div>
+                <div>
+                  <h1 class="text-xl font-black tracking-tight text-slate-950 uppercase" id="invoice-company-name">Sri Govinda's Food Products</h1>
+                  <p class="text-xs font-mono font-bold text-emerald-700">GSTIN: <span id="invoice-company-gstin">29AFVPD7658B1Z1</span></p>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-2 max-w-sm" id="invoice-company-address">Food Industrial Area, Bengaluru, Karnataka</p>
+              <p class="text-[11px] text-slate-500 font-mono" id="invoice-company-contact">Phone: +91 98450 12345 | Email: orders@srigovindafoods.com</p>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <span class="inline-block px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-black text-xs uppercase tracking-wider">
+                Tax Invoice
+              </span>
+              <div class="text-sm font-mono font-black text-slate-900 mt-2" id="invoice-ref-number">#ORD-1001</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Date: <span id="invoice-date" class="font-mono text-slate-800">-</span></div>
+              <div id="invoice-fulfillment-badge" class="mt-1"></div>
+            </div>
+          </div>
+
+          <!-- Billed Customer Details -->
+          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex justify-between items-start gap-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Billed & Delivered To:</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-0.5" id="invoice-cust-name">-</h3>
+              <p class="text-xs text-slate-600 mt-0.5" id="invoice-cust-address">-</p>
+              <p class="text-xs font-mono text-slate-600 mt-0.5" id="invoice-cust-phone">-</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Order Beat & Terms</span>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Route: <span id="invoice-route">-</span></div>
+              <div class="text-xs font-semibold text-slate-700 mt-0.5">Payment Mode: <b id="invoice-pay-mode" class="text-indigo-700">-</b></div>
+            </div>
+          </div>
+
+          <!-- Line Items Table -->
+          <div>
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b-2 border-slate-200 text-slate-600 text-[10px] uppercase font-bold">
+                  <th class="py-2 pr-2 text-center w-8">#</th>
+                  <th class="py-2 px-2">Item Description</th>
+                  <th class="py-2 px-2">Pack</th>
+                  <th class="py-2 px-2 text-right">Qty</th>
+                  <th class="py-2 px-2 text-right">Unit Rate</th>
+                  <th class="py-2 pl-2 text-right">Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="invoice-items-tbody" class="divide-y divide-slate-100 font-mono text-xs">
+                <!-- Line items rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Calculations & Net Payable -->
+          <div class="border-t-2 border-slate-200 pt-3 flex justify-between items-start gap-4">
+            <div class="space-y-1 text-xs flex-1">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Amount In Words:</span>
+              <p class="font-bold text-slate-800 italic" id="invoice-amount-words">Rupees Zero Only</p>
+              <p class="text-[11px] text-slate-400" id="invoice-notes-display"></p>
+            </div>
+            <div class="w-60 font-mono text-xs space-y-1 text-right">
+              <div class="flex justify-between text-slate-500"><span>Items Subtotal:</span> <span id="invoice-subtotal">₹0</span></div>
+              <div class="flex justify-between text-rose-600" id="invoice-rebate-row"><span>Special Rebate:</span> <span id="invoice-rebate">-₹0</span></div>
+              <div class="flex justify-between text-slate-900 font-black text-sm pt-1 border-t border-slate-300">
+                <span>Net Total:</span> <span class="text-emerald-700" id="invoice-net-payable">₹0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Banking & Dynamic UPI Payment QR Code Section -->
+          <div class="pt-2 border-t border-slate-200">
+            <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-2xl p-4 border border-emerald-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="space-y-1 text-xs flex-1">
+                <div class="text-[10px] uppercase font-black text-emerald-700 tracking-wider">Bank Transfer & UPI Settlement</div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Name:</span> <b id="invoice-bank-acc-name">Sri Govinda's Food Products</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Bank Name:</span> <b id="invoice-bank-name">State Bank of India</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Number:</span> <b id="invoice-bank-acc-num" class="font-mono">38920194820</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">IFSC Code:</span> <b id="invoice-bank-ifsc" class="font-mono">SBIN0001234</b></div>
+                <div class="text-slate-800"><span class="text-slate-500 font-semibold">UPI ID:</span> <b id="invoice-bank-upi" class="font-mono text-emerald-700">srigovinda@sbi</b></div>
+              </div>
+              <div class="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex-shrink-0 text-center">
+                <div id="invoice-upi-qrcode" class="w-[100px] h-[100px] flex items-center justify-center"></div>
+                <span class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Scan & Pay Exact Amount</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invoice Footer & Signatory -->
+          <div class="pt-3 border-t border-slate-200 flex justify-between items-end text-xs">
+            <div class="text-[10px] text-slate-500 space-y-0.5 max-w-xs">
+              <p class="font-bold text-slate-700">Declaration:</p>
+              <p>We declare that this invoice shows the actual price of goods described and that all particulars are true and correct.</p>
+            </div>
+            <div class="text-center">
+              <div class="w-36 border-b border-slate-400 mb-1"></div>
+              <span class="text-[10px] font-bold uppercase text-slate-700 block">Authorized Signatory</span>
+              <span class="text-[9px] text-slate-400">Sri Govinda's Food Products</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: COMPANY & BANK ACCOUNT SETTINGS
+       ============================================================================== -->
+  <div id="modal-company-settings" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="p-2 rounded-xl bg-indigo-50 text-indigo-600"><i data-lucide="landmark" class="w-5 h-5"></i></span>
+          <div>
+            <h3 class="font-extrabold text-base text-slate-900">Company & Bank Details</h3>
+            <p class="text-[11px] text-slate-400">Used on all Invoices, Quotations & UPI QR Codes</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCompanySettingsModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-company-settings" onsubmit="handleSaveCompanySettings(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Company Name</label>
+          <input type="text" id="set-company-name" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">GSTIN</label>
+            <input type="text" id="set-company-gstin" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono uppercase font-bold">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Company Phone</label>
+            <input type="text" id="set-company-phone" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Company Address</label>
+          <input type="text" id="set-company-address" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        </div>
+        <div class="pt-2 border-t border-slate-100 font-bold text-slate-800 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="credit-card" class="w-3.5 h-3.5 text-indigo-600"></i> Bank Account for Customer Payments
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-0.5">Bank Name</label>
+            <input type="text" id="set-bank-name" required placeholder="e.g. State Bank of India" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-0.5">Account Holder Name</label>
+            <input type="text" id="set-bank-acc-name" required placeholder="Sri Govinda's Food Products" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-0.5">Account Number</label>
+            <input type="text" id="set-bank-acc-num" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-0.5">IFSC Code</label>
+            <input type="text" id="set-bank-ifsc" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono uppercase font-bold">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-600 font-semibold mb-0.5">UPI ID (For dynamic QR Code)</label>
+          <input type="text" id="set-bank-upi" required placeholder="e.g. srigovinda@sbi" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-indigo-700">
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeCompanySettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       FOOTER (ADMIN LINK & BANK DETAILS AT BOTTOM)
        ============================================================================== -->
   <footer class="mt-auto border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">
     <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
-      <div class="flex items-center gap-2">
-        <span class="font-bold text-slate-700">Sri Govinda Food Products</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-bold text-slate-700">Sri Govinda's Food Products</span>
+        <span>•</span>
+        <span class="font-mono text-[11px] text-slate-600 font-semibold">GSTIN: 29AFVPD7658B1Z1</span>
         <span>•</span>
         <span>Sales & Inventory Hub</span>
       </div>
 
-      <!-- Admin Manager Footer Link -->
-      <div class="flex items-center gap-2">
+      <!-- Bank Details & Admin Manager Footer Links -->
+      <div class="flex items-center gap-3">
+        <button onclick="openCompanySettingsModal()" class="font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer">
+          <i data-lucide="landmark" class="w-3.5 h-3.5 text-indigo-600"></i>
+          <span>Bank & GST Details</span>
+        </button>
+        <span>•</span>
         <button id="btn-footer-admin" onclick="handleFooterAdminClick()" class="font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer">
           <i data-lucide="lock" class="w-3.5 h-3.5"></i>
           <span id="footer-admin-label">Manager Login</span>
@@ -2257,7 +2724,10 @@
           <td class="p-3 font-mono text-slate-600">${escapeHtml(c.phone || '-')}</td>
           <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
-            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer & Rates">
+            <button onclick="openCustomerPricingModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition" title="Open Custom Price List & Generate Quotation">
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Price List & Quote
+            </button>
+            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer Details">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
             ${isManager ? `
@@ -2580,6 +3050,9 @@
                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
               </button>
             `}
+            <button onclick="openInvoiceModal('${o.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" title="View & Download Tax Invoice (PDF & JPEG)">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+            </button>
             <button onclick="openEditOrderModal('${o.id}')" class="p-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200" title="Modify Order">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
@@ -3171,7 +3644,710 @@
       populateDropdowns();
     }
 
-    // 14. BOOTSTRAP
+    // ==============================================================================
+    // 12. COMPANY & BANKING SETTINGS (LOCALSTORAGE PERSISTED)
+    // ==============================================================================
+    const DEFAULT_COMPANY_SETTINGS = {
+      companyName: "Sri Govinda's Food Products",
+      gstin: "29AFVPD7658B1Z1",
+      address: "Food Industrial Area, Bengaluru, Karnataka - 560001",
+      phone: "+91 98450 12345",
+      email: "orders@srigovindafoods.com",
+      bankName: "State Bank of India",
+      accountName: "Sri Govinda's Food Products",
+      accountNumber: "38920194820",
+      ifsc: "SBIN0001234",
+      branch: "Industrial Estate Branch",
+      upiId: "srigovinda@sbi"
+    };
+
+    function getCompanySettings() {
+      try {
+        const saved = localStorage.getItem('sg_company_settings');
+        if (saved) return { ...DEFAULT_COMPANY_SETTINGS, ...JSON.parse(saved) };
+      } catch (e) {}
+      return DEFAULT_COMPANY_SETTINGS;
+    }
+
+    function saveCompanySettings(settings) {
+      localStorage.setItem('sg_company_settings', JSON.stringify(settings));
+    }
+
+    function openCompanySettingsModal() {
+      const s = getCompanySettings();
+      document.getElementById('set-company-name').value = s.companyName;
+      document.getElementById('set-company-gstin').value = s.gstin;
+      document.getElementById('set-company-phone').value = s.phone || '';
+      document.getElementById('set-company-address').value = s.address || '';
+      document.getElementById('set-bank-name').value = s.bankName;
+      document.getElementById('set-bank-acc-name').value = s.accountName;
+      document.getElementById('set-bank-acc-num').value = s.accountNumber;
+      document.getElementById('set-bank-ifsc').value = s.ifsc;
+      document.getElementById('set-bank-upi').value = s.upiId;
+
+      document.getElementById('modal-company-settings').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCompanySettingsModal() {
+      document.getElementById('modal-company-settings').classList.add('hidden');
+    }
+
+    function handleSaveCompanySettings(e) {
+      e.preventDefault();
+      const settings = {
+        companyName: document.getElementById('set-company-name').value.trim() || DEFAULT_COMPANY_SETTINGS.companyName,
+        gstin: document.getElementById('set-company-gstin').value.trim().toUpperCase() || DEFAULT_COMPANY_SETTINGS.gstin,
+        phone: document.getElementById('set-company-phone').value.trim(),
+        address: document.getElementById('set-company-address').value.trim(),
+        bankName: document.getElementById('set-bank-name').value.trim(),
+        accountName: document.getElementById('set-bank-acc-name').value.trim(),
+        accountNumber: document.getElementById('set-bank-acc-num').value.trim(),
+        ifsc: document.getElementById('set-bank-ifsc').value.trim().toUpperCase(),
+        upiId: document.getElementById('set-bank-upi').value.trim()
+      };
+      saveCompanySettings(settings);
+      closeCompanySettingsModal();
+      alert("Company & Banking details updated successfully!");
+    }
+
+    // ==============================================================================
+    // 13. INDIAN RUPEES NUMBER-TO-WORDS CONVERTER
+    // ==============================================================================
+    function numberToWordsINR(num) {
+      num = Math.round(Number(num || 0));
+      if (num === 0) return 'Rupees Zero Only';
+      const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+                 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+      function inWords(n) {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+        if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + inWords(n % 100) : '');
+        if (n < 100000) return inWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + inWords(n % 1000) : '');
+        if (n < 10000000) return inWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + inWords(n % 100000) : '');
+        return inWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + inWords(n % 10000000) : '');
+      }
+      return 'Rupees ' + inWords(num).trim() + ' Only';
+    }
+
+    // ==============================================================================
+    // 14. DYNAMIC SCANNABLE UPI QR CODE GENERATOR (GPay, PhonePe, Paytm, BHIM)
+    // ==============================================================================
+    function generateUpiQrCode(containerId, upiId, payeeName, amount, ref) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      if (!upiId) {
+        container.innerHTML = '<span class="text-[9px] text-slate-400">Set UPI ID in Settings</span>';
+        return;
+      }
+      let uri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName || "Sri Govinda's Food Products")}&cu=INR`;
+      if (amount && Number(amount) > 0) {
+        uri += `&am=${Number(amount).toFixed(2)}`;
+      }
+      if (ref) {
+        uri += `&tn=${encodeURIComponent(ref)}`;
+      }
+      try {
+        new QRCode(container, {
+          text: uri,
+          width: 100,
+          height: 100,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn("QR code render fallback:", e);
+        container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upiId)}</span>`;
+      }
+    }
+
+    // ==============================================================================
+    // 15. HIGH-DPI CLIENT-SIDE JPEG & VECTOR PDF EXPORT
+    // ==============================================================================
+    async function downloadElementAsJpeg(elementId, filename) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const link = document.createElement('a');
+        link.download = filename.endsWith('.jpeg') || filename.endsWith('.jpg') ? filename : filename + '.jpeg';
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.error("JPEG generation failed:", err);
+        alert("Failed to export JPEG. Please use the Print option to save.");
+      }
+    }
+
+    async function downloadElementAsPdf(elementId, filename) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        if (pdfHeight <= pageHeight) {
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        } else {
+          let heightLeft = pdfHeight;
+          let position = 0;
+          pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+          heightLeft -= pageHeight;
+          while (heightLeft > 0) {
+            position = heightLeft - pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+          }
+        }
+        pdf.save(filename.endsWith('.pdf') ? filename : filename + '.pdf');
+      } catch (err) {
+        console.error("PDF generation failed:", err);
+        alert("Failed to export PDF. Please use the Print option to save as PDF.");
+      }
+    }
+
+    // ==============================================================================
+    // 16. CUSTOMER BULK PRICING ENGINE (OPEN TABLE LIST VIEW, NOT DROPDOWN)
+    // ==============================================================================
+    let currentPricingCustomerId = null;
+
+    function openCustomerPricingModal(custId) {
+      const targetCustId = custId || (customers[0] ? customers[0].id : null);
+      if (!targetCustId) {
+        alert("No customers available. Please add a customer first.");
+        return;
+      }
+      currentPricingCustomerId = targetCustId;
+      const cust = customers.find(c => c.id === targetCustId);
+      if (!cust) return;
+
+      document.getElementById('cust-pricing-customer-name').innerText = cust.name;
+      document.getElementById('cust-pricing-customer-tier').innerText = cust.tier || 'Retail';
+      document.getElementById('cust-pricing-customer-route').innerText = (cust.homeRoute || 'Not assigned').split(':')[0];
+      document.getElementById('cust-bulk-pricing-search').value = '';
+
+      renderCustomerBulkPricingTable();
+      document.getElementById('modal-customer-pricing').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCustomerPricingModal() {
+      document.getElementById('modal-customer-pricing').classList.add('hidden');
+    }
+
+    function renderCustomerBulkPricingTable() {
+      const tbody = document.getElementById('cust-bulk-pricing-tbody');
+      if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No products configured in catalog. Add products in Manager Hub to set customer pricing.</td></tr>`;
+        updateCustomerBulkPricingBadge();
+        return;
+      }
+
+      tbody.innerHTML = products.map(p => {
+        let existingOverride = '';
+        if (currentPricingCustomerId) {
+          const cp = contractPricing.find(c => 
+            String(c.buyerId) === String(currentPricingCustomerId) && 
+            (String(c.productId) === String(p.id) || String(c.productId) === String(p.sku))
+          );
+          if (cp && cp.overrideRate !== null && cp.overrideRate !== undefined && !isNaN(Number(cp.overrideRate))) {
+            existingOverride = Number(cp.overrideRate);
+          }
+        }
+
+        const isOverridden = (existingOverride !== '' && existingOverride !== null);
+        const baseRate = Number(p.baseRate || 0);
+        const stock = getProductStock(p);
+
+        // Variance calculation
+        let varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
+        if (isOverridden) {
+          const diff = Number(existingOverride) - baseRate;
+          const pct = baseRate > 0 ? ((diff / baseRate) * 100).toFixed(1) : 0;
+          if (diff < 0) {
+            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">-${Math.abs(pct)}% (Save ${formatINR(Math.abs(diff))})</span>`;
+          } else if (diff > 0) {
+            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">+${pct}% (+${formatINR(diff)})</span>`;
+          } else {
+            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Same as MRP</span>`;
+          }
+        }
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition cust-bulk-row" data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</div>
+            </td>
+            <td class="p-2.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : 'text-slate-600'}">
+              ${stock.balance}
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-700">
+              ${formatINR(baseRate)}
+            </td>
+            <td class="p-2.5 text-center">
+              <div class="inline-flex items-center relative">
+                <span class="absolute left-2.5 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
+                <input type="number" step="any" min="0"
+                       id="bulk-input-${escapeHtml(p.id)}"
+                       data-pricing-prod-id="${escapeHtml(p.id)}"
+                       data-base-rate="${baseRate}"
+                       value="${isOverridden ? existingOverride : ''}"
+                       placeholder="${baseRate}"
+                       oninput="onBulkPricingInputChanged(this)"
+                       class="w-28 pl-6 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono text-right outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+              </div>
+            </td>
+            <td class="p-2.5 text-center" id="variance-cell-${escapeHtml(p.id)}">
+              ${varianceHtml}
+            </td>
+            <td class="p-2.5 text-center">
+              <button type="button" onclick="resetSingleCustPrice('${escapeHtml(p.id)}')" title="Reset to standard MRP" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateCustomerBulkPricingBadge();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function onBulkPricingInputChanged(inputEl) {
+      const prodId = inputEl.getAttribute('data-pricing-prod-id');
+      const baseRate = parseFloat(inputEl.getAttribute('data-base-rate')) || 0;
+      const val = (inputEl.value || '').trim();
+      const varianceCell = document.getElementById(`variance-cell-${prodId}`);
+
+      if (val !== '') {
+        const num = parseFloat(val);
+        inputEl.classList.add('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
+        inputEl.classList.remove('border-slate-300');
+
+        if (!isNaN(num) && varianceCell) {
+          const diff = num - baseRate;
+          const pct = baseRate > 0 ? ((diff / baseRate) * 100).toFixed(1) : 0;
+          if (diff < 0) {
+            varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">-${Math.abs(pct)}% (Save ${formatINR(Math.abs(diff))})</span>`;
+          } else if (diff > 0) {
+            varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">+${pct}% (+${formatINR(diff)})</span>`;
+          } else {
+            varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Same as MRP</span>`;
+          }
+        }
+      } else {
+        inputEl.classList.remove('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
+        inputEl.classList.add('border-slate-300');
+        if (varianceCell) {
+          varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
+        }
+      }
+      updateCustomerBulkPricingBadge();
+    }
+
+    function resetSingleCustPrice(prodId) {
+      const input = document.getElementById(`bulk-input-${prodId}`);
+      if (input) {
+        input.value = '';
+        onBulkPricingInputChanged(input);
+      }
+    }
+
+    function applyBulkDiscountToCustomerPricing(percent) {
+      const inputs = document.querySelectorAll('#cust-bulk-pricing-tbody input[data-pricing-prod-id]');
+      inputs.forEach(inp => {
+        const baseRate = parseFloat(inp.getAttribute('data-base-rate')) || 0;
+        if (baseRate > 0) {
+          const discounted = Math.round(baseRate * (1 - percent / 100));
+          inp.value = discounted;
+          onBulkPricingInputChanged(inp);
+        }
+      });
+    }
+
+    function resetAllCustomerPricingToBase() {
+      if (!confirm("Reset all customer prices to standard base rates?")) return;
+      const inputs = document.querySelectorAll('#cust-bulk-pricing-tbody input[data-pricing-prod-id]');
+      inputs.forEach(inp => {
+        inp.value = '';
+        onBulkPricingInputChanged(inp);
+      });
+    }
+
+    function filterCustomerBulkPricingTable() {
+      const q = (document.getElementById('cust-bulk-pricing-search')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#cust-bulk-pricing-tbody .cust-bulk-row');
+      rows.forEach(r => {
+        const text = r.getAttribute('data-search') || '';
+        r.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    }
+
+    function updateCustomerBulkPricingBadge() {
+      const badge = document.getElementById('cust-pricing-badge');
+      if (!badge) return;
+      const inputs = document.querySelectorAll('#cust-bulk-pricing-tbody input[data-pricing-prod-id]');
+      let count = 0;
+      inputs.forEach(inp => {
+        if (inp.value && inp.value.trim() !== '') count++;
+      });
+      badge.innerText = `${count} Custom Override${count !== 1 ? 's' : ''}`;
+      if (count > 0) {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
+      } else {
+        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+      }
+    }
+
+    async function saveAllCustomerPricesAtOnce() {
+      if (!currentPricingCustomerId) return;
+      const cust = customers.find(c => c.id === currentPricingCustomerId);
+      if (!cust) return;
+
+      const saveBtn = document.getElementById('btn-save-cust-prices');
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.innerText = 'Saving...'; }
+
+      const inputs = document.querySelectorAll('#cust-bulk-pricing-tbody input[data-pricing-prod-id]');
+      const overridesToSave = [];
+
+      inputs.forEach(inp => {
+        const val = (inp.value || '').trim();
+        if (val !== '') {
+          const num = parseFloat(val);
+          if (!isNaN(num) && num >= 0) {
+            overridesToSave.push({
+              buyerId: currentPricingCustomerId,
+              productId: inp.getAttribute('data-pricing-prod-id'),
+              overrideRate: num
+            });
+          }
+        }
+      });
+
+      // Update local contractPricing state
+      contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(currentPricingCustomerId));
+      overridesToSave.forEach(o => contractPricing.push(o));
+
+      // Persist to Supabase contract_pricing
+      if (supabaseClient) {
+        try {
+          const { error: delErr } = await supabaseClient.from('contract_pricing').delete().eq('buyerId', currentPricingCustomerId);
+          if (delErr) console.warn("Supabase contract delete error:", delErr);
+
+          if (overridesToSave.length > 0) {
+            const { error: insErr } = await supabaseClient.from('contract_pricing').insert(overridesToSave);
+            if (insErr) console.warn("Supabase contract insert error:", insErr);
+          }
+        } catch (e) {
+          console.error("Error saving customer contract prices to Supabase:", e);
+        }
+      }
+
+      if (saveBtn) { 
+        saveBtn.disabled = false; 
+        saveBtn.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> Save All Prices At Once'; 
+      }
+
+      renderCustomersTable();
+      renderOrderCatalog();
+      if (window.lucide) lucide.createIcons();
+
+      alert(`✅ Saved ${overridesToSave.length} customized product rate(s) for ${cust.name}!`);
+    }
+
+    // ==============================================================================
+    // 17. OFFICIAL QUOTATION VIEW & EXPORT LOGIC
+    // ==============================================================================
+    let currentQuotationCustomerId = null;
+
+    function openQuotationModal(custId) {
+      const targetCustId = custId || currentPricingCustomerId || (customers[0] ? customers[0].id : null);
+      if (!targetCustId) {
+        alert("Please select a customer to generate a quotation.");
+        return;
+      }
+      currentQuotationCustomerId = targetCustId;
+      const cust = customers.find(c => c.id === targetCustId);
+      if (!cust) return;
+
+      const settings = getCompanySettings();
+
+      // Company branding & GSTIN
+      document.getElementById('quote-company-name').innerText = settings.companyName;
+      document.getElementById('quote-company-gstin').innerText = settings.gstin;
+      document.getElementById('quote-company-address').innerText = settings.address;
+      document.getElementById('quote-company-contact').innerText = `Phone: ${settings.phone} | Email: ${settings.email}`;
+
+      // Ref and dates
+      const now = new Date();
+      const refNum = 'QTN-' + (cust.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'SG')) + '-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('quote-ref-number').innerText = refNum;
+      document.getElementById('quote-date').innerText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      // Customer info
+      document.getElementById('quote-cust-name').innerText = cust.name;
+      document.getElementById('quote-cust-address').innerText = cust.address || 'Address as per records';
+      document.getElementById('quote-cust-phone').innerText = cust.phone ? `📞 ${cust.phone}` : 'No phone listed';
+      document.getElementById('quote-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
+      document.getElementById('quote-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+
+      // Quotation items schedule
+      const tbody = document.getElementById('quote-items-tbody');
+      if (products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">No products configured in catalog.</td></tr>`;
+      } else {
+        tbody.innerHTML = products.map((p, idx) => {
+          const agreedRate = getCustomerProductRate(targetCustId, p);
+          const baseRate = Number(p.baseRate || 0);
+          const hasDiscount = (agreedRate < baseRate);
+          const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-2 pr-2 text-center text-slate-400 font-sans">${idx + 1}</td>
+              <td class="py-2 px-2">
+                <span class="font-bold text-slate-900 font-sans">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(p.sku)}</span>
+              </td>
+              <td class="py-2 px-2 text-slate-600 font-sans">${escapeHtml(p.unitSize || '-')}</td>
+              <td class="py-2 px-2 text-right text-slate-500 font-mono">${formatINR(baseRate)}</td>
+              <td class="py-2 px-2 text-right font-black text-indigo-700 font-mono text-sm">${formatINR(agreedRate)}</td>
+              <td class="py-2 pl-2 text-right font-sans">
+                ${hasDiscount ? `
+                  <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    -${discountPct}% (Save ${formatINR(baseRate - agreedRate)})
+                  </span>
+                ` : `<span class="text-[10px] text-slate-400">Standard MRP</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Bank Details
+      document.getElementById('quote-bank-acc-name').innerText = settings.accountName;
+      document.getElementById('quote-bank-name').innerText = settings.bankName;
+      document.getElementById('quote-bank-acc-num').innerText = settings.accountNumber;
+      document.getElementById('quote-bank-ifsc').innerText = settings.ifsc;
+      document.getElementById('quote-bank-upi').innerText = settings.upiId;
+
+      // Dynamic UPI QR code
+      generateUpiQrCode('quote-upi-qrcode', settings.upiId, settings.companyName, 0, refNum);
+
+      document.getElementById('modal-quotation-view').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeQuotationModal() {
+      document.getElementById('modal-quotation-view').classList.add('hidden');
+    }
+
+    function downloadQuotationPdf() {
+      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+      downloadElementAsPdf('quotation-printable-card', `Quotation_${name}`);
+    }
+
+    function downloadQuotationJpeg() {
+      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+      downloadElementAsJpeg('quotation-printable-card', `Quotation_${name}`);
+    }
+
+    function printQuotationCard() {
+      window.print();
+    }
+
+    function shareQuotationWhatsApp() {
+      if (!currentQuotationCustomerId) return;
+      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      if (!cust) return;
+      const settings = getCompanySettings();
+      const ref = document.getElementById('quote-ref-number')?.innerText || 'QTN-SG';
+
+      const lines = products.map(p => {
+        const rate = getCustomerProductRate(cust.id, p);
+        const base = Number(p.baseRate || 0);
+        const disc = rate < base ? ` (Save ${formatINR(base - rate)})` : '';
+        return `• *${p.name}* (${p.unitSize}): *${formatINR(rate)}*${disc}`;
+      }).join('\n');
+
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*GSTIN: ${settings.gstin}*\n` +
+        `--------------------------------\n` +
+        `*OFFICIAL PRICE QUOTATION*\n` +
+        `Quotation Ref: *${ref}*\n` +
+        `Customer: *${cust.name}* [${cust.tier || 'Retail'}]\n` +
+        `Date: ${new Date().toLocaleDateString('en-IN')}\n` +
+        `Valid For: 30 Days\n` +
+        `--------------------------------\n` +
+        `*AGREED PRODUCT RATES:*\n${lines}\n` +
+        `--------------------------------\n` +
+        `*BANK ACCOUNT DETAILS:*\n` +
+        `Bank: ${settings.bankName}\n` +
+        `A/C Name: ${settings.accountName}\n` +
+        `A/C No: ${settings.accountNumber}\n` +
+        `IFSC: ${settings.ifsc}\n` +
+        `UPI ID: ${settings.upiId}\n` +
+        `--------------------------------\n` +
+        `For bookings & dispatch, reply directly to this message.\nThank you!`;
+
+      const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // ==============================================================================
+    // 18. OFFICIAL TAX INVOICE VIEW & EXPORT LOGIC
+    // ==============================================================================
+    let currentViewingOrderId = null;
+
+    function openInvoiceModal(orderId) {
+      const targetId = orderId || (latestOrder ? latestOrder.id : (orders[0] ? orders[0].id : null));
+      if (!targetId) {
+        alert("No order selected to display invoice.");
+        return;
+      }
+      const o = orders.find(x => x.id === targetId) || latestOrder;
+      if (!o) return;
+
+      currentViewingOrderId = o.id;
+      const settings = getCompanySettings();
+      const isDelivered = (getOrderStatus(o) === 'Delivered');
+
+      // Company info & GSTIN
+      document.getElementById('invoice-company-name').innerText = settings.companyName;
+      document.getElementById('invoice-company-gstin').innerText = settings.gstin;
+      document.getElementById('invoice-company-address').innerText = settings.address;
+      document.getElementById('invoice-company-contact').innerText = `Phone: ${settings.phone} | Email: ${settings.email}`;
+
+      // Ref and dates
+      document.getElementById('invoice-ref-number').innerText = '#' + o.id;
+      document.getElementById('invoice-date').innerText = `${o.date} ${o.time}`;
+
+      const badgeEl = document.getElementById('invoice-fulfillment-badge');
+      if (badgeEl) {
+        badgeEl.innerHTML = isDelivered 
+          ? `<span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">✅ Delivered & Fulfilled</span>`
+          : `<span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🚚 Pending Delivery</span>`;
+      }
+
+      // Customer info
+      document.getElementById('invoice-cust-name').innerText = o.buyerName;
+      const custObj = customers.find(c => c.id === o.buyerId);
+      document.getElementById('invoice-cust-address').innerText = (custObj && custObj.address) ? custObj.address : 'Store Delivery Address as registered';
+      document.getElementById('invoice-cust-phone').innerText = o.buyerPhone ? `📞 ${o.buyerPhone}` : 'No phone listed';
+      document.getElementById('invoice-route').innerText = (o.dispatchRoute || '-').split(':')[0];
+      document.getElementById('invoice-pay-mode').innerText = o.paymentMode;
+
+      // Line items
+      const tbody = document.getElementById('invoice-items-tbody');
+      if (Array.isArray(o.items) && o.items.length > 0) {
+        tbody.innerHTML = o.items.map((it, idx) => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2 pr-2 text-center text-slate-400 font-sans">${idx + 1}</td>
+            <td class="py-2 px-2">
+              <span class="font-bold text-slate-900 font-sans">${escapeHtml(it.name)}</span>
+              <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(it.sku || '')}</span>
+            </td>
+            <td class="py-2 px-2 text-slate-600 font-sans">${escapeHtml(it.unitSize || '-')}</td>
+            <td class="py-2 px-2 text-right font-black font-mono">${it.qty}</td>
+            <td class="py-2 px-2 text-right text-slate-700 font-mono">${formatINR(it.rate)}</td>
+            <td class="py-2 pl-2 text-right font-black text-slate-900 font-mono">${formatINR(it.total)}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">No items listed on order.</td></tr>`;
+      }
+
+      // Calculations & amount in words
+      document.getElementById('invoice-subtotal').innerText = formatINR(o.itemsSubtotal || o.netPayable);
+      const rebateRow = document.getElementById('invoice-rebate-row');
+      if (o.extraRebate && Number(o.extraRebate) > 0) {
+        rebateRow.classList.remove('hidden');
+        document.getElementById('invoice-rebate').innerText = '-' + formatINR(o.extraRebate);
+      } else {
+        rebateRow.classList.add('hidden');
+      }
+      document.getElementById('invoice-net-payable').innerText = formatINR(o.netPayable);
+      document.getElementById('invoice-amount-words').innerText = numberToWordsINR(o.netPayable);
+
+      const notesEl = document.getElementById('invoice-notes-display');
+      const cleanNotes = cleanOrderNotes(o.notes);
+      if (notesEl) {
+        notesEl.innerText = cleanNotes ? `Delivery Notes: ${cleanNotes}` : '';
+      }
+
+      // Bank Details
+      document.getElementById('invoice-bank-acc-name').innerText = settings.accountName;
+      document.getElementById('invoice-bank-name').innerText = settings.bankName;
+      document.getElementById('invoice-bank-acc-num').innerText = settings.accountNumber;
+      document.getElementById('invoice-bank-ifsc').innerText = settings.ifsc;
+      document.getElementById('invoice-bank-upi').innerText = settings.upiId;
+
+      // Dynamic UPI QR code with exact net payable amount!
+      generateUpiQrCode('invoice-upi-qrcode', settings.upiId, settings.companyName, o.netPayable, 'INV-' + o.id);
+
+      document.getElementById('modal-invoice-view').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeInvoiceModal() {
+      document.getElementById('modal-invoice-view').classList.add('hidden');
+    }
+
+    function downloadInvoicePdf(orderId) {
+      if (orderId && orderId !== currentViewingOrderId) {
+        openInvoiceModal(orderId);
+      }
+      const targetId = currentViewingOrderId || (orderId ? orderId : 'INV');
+      downloadElementAsPdf('invoice-printable-card', `Invoice_${targetId}`);
+    }
+
+    function downloadInvoiceJpeg(orderId) {
+      if (orderId && orderId !== currentViewingOrderId) {
+        openInvoiceModal(orderId);
+      }
+      const targetId = currentViewingOrderId || (orderId ? orderId : 'INV');
+      downloadElementAsJpeg('invoice-printable-card', `Invoice_${targetId}`);
+    }
+
+    function printInvoiceCard() {
+      window.print();
+    }
+
+    function shareCurrentInvoiceWhatsApp() {
+      shareWhatsApp(currentViewingOrderId);
+    }
+
+    // 19. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
       setTab('dashboard');
       updateManagerUI();
