@@ -793,6 +793,118 @@
         </button>
       </form>
     </div>
+  <!-- MODAL: MODIFY ORDER (MANAGER ONLY) -->
+  <div id="modal-edit-order" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-shrink-0">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-base text-slate-900" id="modal-edit-order-title">Modify Order #ORD</h3>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager Edit</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Adjust items, quantities, pricing, rebates, or payment terms</p>
+        </div>
+        <button onclick="closeEditOrderModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-edit-order" onsubmit="handleSaveEditedOrder(event)" class="space-y-4 text-xs flex-1 overflow-y-auto pr-1">
+        <input type="hidden" id="edit-order-id" value="">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Customer / Store *</label>
+            <select id="edit-order-customer" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Dispatch Route Beat</label>
+            <select id="edit-order-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Line items editor -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700 uppercase text-[10px]">Order Line Items</label>
+            <span class="text-[10px] text-slate-400">Inventory automatically reconciles upon save</span>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-500 uppercase text-[9px] font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Product</th>
+                  <th class="p-2.5 text-right w-24">Rate (₹)</th>
+                  <th class="p-2.5 text-center w-24">Qty</th>
+                  <th class="p-2.5 text-right w-24">Total</th>
+                  <th class="p-2.5 text-center w-10"></th>
+                </tr>
+              </thead>
+              <tbody id="edit-order-items-tbody" class="divide-y divide-slate-200 bg-white">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Add Product to Order Row -->
+          <div class="flex items-center gap-2 pt-1">
+            <select id="edit-order-add-product" class="flex-1 p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-xs outline-none">
+              <!-- Populated with all catalog products -->
+            </select>
+            <button type="button" onclick="addEditOrderItem()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 transition flex-shrink-0">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Item
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Payment Mode</label>
+            <select id="edit-order-payment-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+              <option value="Cash">Cash</option>
+              <option value="UPI / QR">UPI / QR</option>
+              <option value="Credit / Udhaar">Credit / Udhaar</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Extra Rebate (₹)</label>
+            <input type="number" id="edit-order-rebate" min="0" step="any" oninput="calculateEditOrderTotals()" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Notes / Instructions</label>
+            <input type="text" id="edit-order-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+
+        <!-- Calculated Summary Bar -->
+        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-3 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-indigo-900 font-bold">Total Items: <b id="edit-order-summary-items">0</b></span>
+            <span class="text-indigo-300 mx-2">•</span>
+            <span class="text-indigo-900 font-bold">Total Units: <b id="edit-order-summary-units">0</b></span>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] font-bold uppercase text-indigo-500 block">Updated Net Payable</span>
+            <span id="edit-order-summary-total" class="font-mono font-black text-indigo-700 text-base">₹0</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1 flex-shrink-0">
+          <button type="button" onclick="closeEditOrderModal()" class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+            Cancel
+          </button>
+          <button type="submit" id="btn-save-edit-order" class="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition flex items-center justify-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i> Save Changes & Reconcile Stock
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- MODAL: POST-ORDER CONFIRMATION -->
@@ -1122,6 +1234,7 @@
       }
       renderCustomersTable();
       renderSamplesTable();
+      renderOrdersHistoryTable();
     }
 
     // 6. DASHBOARD VIEW LOGIC
@@ -1829,10 +1942,18 @@
           <td class="p-3 font-mono text-right font-bold">${o.totalUnits}</td>
           <td class="p-3 font-mono font-black text-right text-emerald-600">${formatINR(o.netPayable)}</td>
           <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${escapeHtml(o.paymentMode)}</span></td>
-          <td class="p-3 text-right">
+          <td class="p-3 text-right space-x-1 whitespace-nowrap">
             <button onclick="viewOrderDetails('${o.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Inspect Items">
               <i data-lucide="eye" class="w-3.5 h-3.5"></i>
             </button>
+            ${isManager ? `
+              <button onclick="openEditOrderModal('${o.id}')" class="p-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700" title="Modify Order">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteOrderConfirm('${o.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Cancel & Delete Order">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
           </td>
         </tr>
       `).join('');
@@ -1842,8 +1963,317 @@
     function viewOrderDetails(orderId) {
       const o = orders.find(x => x.id === orderId);
       if (!o) return;
-      const lines = (o.items || []).map(i => `${i.name} (${i.unitSize}) x${i.qty} = ${formatINR(i.total)}`).join('\n');
-      alert(`Order #${o.id}\nCustomer: ${o.buyerName}\nDate: ${o.date} ${o.time}\nPayment: ${o.paymentMode}\n\nItems:\n${lines}\n\nNet Amount: ${formatINR(o.netPayable)}`);
+      const lines = (o.items || []).map(i => `• ${i.name} (${i.unitSize}) x${i.qty} @ ₹${i.rate} = ${formatINR(i.total)}`).join('\n');
+      const msg = `ORDER #${o.id}\nCustomer: ${o.buyerName}\nRoute: ${o.dispatchRoute || '-'}\nDate: ${o.date} ${o.time}\nPayment: ${o.paymentMode}\n\nITEMS:\n${lines}\n\nTotal Units: ${o.totalUnits}\nExtra Rebate: ${formatINR(o.extraRebate || 0)}\nNet Amount: ${formatINR(o.netPayable)}\nNotes: ${o.notes || 'None'}`;
+      if (isManager) {
+        if (confirm(`${msg}\n\nWould you like to modify this order now?`)) {
+          openEditOrderModal(orderId);
+        }
+      } else {
+        alert(msg);
+      }
+    }
+
+    // ORDER MODIFICATION & RECONCILIATION LOGIC (MANAGER)
+    let editOrderItems = [];
+
+    function openEditOrderModal(orderId) {
+      const o = orders.find(x => x.id === orderId);
+      if (!o) return;
+
+      document.getElementById('edit-order-id').value = orderId;
+      document.getElementById('modal-edit-order-title').innerText = `Modify Order #${o.id}`;
+
+      // Populate customer select
+      const custSelect = document.getElementById('edit-order-customer');
+      custSelect.innerHTML = customers.map(c => `
+        <option value="${c.id}" ${c.id === o.buyerId ? 'selected' : ''}>${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]</option>
+      `).join('');
+
+      // Populate route select
+      const routeSelect = document.getElementById('edit-order-route');
+      const allRoutes = routes.map(r => r.name);
+      if (o.dispatchRoute && !allRoutes.includes(o.dispatchRoute)) allRoutes.unshift(o.dispatchRoute);
+      routeSelect.innerHTML = allRoutes.map(r => `
+        <option value="${escapeHtml(r)}" ${r === o.dispatchRoute ? 'selected' : ''}>${escapeHtml(r)}</option>
+      `).join('');
+
+      document.getElementById('edit-order-payment-mode').value = o.paymentMode || 'Cash';
+      document.getElementById('edit-order-rebate').value = o.extraRebate || 0;
+      document.getElementById('edit-order-notes').value = o.notes || '';
+
+      // Clone items
+      editOrderItems = (o.items || []).map(it => ({
+        productId: it.productId,
+        sku: it.sku,
+        name: it.name,
+        unitSize: it.unitSize || '',
+        rate: Number(it.rate || 0),
+        qty: Number(it.qty || 1),
+        total: Number(it.total || 0)
+      }));
+
+      // Populate add product select
+      const addSelect = document.getElementById('edit-order-add-product');
+      addSelect.innerHTML = `<option value="">-- Add another product to this order --</option>` + products.map(p => `
+        <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)}) • ${formatINR(p.baseRate)}</option>
+      `).join('');
+
+      renderEditOrderItemsTable();
+      calculateEditOrderTotals();
+      document.getElementById('modal-edit-order').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEditOrderModal() {
+      document.getElementById('modal-edit-order').classList.add('hidden');
+    }
+
+    function renderEditOrderItemsTable() {
+      const tbody = document.getElementById('edit-order-items-tbody');
+      if (editOrderItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No items in this order. Add an item below.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = editOrderItems.map((it, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-2.5">
+            <div class="font-bold text-slate-900">${escapeHtml(it.name)}</div>
+            <div class="text-[10px] font-mono text-slate-400">${escapeHtml(it.sku)} • ${escapeHtml(it.unitSize)}</div>
+          </td>
+          <td class="p-2.5 text-right">
+            <input type="number" step="any" min="0" value="${it.rate}" onchange="updateEditItemRate(${idx}, this.value)" class="w-20 p-1 bg-slate-50 border border-slate-300 rounded-lg text-right font-mono font-bold text-xs">
+          </td>
+          <td class="p-2.5 text-center">
+            <div class="inline-flex items-center gap-1">
+              <button type="button" onclick="adjustEditItemQty(${idx}, -1)" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center">-</button>
+              <input type="number" min="1" value="${it.qty}" onchange="updateEditItemQty(${idx}, this.value)" class="w-10 h-6 text-center font-mono font-bold text-xs rounded-lg border border-slate-200">
+              <button type="button" onclick="adjustEditItemQty(${idx}, 1)" class="w-6 h-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center justify-center">+</button>
+            </div>
+          </td>
+          <td class="p-2.5 font-mono font-bold text-right text-indigo-700">${formatINR(it.total)}</td>
+          <td class="p-2.5 text-center">
+            <button type="button" onclick="removeEditOrderItem(${idx})" class="p-1 rounded-lg text-rose-500 hover:bg-rose-50" title="Remove item">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateEditItemRate(idx, val) {
+      if (!editOrderItems[idx]) return;
+      const rate = Math.max(0, parseFloat(val) || 0);
+      editOrderItems[idx].rate = rate;
+      editOrderItems[idx].total = rate * editOrderItems[idx].qty;
+      renderEditOrderItemsTable();
+      calculateEditOrderTotals();
+    }
+
+    function updateEditItemQty(idx, val) {
+      if (!editOrderItems[idx]) return;
+      const qty = Math.max(1, parseInt(val) || 1);
+      editOrderItems[idx].qty = qty;
+      editOrderItems[idx].total = editOrderItems[idx].rate * qty;
+      renderEditOrderItemsTable();
+      calculateEditOrderTotals();
+    }
+
+    function adjustEditItemQty(idx, delta) {
+      if (!editOrderItems[idx]) return;
+      const next = editOrderItems[idx].qty + delta;
+      if (next <= 0) {
+        removeEditOrderItem(idx);
+      } else {
+        editOrderItems[idx].qty = next;
+        editOrderItems[idx].total = editOrderItems[idx].rate * next;
+        renderEditOrderItemsTable();
+        calculateEditOrderTotals();
+      }
+    }
+
+    function removeEditOrderItem(idx) {
+      editOrderItems.splice(idx, 1);
+      renderEditOrderItemsTable();
+      calculateEditOrderTotals();
+    }
+
+    function addEditOrderItem() {
+      const select = document.getElementById('edit-order-add-product');
+      const sku = select.value;
+      if (!sku) return;
+
+      const prod = products.find(p => p.sku === sku);
+      if (!prod) return;
+
+      const existing = editOrderItems.find(it => it.sku === sku);
+      if (existing) {
+        existing.qty += 1;
+        existing.total = existing.rate * existing.qty;
+      } else {
+        editOrderItems.push({
+          productId: prod.id,
+          sku: prod.sku,
+          name: prod.name,
+          unitSize: prod.unitSize,
+          rate: Number(prod.baseRate || 0),
+          qty: 1,
+          total: Number(prod.baseRate || 0)
+        });
+      }
+
+      select.value = '';
+      renderEditOrderItemsTable();
+      calculateEditOrderTotals();
+    }
+
+    function calculateEditOrderTotals() {
+      let totalUnits = 0;
+      let itemsSubtotal = 0;
+
+      editOrderItems.forEach(it => {
+        totalUnits += Number(it.qty || 0);
+        itemsSubtotal += Number(it.total || 0);
+      });
+
+      const rebate = Math.max(0, parseFloat(document.getElementById('edit-order-rebate').value) || 0);
+      const netPayable = Math.max(0, itemsSubtotal - rebate);
+
+      document.getElementById('edit-order-summary-items').innerText = editOrderItems.length;
+      document.getElementById('edit-order-summary-units').innerText = totalUnits;
+      document.getElementById('edit-order-summary-total').innerText = formatINR(netPayable);
+      document.getElementById('btn-save-edit-order').disabled = (editOrderItems.length === 0 || totalUnits === 0);
+    }
+
+    async function handleSaveEditedOrder(e) {
+      e.preventDefault();
+      const orderId = document.getElementById('edit-order-id').value;
+      const orderIndex = orders.findIndex(x => x.id === orderId);
+      if (orderIndex === -1) return;
+
+      const origOrder = orders[orderIndex];
+
+      if (editOrderItems.length === 0) {
+        alert("An order must have at least 1 item. If you want to cancel the order, use the Delete button.");
+        return;
+      }
+
+      const custId = document.getElementById('edit-order-customer').value;
+      const cust = customers.find(c => c.id === custId) || { id: custId, name: origOrder.buyerName, phone: origOrder.buyerPhone };
+      const route = document.getElementById('edit-order-route').value;
+      const payMode = document.getElementById('edit-order-payment-mode').value;
+      const rebate = Math.max(0, parseFloat(document.getElementById('edit-order-rebate').value) || 0);
+      const notes = document.getElementById('edit-order-notes').value.trim();
+
+      let totalUnits = 0;
+      let itemsSubtotal = 0;
+      editOrderItems.forEach(it => {
+        it.total = Number(it.rate || 0) * Number(it.qty || 0);
+        totalUnits += it.qty;
+        itemsSubtotal += it.total;
+      });
+      const netPayable = Math.max(0, itemsSubtotal - rebate);
+
+      // Reconcile Udhaar balance if credit or amounts changed
+      const oldPayMode = origOrder.paymentMode;
+      const oldNet = Number(origOrder.netPayable || 0);
+      const oldBuyerId = origOrder.buyerId;
+
+      const oldBuyer = customers.find(c => c.id === oldBuyerId);
+      if (oldPayMode === 'Credit / Udhaar' && oldBuyer) {
+        oldBuyer.pendingUdhaar = Math.max(0, Number(oldBuyer.pendingUdhaar || 0) - oldNet);
+        if (supabaseClient) {
+          try { await supabaseClient.from('buyers').update({ pendingUdhaar: oldBuyer.pendingUdhaar }).eq('id', oldBuyer.id); } catch(err){}
+        }
+      }
+
+      if (payMode === 'Credit / Udhaar') {
+        const newBuyer = customers.find(c => c.id === cust.id);
+        if (newBuyer) {
+          newBuyer.pendingUdhaar = Number(newBuyer.pendingUdhaar || 0) + netPayable;
+          if (supabaseClient) {
+            try { await supabaseClient.from('buyers').update({ pendingUdhaar: newBuyer.pendingUdhaar }).eq('id', newBuyer.id); } catch(err){}
+          }
+        }
+      }
+
+      // Update Order Record
+      const updatedRecord = {
+        ...origOrder,
+        buyerId: cust.id,
+        buyerName: cust.name,
+        buyerPhone: cust.phone || '',
+        dispatchRoute: route,
+        items: editOrderItems,
+        totalUnits,
+        itemsSubtotal,
+        extraRebate: rebate,
+        netPayable,
+        paymentMode: payMode,
+        notes
+      };
+
+      orders[orderIndex] = updatedRecord;
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('orders').update({
+            buyerId: updatedRecord.buyerId,
+            buyerName: updatedRecord.buyerName,
+            buyerPhone: updatedRecord.buyerPhone,
+            dispatchRoute: updatedRecord.dispatchRoute,
+            items: updatedRecord.items,
+            totalUnits: updatedRecord.totalUnits,
+            itemsSubtotal: updatedRecord.itemsSubtotal,
+            extraRebate: updatedRecord.extraRebate,
+            netPayable: updatedRecord.netPayable,
+            paymentMode: updatedRecord.paymentMode,
+            notes: updatedRecord.notes
+          }).eq('id', orderId);
+
+          if (error) console.error("Supabase order update error:", error);
+        } catch(err) {
+          console.error(err);
+        }
+      }
+
+      closeEditOrderModal();
+      refreshAllUI();
+      alert(`Order #${orderId} successfully modified! Stock and ledger reconciled.`);
+    }
+
+    async function deleteOrderConfirm(orderId) {
+      const o = orders.find(x => x.id === orderId);
+      if (!o) return;
+
+      if (!confirm(`Are you sure you want to cancel and delete Order #${o.id}?\n\nCustomer: ${o.buyerName}\nAmount: ${formatINR(o.netPayable)}\n\n⚠️ All ${o.totalUnits} product units will be immediately returned to warehouse inventory.`)) {
+        return;
+      }
+
+      // Restore Udhaar if credit
+      if (o.paymentMode === 'Credit / Udhaar' && o.buyerId) {
+        const buyer = customers.find(c => c.id === o.buyerId);
+        if (buyer) {
+          buyer.pendingUdhaar = Math.max(0, Number(buyer.pendingUdhaar || 0) - Number(o.netPayable || 0));
+          if (supabaseClient) {
+            try { await supabaseClient.from('buyers').update({ pendingUdhaar: buyer.pendingUdhaar }).eq('id', buyer.id); } catch(err){}
+          }
+        }
+      }
+
+      orders = orders.filter(x => x.id !== orderId);
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').delete().eq('id', orderId);
+        } catch(err) {
+          console.error("Supabase order delete error:", err);
+        }
+      }
+
+      refreshAllUI();
     }
 
     // 12. PRODUCTS CRUD (MANAGER ONLY)
