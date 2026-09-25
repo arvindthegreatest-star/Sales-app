@@ -94,6 +94,16 @@ CREATE TABLE IF NOT EXISTS sample_giveaways (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Contract Pricing / Customer-Specific Negotiated Product Rates
+CREATE TABLE IF NOT EXISTS contract_pricing (
+  id BIGSERIAL PRIMARY KEY,
+  "buyerId" TEXT NOT NULL,
+  "productId" TEXT NOT NULL,
+  "overrideRate" NUMERIC NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE("buyerId", "productId")
+);
+
 -- 2. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buyers ENABLE ROW LEVEL SECURITY;
@@ -101,6 +111,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_inward ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sample_giveaways ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contract_pricing ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public full access routes" ON routes;
 CREATE POLICY "Public full access routes" ON routes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -120,11 +131,15 @@ CREATE POLICY "Public full access inventory_inward" ON inventory_inward FOR ALL 
 DROP POLICY IF EXISTS "Public full access sample_giveaways" ON sample_giveaways FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Public full access sample_giveaways" ON sample_giveaways FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public full access contract_pricing" ON contract_pricing;
+CREATE POLICY "Public full access contract_pricing" ON contract_pricing FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
 -- 3. REALTIME REPLICATION (Instant Updates across all devices)
-ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways;
+ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways, contract_pricing;
 
 -- ==============================================================================
 -- OPTIONAL: RESET DUMMY DATA SCRIPT
 -- If you want to purge test records from Supabase, run this in SQL Editor:
--- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways CASCADE;
+-- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing CASCADE;
 -- ==============================================================================
+

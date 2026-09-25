@@ -536,21 +536,24 @@
        MODALS
        ============================================================================== -->
 
-  <!-- MODAL: ADD / EDIT CUSTOMER -->
+  <!-- MODAL: ADD / EDIT CUSTOMER & CONTRACT PRICING -->
   <div id="modal-customer" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-        <h3 class="font-bold text-base text-slate-900" id="modal-customer-title">Add New Customer</h3>
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 space-y-3.5 border border-slate-200 my-auto max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-shrink-0">
+        <div>
+          <h3 class="font-bold text-base text-slate-900" id="modal-customer-title">Add New Customer</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Store details, credit limit, and product contract pricing</p>
+        </div>
         <button onclick="closeCustomerModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <form id="form-customer" onsubmit="handleSaveCustomer(event)" class="space-y-3 text-xs">
+      <form id="form-customer" onsubmit="handleSaveCustomer(event)" class="space-y-3 text-xs flex-1 overflow-y-auto pr-1">
         <input type="hidden" id="cust-id" value="">
         <div>
           <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store / Business Name *</label>
-          <input type="text" id="cust-name" required placeholder="e.g. Hotel Grand Royal" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+          <input type="text" id="cust-name" required placeholder="e.g. Hotel Grand Royal" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -588,8 +591,33 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition mt-2">
-          Save Customer
+        <!-- Product Specific Pricing Section -->
+        <div class="border-t border-slate-200 pt-3 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-1">
+            <div>
+              <span class="block font-bold text-slate-800 uppercase text-[10px] flex items-center gap-1">
+                <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-600"></i> Customer Negotiated Rates (Optional)
+              </span>
+              <span class="text-[10px] text-slate-400">Set custom prices for this customer. Blank = Standard base rate.</span>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200" id="cust-rates-count-badge">
+              0 Special Rates
+            </span>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50">
+            <div class="p-2 border-b border-slate-200 bg-slate-100/60 flex items-center gap-2">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+              <input type="text" id="cust-pricing-search" oninput="filterCustomerPricingInputs()" placeholder="Filter products by name or SKU..." class="w-full p-1 bg-white border border-slate-300 rounded-lg text-xs outline-none">
+            </div>
+            <div id="cust-pricing-list" class="divide-y divide-slate-100 max-h-52 overflow-y-auto bg-white">
+              <!-- Dynamically populated with all products in catalog -->
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition mt-2 flex items-center justify-center gap-1.5 flex-shrink-0">
+          <i data-lucide="check" class="w-4 h-4"></i> Save Customer & Custom Rates
         </button>
       </form>
     </div>
@@ -1001,6 +1029,7 @@
     let routes = [];
     let inwardEntries = [];
     let sampleGiveaways = [];
+    let contractPricing = [];
     let cart = {};
     let latestOrder = null;
 
@@ -1014,6 +1043,18 @@
       u = u.replace(/\/rest\/v1\/?$/i, '');
       u = u.replace(/\/auth\/v1\/?$/i, '');
       return u;
+    }
+
+    // RESOLVE CUSTOMER CONTRACT PRICING (OVERRIDE RATE OR STANDARD BASE RATE)
+    function getCustomerProductRate(buyerId, prod) {
+      if (!prod) return 0;
+      if (buyerId) {
+        const cp = contractPricing.find(c => String(c.buyerId) === String(buyerId) && (String(c.productId) === String(prod.id) || String(c.productId) === String(prod.sku)));
+        if (cp && cp.overrideRate !== null && cp.overrideRate !== undefined && cp.overrideRate !== '' && !isNaN(Number(cp.overrideRate))) {
+          return Number(cp.overrideRate);
+        }
+      }
+      return Number(prod.baseRate || 0);
     }
 
     // 2. LIVE INVENTORY RECONCILIATION ENGINE
@@ -1098,6 +1139,10 @@
             const { data } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
             if (data) { sampleGiveaways = data; refreshAllUI(); }
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_pricing' }, async () => {
+            const { data } = await supabaseClient.from('contract_pricing').select('*');
+            if (data) { contractPricing = data; renderOrderCatalog(); renderCustomersTable(); }
+          })
           .subscribe();
 
       } catch (e) {
@@ -1126,6 +1171,9 @@
 
         const { data: dbSamples } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
         if (dbSamples) sampleGiveaways = dbSamples;
+
+        const { data: dbPricing } = await supabaseClient.from('contract_pricing').select('*');
+        if (dbPricing) contractPricing = dbPricing;
 
         refreshAllUI();
       } catch (err) {
@@ -1369,11 +1417,14 @@
         document.getElementById('snap-route').innerText = '-';
         document.getElementById('snap-due').innerText = '₹0';
       }
+      renderOrderCatalog();
+      calculateOrderTotals();
     }
 
     function renderOrderCatalog() {
       const container = document.getElementById('order-catalog-container');
       const q = (document.getElementById('order-catalog-search')?.value || '').toLowerCase().trim();
+      const currentCustId = document.getElementById('order-customer-select')?.value;
 
       const filtered = products.filter(p => !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
 
@@ -1387,6 +1438,8 @@
       container.innerHTML = filtered.map(p => {
         const qty = cart[p.id] || 0;
         const stock = getProductStock(p);
+        const activeRate = getCustomerProductRate(currentCustId, p);
+        const hasCustomRate = (activeRate !== Number(p.baseRate));
 
         // Stock badge formatting
         let stockBadgeHtml = '';
@@ -1407,7 +1460,13 @@
                 ${stockBadgeHtml}
               </div>
               <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
-              <div class="font-mono font-black text-sm text-emerald-700 mt-0.5">${formatINR(p.baseRate)}</div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="font-mono font-black text-sm ${hasCustomRate ? 'text-indigo-600' : 'text-emerald-700'}">${formatINR(activeRate)}</span>
+                ${hasCustomRate ? `
+                  <span class="text-[10px] line-through text-slate-400 font-mono">${formatINR(p.baseRate)}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Custom Price</span>
+                ` : ''}
+              </div>
             </div>
 
             <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -1440,15 +1499,17 @@
       let totalUnits = 0;
       let lineItems = 0;
       let subtotal = 0;
+      const currentCustId = document.getElementById('order-customer-select')?.value;
 
       Object.keys(cart).forEach(pId => {
         const qty = cart[pId];
         if (qty > 0) {
           const prod = products.find(p => p.id === pId);
           if (prod) {
+            const unitRate = getCustomerProductRate(currentCustId, prod);
             totalUnits += qty;
             lineItems++;
-            subtotal += (qty * Number(prod.baseRate));
+            subtotal += (qty * unitRate);
           }
         }
       });
@@ -1477,8 +1538,9 @@
         if (qty > 0) {
           const prod = products.find(p => p.id === pId);
           if (prod) {
-            const lineTotal = qty * Number(prod.baseRate);
-            items.push({ productId: pId, sku: prod.sku, name: prod.name, unitSize: prod.unitSize, qty, rate: prod.baseRate, total: lineTotal });
+            const unitRate = getCustomerProductRate(cust.id, prod);
+            const lineTotal = qty * unitRate;
+            items.push({ productId: pId, sku: prod.sku, name: prod.name, unitSize: prod.unitSize, qty, rate: unitRate, total: lineTotal });
             totalUnits += qty;
             itemsSubtotal += lineTotal;
           }
@@ -1811,10 +1873,18 @@
         return;
       }
 
-      tbody.innerHTML = filtered.map(c => `
+      tbody.innerHTML = filtered.map(c => {
+        const specialCount = contractPricing.filter(cp => String(cp.buyerId) === String(c.id)).length;
+        return `
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3">
-            <div class="font-bold text-slate-900">${escapeHtml(c.name)}</div>
+            <div class="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+              <span>${escapeHtml(c.name)}</span>
+              ${specialCount > 0 ? `
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200" title="${specialCount} custom price override(s)">
+                  <i data-lucide="tag" class="w-2.5 h-2.5"></i> ${specialCount} custom rate${specialCount > 1 ? 's' : ''}
+                </span>` : ''}
+            </div>
             <div class="text-[10px] text-slate-400">${escapeHtml(c.address || 'Address not listed')}</div>
           </td>
           <td class="p-3 font-semibold text-slate-700">${escapeHtml(c.tier || 'Retail')}</td>
@@ -1822,7 +1892,7 @@
           <td class="p-3 font-mono text-slate-600">${escapeHtml(c.phone || '-')}</td>
           <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
-            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer">
+            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer & Rates">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
             ${isManager ? `
@@ -1832,7 +1902,7 @@
             ` : ''}
           </td>
         </tr>
-      `).join('');
+      `}).join('');
       if (window.lucide) lucide.createIcons();
     }
 
@@ -1849,7 +1919,7 @@
       if (editId) {
         const c = customers.find(x => x.id === editId);
         if (c) {
-          document.getElementById('modal-customer-title').innerText = "Edit Customer Details";
+          document.getElementById('modal-customer-title').innerText = "Edit Customer & Contract Rates";
           document.getElementById('cust-name').value = c.name;
           document.getElementById('cust-tier').value = c.tier || 'Retail';
           document.getElementById('cust-phone').value = c.phone || '';
@@ -1862,11 +1932,127 @@
         document.getElementById('modal-customer-title').innerText = "Add New Customer";
       }
 
+      renderCustomerPricingInputs(editId);
       document.getElementById('modal-customer').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
     }
 
     function closeCustomerModal() {
       document.getElementById('modal-customer').classList.add('hidden');
+    }
+
+    function renderCustomerPricingInputs(targetCustId) {
+      const container = document.getElementById('cust-pricing-list');
+      const searchInput = document.getElementById('cust-pricing-search');
+      if (searchInput) searchInput.value = '';
+
+      if (!products || products.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-xs text-slate-400">
+            No products found in catalog. Add products in Manager Hub to configure customer-specific rates.
+          </div>
+        `;
+        updateCustomerRatesCountBadge();
+        return;
+      }
+
+      container.innerHTML = products.map(p => {
+        let existingOverride = '';
+        if (targetCustId) {
+          const cp = contractPricing.find(c => 
+            String(c.buyerId) === String(targetCustId) && 
+            (String(c.productId) === String(p.id) || String(c.productId) === String(p.sku))
+          );
+          if (cp && cp.overrideRate !== null && cp.overrideRate !== undefined && !isNaN(Number(cp.overrideRate))) {
+            existingOverride = Number(cp.overrideRate);
+          }
+        }
+
+        const isOverridden = (existingOverride !== '' && existingOverride !== null);
+
+        return `
+          <div class="p-2.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition cust-price-row"
+               data-filter="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-bold text-slate-900 text-xs">${escapeHtml(p.name)}</span>
+                <span class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">📦 ${escapeHtml(p.unitSize)}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <span>Standard Base Rate:</span>
+                <span class="font-mono font-bold text-slate-700">${formatINR(p.baseRate)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <div class="relative flex items-center">
+                <span class="absolute left-2 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
+                <input type="number" step="any" min="0"
+                       id="cust-override-prod-${escapeHtml(p.id)}"
+                       data-prod-id="${escapeHtml(p.id)}"
+                       data-prod-sku="${escapeHtml(p.sku)}"
+                       data-base-rate="${p.baseRate}"
+                       value="${isOverridden ? existingOverride : ''}"
+                       placeholder="${p.baseRate}"
+                       oninput="onCustomerRateChanged(this)"
+                       class="w-24 pl-5 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+              </div>
+              <button type="button" onclick="clearCustomerOverride('cust-override-prod-${escapeHtml(p.id)}')" title="Reset to standard base rate" class="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateCustomerRatesCountBadge();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function onCustomerRateChanged(inputEl) {
+      const val = (inputEl.value || '').trim();
+      if (val !== '') {
+        inputEl.classList.add('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
+        inputEl.classList.remove('border-slate-300');
+      } else {
+        inputEl.classList.remove('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
+        inputEl.classList.add('border-slate-300');
+      }
+      updateCustomerRatesCountBadge();
+    }
+
+    function clearCustomerOverride(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.value = '';
+        onCustomerRateChanged(input);
+      }
+    }
+
+    function updateCustomerRatesCountBadge() {
+      const badge = document.getElementById('cust-rates-count-badge');
+      if (!badge) return;
+      const inputs = document.querySelectorAll('#cust-pricing-list input[data-prod-id]');
+      let count = 0;
+      inputs.forEach(inp => {
+        if (inp.value && inp.value.trim() !== '') count++;
+      });
+      badge.innerText = count === 0 ? '0 Special Rates' : `${count} Special Rate${count > 1 ? 's' : ''}`;
+      if (count > 0) {
+        badge.className = 'text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
+      } else {
+        badge.className = 'text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+      }
+    }
+
+    function filterCustomerPricingInputs() {
+      const q = (document.getElementById('cust-pricing-search')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#cust-pricing-list .cust-price-row');
+      rows.forEach(r => {
+        const filterData = r.getAttribute('data-filter') || '';
+        r.style.display = (!q || filterData.includes(q)) ? '' : 'none';
+      });
     }
 
     async function handleSaveCustomer(e) {
@@ -1880,8 +2066,10 @@
       const creditLimit = parseFloat(document.getElementById('cust-credit-limit').value) || 0;
       const pendingUdhaar = parseFloat(document.getElementById('cust-pending-due').value) || 0;
 
+      const custId = editId || ('cust_' + Date.now());
+
       const record = {
-        id: editId || ('cust_' + Date.now()),
+        id: custId,
         name,
         tier,
         phone,
@@ -1894,12 +2082,43 @@
       if (editId) customers = customers.map(c => c.id === editId ? record : c);
       else customers.push(record);
 
+      // Collect contract pricing overrides from the form
+      const pricingInputs = document.querySelectorAll('#cust-pricing-list input[data-prod-id]');
+      const overridesToSave = [];
+      pricingInputs.forEach(inp => {
+        const rawVal = (inp.value || '').trim();
+        if (rawVal !== '') {
+          const numVal = parseFloat(rawVal);
+          if (!isNaN(numVal) && numVal >= 0) {
+            overridesToSave.push({
+              buyerId: custId,
+              productId: inp.getAttribute('data-prod-id'),
+              overrideRate: numVal
+            });
+          }
+        }
+      });
+
+      // Update local contractPricing state
+      contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
+      overridesToSave.forEach(o => contractPricing.push(o));
+
+      // Persist to Supabase
       if (supabaseClient) {
         try {
-          const { error } = await supabaseClient.from('buyers').upsert([record]);
-          if (error) console.error("Supabase customer save error:", error);
+          const { error: custErr } = await supabaseClient.from('buyers').upsert([record]);
+          if (custErr) console.error("Supabase customer save error:", custErr);
+
+          // Delete previous overrides for this buyer, then insert new ones
+          const { error: delErr } = await supabaseClient.from('contract_pricing').delete().eq('buyerId', custId);
+          if (delErr) console.error("Supabase contract_pricing delete error:", delErr);
+
+          if (overridesToSave.length > 0) {
+            const { error: insErr } = await supabaseClient.from('contract_pricing').insert(overridesToSave);
+            if (insErr) console.error("Supabase contract_pricing insert error:", insErr);
+          }
         } catch (err) {
-          console.error(err);
+          console.error("Supabase save customer error:", err);
         }
       }
 
@@ -1907,17 +2126,27 @@
       renderCustomersTable();
       populateDropdowns();
       renderDashboard();
+      renderOrderCatalog();
     }
 
     async function deleteCustomerConfirm(custId) {
       if (!confirm("Are you sure you want to delete this customer?")) return;
       customers = customers.filter(c => c.id !== custId);
+      contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
+
       if (supabaseClient) {
-        try { await supabaseClient.from('buyers').delete().eq('id', custId); } catch (e) {}
+        try {
+          await supabaseClient.from('buyers').delete().eq('id', custId);
+          await supabaseClient.from('contract_pricing').delete().eq('buyerId', custId);
+        } catch (e) {
+          console.error("Supabase delete customer error:", e);
+        }
       }
+
       renderCustomersTable();
       populateDropdowns();
       renderDashboard();
+      renderOrderCatalog();
     }
 
     // 11. ORDERS HISTORY DATABASE
@@ -2108,6 +2337,9 @@
       const prod = products.find(p => p.sku === sku);
       if (!prod) return;
 
+      const custId = document.getElementById('edit-order-customer')?.value;
+      const initialRate = getCustomerProductRate(custId, prod);
+
       const existing = editOrderItems.find(it => it.sku === sku);
       if (existing) {
         existing.qty += 1;
@@ -2118,9 +2350,9 @@
           sku: prod.sku,
           name: prod.name,
           unitSize: prod.unitSize,
-          rate: Number(prod.baseRate || 0),
+          rate: initialRate,
           qty: 1,
-          total: Number(prod.baseRate || 0)
+          total: initialRate
         });
       }
 
@@ -2369,8 +2601,12 @@
     async function deleteProductConfirm(prodId) {
       if (!confirm("Delete product from catalog?")) return;
       products = products.filter(p => p.id !== prodId);
+      contractPricing = contractPricing.filter(c => String(c.productId) !== String(prodId));
       if (supabaseClient) {
-        try { await supabaseClient.from('products').delete().eq('id', prodId); } catch (e) {}
+        try { 
+          await supabaseClient.from('products').delete().eq('id', prodId); 
+          await supabaseClient.from('contract_pricing').delete().eq('productId', prodId);
+        } catch (e) {}
       }
       refreshAllUI();
     }
