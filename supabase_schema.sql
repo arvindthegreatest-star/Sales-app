@@ -60,9 +60,15 @@ CREATE TABLE IF NOT EXISTS orders (
   "extraRebate" NUMERIC DEFAULT 0,
   "netPayable" NUMERIC DEFAULT 0,
   "paymentMode" TEXT DEFAULT 'Cash',
+  status TEXT DEFAULT 'Pending Delivery', -- 'Pending Delivery', 'Delivered'
+  "deliveredAt" TIMESTAMPTZ,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Backward-compatibility column migration if table already exists
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Pending Delivery';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "deliveredAt" TIMESTAMPTZ;
 
 -- Inward Inventory (Stock arrivals from factory/suppliers)
 CREATE TABLE IF NOT EXISTS inventory_inward (
