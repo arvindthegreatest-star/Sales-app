@@ -143,28 +143,35 @@
       </div>
 
       <!-- KPI Metric Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Sales</span>
           <div id="kpi-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
         </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Orders</span>
           <div id="kpi-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
         </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+        <div class="bg-amber-50/70 rounded-2xl p-3 border border-amber-200 shadow-xs cursor-pointer hover:bg-amber-100/70 transition" onclick="setTab('orders'); setOrdersStatusFilter('Pending Delivery');" title="Click to view orders out for delivery">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1 flex items-center justify-between">
+            <span>Pending Delivery</span>
+            <i data-lucide="truck" class="w-3 h-3 text-amber-600"></i>
+          </span>
+          <div id="kpi-pending-deliveries" class="font-mono font-black text-lg text-amber-700">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Units Sold</span>
           <div id="kpi-total-units-sold" class="font-mono font-black text-lg text-slate-900">0</div>
         </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Samples Given</span>
           <div id="kpi-total-samples" class="font-mono font-black text-lg text-amber-600">0</div>
         </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Inward Receipts</span>
           <div id="kpi-total-inward" class="font-mono font-black text-lg text-indigo-600">0</div>
         </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Customers</span>
           <div id="kpi-total-customers" class="font-mono font-black text-lg text-slate-900">0</div>
         </div>
@@ -284,8 +291,22 @@
           </div>
         </div>
 
-        <button type="button" id="btn-submit-order" onclick="submitOrder()" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
-          <i data-lucide="check-circle" class="w-4 h-4"></i> CONFIRM & FULFILL ORDER
+        <!-- Fulfillment Stage Selector -->
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs flex-wrap">
+          <span class="font-bold text-slate-700 uppercase text-[10px]">Fulfillment Mode:</span>
+          <div class="inline-flex rounded-lg bg-slate-200 p-0.5 text-xs font-semibold">
+            <button type="button" id="btn-stage-pending" onclick="setOrderFulfillmentStage('Pending Delivery')" class="px-2.5 py-1 rounded-md bg-white text-indigo-700 font-bold shadow-xs transition">
+              🚚 Record for Delivery
+            </button>
+            <button type="button" id="btn-stage-delivered" onclick="setOrderFulfillmentStage('Delivered')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition">
+              ⚡ Immediate Delivery & Bill
+            </button>
+          </div>
+          <input type="hidden" id="order-fulfillment-stage" value="Pending Delivery">
+        </div>
+
+        <button type="button" id="btn-submit-order" onclick="submitOrder()" disabled class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
+          <i data-lucide="file-plus" class="w-4 h-4"></i> <span id="submit-order-btn-text">RECORD ORDER (PENDING DELIVERY)</span>
         </button>
       </div>
     </section>
@@ -332,9 +353,16 @@
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 class="text-lg font-bold text-slate-900">Order Database & History</h2>
-          <p class="text-xs text-slate-500">Audit trail of all commercial sales transactions</p>
+          <p class="text-xs text-slate-500">Track delivery fulfillment, modify orders, and send WhatsApp bills</p>
         </div>
-        <input type="text" id="order-history-search" oninput="renderOrdersHistoryTable()" placeholder="Search by Order ID or customer..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-52 outline-none">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
+            <button type="button" onclick="setOrdersStatusFilter('all')" id="btn-filter-orders-all" class="px-2.5 py-1 rounded-lg bg-white font-bold text-slate-900 shadow-xs">All</button>
+            <button type="button" onclick="setOrdersStatusFilter('Pending Delivery')" id="btn-filter-orders-pending" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold">🚚 Pending Delivery</button>
+            <button type="button" onclick="setOrdersStatusFilter('Delivered')" id="btn-filter-orders-delivered" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold">✅ Delivered</button>
+          </div>
+          <input type="text" id="order-history-search" oninput="renderOrdersHistoryTable()" placeholder="Search order ID or store..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-48 outline-none">
+        </div>
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
@@ -342,13 +370,13 @@
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
               <tr>
-                <th class="p-3">Order ID & Time</th>
-                <th class="p-3">Customer</th>
-                <th class="p-3">Route</th>
+                <th class="p-3">Order ID & Date</th>
+                <th class="p-3">Customer & Route</th>
                 <th class="p-3 text-right">Units</th>
                 <th class="p-3 text-right">Net Amount</th>
                 <th class="p-3">Payment</th>
-                <th class="p-3 text-right">Details</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
@@ -821,16 +849,18 @@
         </button>
       </form>
     </div>
-  <!-- MODAL: MODIFY ORDER (MANAGER ONLY) -->
+  </div>
+
+  <!-- MODAL: MODIFY ORDER (REPS & MANAGERS) -->
   <div id="modal-edit-order" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
     <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-shrink-0">
         <div>
           <div class="flex items-center gap-2">
             <h3 class="font-bold text-base text-slate-900" id="modal-edit-order-title">Modify Order #ORD</h3>
-            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager Edit</span>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Order Edit</span>
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Adjust items, quantities, pricing, rebates, or payment terms</p>
+          <p class="text-xs text-slate-400 mt-0.5">Adjust items, quantities, pricing, rebates, status, or payment terms</p>
         </div>
         <button onclick="closeEditOrderModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
           <i data-lucide="x" class="w-4 h-4"></i>
@@ -890,7 +920,14 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Status</label>
+            <select id="edit-order-status" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+              <option value="Pending Delivery">Pending Delivery</option>
+              <option value="Delivered">Delivered & Fulfilled</option>
+            </select>
+          </div>
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Payment Mode</label>
             <select id="edit-order-payment-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
@@ -905,7 +942,7 @@
             <input type="number" id="edit-order-rebate" min="0" step="any" oninput="calculateEditOrderTotals()" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
           </div>
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Notes / Instructions</label>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Notes</label>
             <input type="text" id="edit-order-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
           </div>
         </div>
@@ -924,14 +961,95 @@
         </div>
 
         <div class="flex items-center gap-2 pt-1 flex-shrink-0">
-          <button type="button" onclick="closeEditOrderModal()" class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+          <button type="button" onclick="closeEditOrderModal()" class="w-1/4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
             Cancel
           </button>
-          <button type="submit" id="btn-save-edit-order" class="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition flex items-center justify-center gap-1.5">
+          <button type="submit" id="btn-save-edit-order" class="w-3/4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition flex items-center justify-center gap-1.5">
             <i data-lucide="check" class="w-4 h-4"></i> Save Changes & Reconcile Stock
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRM ORDER DELIVERY & SEND WHATSAPP BILL -->
+  <div id="modal-delivery-confirm" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 shadow-inner">
+            <i data-lucide="truck" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">Confirm Order Delivery</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Mark fulfilled & send official WhatsApp bill</p>
+          </div>
+        </div>
+        <button onclick="closeDeliveryConfirmModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs flex-1 overflow-y-auto pr-1">
+        <input type="hidden" id="delivery-order-id" value="">
+
+        <!-- Order Snapshot Card -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-mono font-bold text-xs text-indigo-700" id="delivery-modal-order-id">#ORD</span>
+              <h4 class="font-bold text-slate-900 text-sm mt-0.5" id="delivery-modal-customer">-</h4>
+              <p class="text-[11px] text-slate-500 font-mono mt-0.5" id="delivery-modal-phone">-</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 font-bold block" id="delivery-modal-date">-</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 inline-block mt-1" id="delivery-modal-route">-</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-200 pt-2">
+            <div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Delivered Items Breakdown</div>
+            <div id="delivery-modal-items-list" class="space-y-1 max-h-36 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200 font-mono text-[11px]">
+              <!-- Items list populated dynamically -->
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+            <span class="font-bold text-slate-600">Total Net Amount:</span>
+            <span class="font-mono font-black text-emerald-700 text-base" id="delivery-modal-amount">₹0</span>
+          </div>
+        </div>
+
+        <!-- Payment Settlement -->
+        <div class="space-y-2">
+          <label class="block font-bold text-slate-700 uppercase text-[10px]">Payment Settlement on Delivery</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Payment Mode *</label>
+              <select id="delivery-payment-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-xs outline-none">
+                <option value="Cash">Cash Collected</option>
+                <option value="UPI / QR">UPI / QR Payment</option>
+                <option value="Credit / Udhaar">Credit / Udhaar (Due)</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Delivery Notes / Ref</label>
+              <input type="text" id="delivery-notes" placeholder="e.g. Received by store manager" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirm Action Buttons -->
+        <div class="pt-2 space-y-2">
+          <button type="button" onclick="executeDeliveryFulfillmentAndSendBill()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> Confirm Delivery & Send WhatsApp Bill
+          </button>
+          <button type="button" onclick="executeDeliveryFulfillmentOnly()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i> Mark Delivered (Without WhatsApp)
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -942,8 +1060,9 @@
         <i data-lucide="check" class="w-8 h-8 stroke-[3]"></i>
       </div>
       <div>
-        <h3 class="text-lg font-black text-slate-900">Order Booked & Stock Deducted!</h3>
+        <h3 class="text-lg font-black text-slate-900" id="success-modal-title">Order Booked & Stock Deducted!</h3>
         <p class="text-xs text-slate-500 mt-0.5">Invoice Reference: <span id="success-order-id" class="font-mono font-bold text-slate-800">#ORD</span></p>
+        <div id="success-status-badge" class="mt-1"></div>
       </div>
       <div class="bg-slate-50 rounded-2xl p-3 text-left text-xs font-mono space-y-1 border border-slate-200">
         <div class="flex justify-between text-slate-500"><span>Customer:</span> <b id="success-cust-name" class="text-slate-900">-</b></div>
@@ -953,6 +1072,9 @@
       <div class="space-y-2 pt-1">
         <button onclick="shareWhatsApp()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition">
           <i data-lucide="message-circle" class="w-4 h-4"></i> Share WhatsApp Bill
+        </button>
+        <button type="button" id="success-btn-fulfill-now" onclick="closeOrderSuccessModal(); if(latestOrder) openDeliveryConfirmModal(latestOrder.id);" class="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="truck" class="w-4 h-4"></i> Confirm Delivery Now
         </button>
         <button onclick="closeOrderSuccessModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
           Done / Next Order
