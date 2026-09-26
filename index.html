@@ -724,51 +724,103 @@
     </div>
   </div>
 
-  <!-- MODAL: LOG INWARD STOCK (MANAGER) -->
-  <div id="modal-inward" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-        <h3 class="font-bold text-base text-slate-900 flex items-center gap-1.5">
-          <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-indigo-600"></i> Log Inward Factory Stock
-        </h3>
-        <button onclick="closeInwardModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
-          <i data-lucide="x" class="w-4 h-4"></i>
+  <!-- ==============================================================================
+       MODAL: LOG INWARD STOCK (OPEN LIST VIEW - INWARD ALL PRODUCTS AT ONCE)
+       ============================================================================== -->
+  <div id="modal-inward" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="p-1.5 rounded-xl bg-indigo-100 text-indigo-700">
+              <i data-lucide="arrow-down-to-dot" class="w-5 h-5"></i>
+            </span>
+            <h3 class="text-base sm:text-lg font-black text-slate-900">Inward Factory Stock Arrival</h3>
+            <span id="inward-summary-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              0 products staged (0 units)
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            Enter inward quantities for all arriving products below and credit warehouse inventory at once
+          </p>
+        </div>
+        <button type="button" onclick="closeInwardModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="form-inward" onsubmit="handleSaveInward(event)" class="space-y-3 text-xs">
-        <div>
-          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Select Product *</label>
-          <select id="inward-product-select" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
-            <!-- Populated by JS -->
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
+      <!-- Shared Shipment Details Header -->
+      <div class="p-3 sm:p-4 bg-white border-b border-slate-200">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Quantity Units *</label>
-            <input type="number" id="inward-qty" min="1" required placeholder="e.g. 50" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Receipt Date *</label>
+            <input type="date" id="inward-date" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs font-semibold outline-none focus:border-indigo-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Lot / Batch Number</label>
-            <input type="text" id="inward-batch" placeholder="e.g. LOT-202" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Default Batch / Lot #</label>
+            <input type="text" id="inward-batch-default" placeholder="e.g. LOT-2026-SEP" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Supplier / Factory Source</label>
+            <input type="text" id="inward-supplier-default" value="Factory Production" placeholder="e.g. Factory Grinding Plant" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Shipment Notes</label>
+            <input type="text" id="inward-notes-default" placeholder="e.g. Morning van arrival, QC passed" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:border-indigo-500">
           </div>
         </div>
+      </div>
 
-        <div>
-          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Supplier / Factory Source</label>
-          <input type="text" id="inward-supplier" placeholder="e.g. In-House Grinding Plant, APMC Yard" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+      <!-- Quick Search Bar & Action Tools -->
+      <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="relative flex-1 min-w-[220px]">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="inward-catalog-search" oninput="filterInwardCatalogTable()" placeholder="Search products by SKU or name..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500">
         </div>
-
-        <div>
-          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Receipt Notes</label>
-          <input type="text" id="inward-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="clearAllInwardQuantities()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Clear All
+          </button>
         </div>
+      </div>
 
-        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
-          Credit to Warehouse Stock
-        </button>
-      </form>
+      <!-- Main Scrollable Table of ALL Products (Visible Open List, NOT a dropdown) -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-4">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10">
+              <tr>
+                <th class="p-2.5 rounded-l-xl">Product / SKU</th>
+                <th class="p-2.5">Pack Size</th>
+                <th class="p-2.5 text-right">Current Live Stock</th>
+                <th class="p-2.5 text-center w-32">Inward Qty (+)</th>
+                <th class="p-2.5 w-36">Lot / Batch # (Optional)</th>
+                <th class="p-2.5 text-right w-28">New Balance</th>
+                <th class="p-2.5 text-center rounded-r-xl w-12">Action</th>
+              </tr>
+            </thead>
+            <tbody id="inward-products-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically with all products -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer Bar with Save At Once -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
+        <div class="text-xs text-slate-500">
+          💡 Enter inward units for each arriving product. Only products with <b>Quantity &gt; 0</b> will be credited.
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeInwardModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
+            Cancel
+          </button>
+          <button type="button" onclick="saveAllInwardStockAtOnce()" id="btn-save-bulk-inward" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1997,9 +2049,11 @@
 
       // Inward product select
       const inwardProdSelect = document.getElementById('inward-product-select');
-      inwardProdSelect.innerHTML = products.map(p => `
-        <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
-      `).join('');
+      if (inwardProdSelect) {
+        inwardProdSelect.innerHTML = products.map(p => `
+          <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
+        `).join('');
+      }
 
       onOrderCustomerChanged();
     }
@@ -2634,52 +2688,243 @@
     }
 
     function openInwardModal() {
-      document.getElementById('form-inward').reset();
-      populateDropdowns();
+      // Set today's date
+      const dateInput = document.getElementById('inward-date');
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+      const searchInput = document.getElementById('inward-catalog-search');
+      if (searchInput) searchInput.value = '';
+
+      const batchInput = document.getElementById('inward-batch-default');
+      if (batchInput) batchInput.value = '';
+
+      const notesInput = document.getElementById('inward-notes-default');
+      if (notesInput) notesInput.value = '';
+
+      const supplierInput = document.getElementById('inward-supplier-default');
+      if (supplierInput && !supplierInput.value) supplierInput.value = 'Factory Production';
+
+      renderInwardProductsTable();
       document.getElementById('modal-inward').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
     }
 
     function closeInwardModal() {
       document.getElementById('modal-inward').classList.add('hidden');
     }
 
-    async function handleSaveInward(e) {
-      e.preventDefault();
-      const sku = document.getElementById('inward-product-select').value;
-      const qty = parseFloat(document.getElementById('inward-qty').value) || 0;
-      const batch = document.getElementById('inward-batch').value.trim();
-      const supplier = document.getElementById('inward-supplier').value.trim() || 'Factory Receipt';
-      const notes = document.getElementById('inward-notes').value.trim();
+    function renderInwardProductsTable() {
+      const tbody = document.getElementById('inward-products-tbody');
+      if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No products configured in catalog. Add products first to inward stock.</td></tr>`;
+        updateInwardStagingSummary();
+        return;
+      }
 
-      const prod = products.find(p => p.sku === sku);
-      const record = {
-        id: 'inw_' + Date.now(),
-        date: new Date().toISOString().split('T')[0],
-        product_sku: sku,
-        product_name: prod ? prod.name : sku,
-        unit_size: prod ? prod.unitSize : '',
-        quantity_units: qty,
-        batch_number: batch,
-        supplier_or_source: supplier,
-        notes
-      };
+      tbody.innerHTML = products.map(p => {
+        const stock = getProductStock(p);
+        return `
+          <tr class="hover:bg-slate-50/80 transition inward-row" data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</div>
+            </td>
+            <td class="p-2.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : 'text-slate-600'}">
+              ${stock.balance}
+            </td>
+            <td class="p-2.5 text-center">
+              <input type="number" min="0" step="any"
+                     id="inward-qty-${escapeHtml(p.sku)}"
+                     data-inward-sku="${escapeHtml(p.sku)}"
+                     data-inward-name="${escapeHtml(p.name)}"
+                     data-inward-unitsize="${escapeHtml(p.unitSize || '')}"
+                     data-current-stock="${stock.balance}"
+                     placeholder="0"
+                     oninput="onInwardQtyChanged(this)"
+                     class="w-24 px-2 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-center text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </td>
+            <td class="p-2.5">
+              <input type="text"
+                     id="inward-batch-${escapeHtml(p.sku)}"
+                     placeholder="Inherit header batch"
+                     class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-mono text-slate-700 outline-none focus:bg-white focus:border-indigo-400">
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-xs" id="inward-balance-after-${escapeHtml(p.sku)}">
+              <span class="text-slate-500">${stock.balance}</span>
+            </td>
+            <td class="p-2.5 text-center">
+              <button type="button" onclick="clearSingleInwardRow('${escapeHtml(p.sku)}')" title="Reset this product quantity to 0" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
 
-      inwardEntries.unshift(record);
+      updateInwardStagingSummary();
+      if (window.lucide) lucide.createIcons();
+    }
 
-      if (supabaseClient) {
-        try {
-          const { error } = await supabaseClient.from('inventory_inward').insert([record]);
-          if (error) console.error("Supabase inward insert error:", error);
-        } catch (err) {
-          console.error(err);
+    function onInwardQtyChanged(inputEl) {
+      const sku = inputEl.getAttribute('data-inward-sku');
+      const currentStock = parseFloat(inputEl.getAttribute('data-current-stock')) || 0;
+      const val = parseFloat(inputEl.value) || 0;
+      const balanceEl = document.getElementById(`inward-balance-after-${sku}`);
+
+      if (val > 0) {
+        inputEl.classList.add('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900');
+        inputEl.classList.remove('border-slate-300');
+        if (balanceEl) {
+          const newBal = currentStock + val;
+          balanceEl.innerHTML = `<span class="text-emerald-700 font-black">+${val} <span class="text-slate-400 font-normal">→</span> ${newBal}</span>`;
+        }
+      } else {
+        inputEl.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900');
+        inputEl.classList.add('border-slate-300');
+        if (balanceEl) {
+          balanceEl.innerHTML = `<span class="text-slate-500">${currentStock}</span>`;
+        }
+      }
+      updateInwardStagingSummary();
+    }
+
+    function clearSingleInwardRow(sku) {
+      const input = document.getElementById(`inward-qty-${sku}`);
+      if (input) {
+        input.value = '';
+        onInwardQtyChanged(input);
+      }
+      const batchInput = document.getElementById(`inward-batch-${sku}`);
+      if (batchInput) batchInput.value = '';
+    }
+
+    function clearAllInwardQuantities() {
+      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+      inputs.forEach(inp => {
+        inp.value = '';
+        onInwardQtyChanged(inp);
+      });
+      const batchInputs = document.querySelectorAll('#inward-products-tbody input[id^="inward-batch-"]');
+      batchInputs.forEach(b => b.value = '');
+    }
+
+    function filterInwardCatalogTable() {
+      const q = (document.getElementById('inward-catalog-search')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#inward-products-tbody .inward-row');
+      rows.forEach(r => {
+        const text = r.getAttribute('data-search') || '';
+        r.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    }
+
+    function updateInwardStagingSummary() {
+      const badge = document.getElementById('inward-summary-badge');
+      const saveBtn = document.getElementById('btn-save-bulk-inward');
+      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+      let count = 0;
+      let totalUnits = 0;
+
+      inputs.forEach(inp => {
+        const v = parseFloat(inp.value) || 0;
+        if (v > 0) {
+          count++;
+          totalUnits += v;
+        }
+      });
+
+      if (badge) {
+        if (count > 0) {
+          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
+          badge.innerText = `${count} product${count > 1 ? 's' : ''} staged • +${totalUnits} units total`;
+        } else {
+          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+          badge.innerText = '0 products staged (0 units)';
         }
       }
 
+      if (saveBtn) {
+        if (count > 0) {
+          saveBtn.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i> Credit +${totalUnits} Units (${count} SKUs) to Stock`;
+        } else {
+          saveBtn.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once`;
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    async function saveAllInwardStockAtOnce() {
+      const receiptDate = document.getElementById('inward-date')?.value || new Date().toISOString().split('T')[0];
+      const defaultBatch = (document.getElementById('inward-batch-default')?.value || '').trim();
+      const defaultSupplier = (document.getElementById('inward-supplier-default')?.value || '').trim() || 'Factory Production';
+      const defaultNotes = (document.getElementById('inward-notes-default')?.value || '').trim();
+
+      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+      const newEntries = [];
+      let totalUnits = 0;
+
+      inputs.forEach(inp => {
+        const qty = parseFloat(inp.value) || 0;
+        if (qty > 0) {
+          const sku = inp.getAttribute('data-inward-sku');
+          const name = inp.getAttribute('data-inward-name');
+          const unitSize = inp.getAttribute('data-inward-unitsize');
+          const specificBatch = (document.getElementById(`inward-batch-${sku}`)?.value || '').trim();
+
+          const record = {
+            id: 'inw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            date: receiptDate,
+            product_sku: sku,
+            product_name: name,
+            unit_size: unitSize,
+            quantity_units: qty,
+            batch_number: specificBatch || defaultBatch || 'LOT-' + receiptDate.replace(/-/g, ''),
+            supplier_or_source: defaultSupplier,
+            notes: defaultNotes
+          };
+
+          newEntries.push(record);
+          totalUnits += qty;
+        }
+      });
+
+      if (newEntries.length === 0) {
+        alert("Please enter an inward quantity (> 0) for at least one product before saving.");
+        return;
+      }
+
+      const saveBtn = document.getElementById('btn-save-bulk-inward');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Crediting Stock...';
+      }
+
+      // Add to local state
+      newEntries.forEach(entry => inwardEntries.unshift(entry));
+
+      // Persist to Supabase
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('inventory_inward').insert(newEntries);
+          if (error) console.error("Supabase bulk inward insert error:", error);
+        } catch (err) {
+          console.error("Bulk inward database persistence error:", err);
+        }
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
+
       closeInwardModal();
-      // Instantly credits inward stock!
+      // Instantly credits inward stock across the system!
       renderInwardTables();
       renderDashboard();
       renderOrderCatalog();
+
+      alert(`✅ Successfully credited ${totalUnits} units across ${newEntries.length} product(s) into warehouse stock!`);
     }
 
     async function deleteInwardConfirm(inwardId) {
