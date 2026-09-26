@@ -247,10 +247,27 @@
           </div>
         </div>
 
-        <!-- Customer Snapshot -->
-        <div id="order-customer-snapshot" class="bg-slate-50 rounded-xl p-2.5 text-xs text-slate-600 flex items-center justify-between flex-wrap gap-2 font-mono">
-          <div>Tier: <b id="snap-tier" class="text-slate-900">-</b> • Route: <span id="snap-route">-</span></div>
-          <div>Outstanding Due: <b id="snap-due" class="text-rose-600">₹0</b></div>
+        <!-- Customer Snapshot & Outstanding Due Banner -->
+        <div id="order-customer-snapshot" class="bg-slate-50 rounded-2xl p-3 text-xs border border-slate-200 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Selected Customer:</span>
+              <div class="font-bold text-slate-900 text-sm" id="snap-cust-name">Select a customer above</div>
+              <div class="text-[11px] text-slate-500 font-mono">Tier: <b id="snap-tier" class="text-slate-800">-</b> • Route: <span id="snap-route" class="font-semibold text-slate-700">-</span> • <span id="snap-phone">-</span></div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Previous Outstanding Due</span>
+              <div id="snap-due-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-mono font-black text-sm">
+                <span id="snap-due">₹0</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap text-xs">
+            <span class="text-[11px] text-slate-500">View previous bills & total receivables ledger for this client:</span>
+            <button type="button" onclick="openCurrentCustomerStatement()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> 📑 View Customer Statement Slip
+            </button>
+          </div>
         </div>
       </div>
 
@@ -272,15 +289,23 @@
 
       <!-- Cart Bottom Bar & Checkout -->
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 sticky bottom-3 z-30">
-        <div class="flex items-center justify-between text-xs">
-          <div>
-            <span class="text-slate-500 font-semibold">Total Items: <b id="cart-item-count" class="text-slate-900">0</b></span>
-            <span class="text-slate-300 mx-1.5">•</span>
-            <span class="text-slate-500 font-semibold">Total Units: <b id="cart-total-qty" class="text-slate-900">0</b></span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs border-b border-slate-100 pb-3">
+          <div class="flex flex-col justify-center">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Cart Breakdown</span>
+            <div class="text-xs font-semibold text-slate-700">
+              <b id="cart-item-count" class="text-slate-900">0</b> products • <b id="cart-total-qty" class="text-slate-900">0</b> units
+            </div>
           </div>
-          <div class="text-right">
-            <span class="text-[10px] font-bold uppercase text-slate-400 block">Net Payable</span>
-            <span id="cart-net-total" class="font-mono font-black text-emerald-600 text-lg">₹0</span>
+          <div class="p-2 rounded-xl bg-rose-50/70 border border-rose-200 flex flex-col justify-center">
+            <span class="text-[10px] font-bold uppercase text-rose-600">Previous Outstanding</span>
+            <span id="cart-prev-due" class="font-mono font-black text-rose-700 text-sm">₹0</span>
+          </div>
+          <div class="p-2 rounded-xl bg-slate-900 text-white flex flex-col justify-center text-right">
+            <span class="text-[10px] font-bold uppercase text-slate-300">Combined Total Receivables</span>
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="cart-combined-receivables" class="font-mono font-black text-emerald-400 text-base">₹0</span>
+              <span class="text-[10px] text-slate-400 font-mono">(Net: <span id="cart-net-total">₹0</span>)</span>
+            </div>
           </div>
         </div>
 
@@ -1129,26 +1154,43 @@
         <p class="text-xs text-slate-500 mt-0.5">Invoice Reference: <span id="success-order-id" class="font-mono font-bold text-slate-800">#ORD</span></p>
         <div id="success-status-badge" class="mt-1"></div>
       </div>
-      <div class="bg-slate-50 rounded-2xl p-3 text-left text-xs font-mono space-y-1 border border-slate-200">
-        <div class="flex justify-between text-slate-500"><span>Customer:</span> <b id="success-cust-name" class="text-slate-900">-</b></div>
-        <div class="flex justify-between text-slate-500"><span>Net Amount:</span> <b id="success-net-amount" class="text-emerald-700 text-sm">₹0</b></div>
-        <div class="flex justify-between text-slate-500"><span>Payment:</span> <b id="success-pay-mode" class="text-slate-900">-</b></div>
+      <div class="bg-slate-50 rounded-2xl p-3 text-left text-xs font-mono space-y-1.5 border border-slate-200">
+        <div class="flex justify-between text-slate-500"><span>Customer:</span> <b id="success-cust-name" class="text-slate-900 font-sans">-</b></div>
+        <div class="flex justify-between text-slate-500"><span>Previous Outstanding:</span> <b id="success-prev-due" class="text-rose-600">₹0</b></div>
+        <div class="flex justify-between text-slate-500"><span>Current Order Net:</span> <b id="success-net-amount" class="text-slate-900">₹0</b></div>
+        <div class="flex justify-between text-slate-900 pt-1 border-t border-slate-200 font-bold">
+          <span>Total Combined Due:</span> <b id="success-total-receivables" class="text-emerald-700 text-sm font-black">₹0</b>
+        </div>
+        <div class="flex justify-between text-slate-500 text-[11px]"><span>Payment Mode:</span> <b id="success-pay-mode" class="text-slate-800">-</b></div>
       </div>
       <div class="space-y-2 pt-1">
-        <button onclick="shareWhatsApp()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition">
-          <i data-lucide="message-circle" class="w-4 h-4"></i> Share WhatsApp Bill
-        </button>
-        <button type="button" onclick="openInvoiceModal(latestOrder ? latestOrder.id : null)" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
-          <i data-lucide="file-text" class="w-4 h-4"></i> View & Print Tax Invoice
-        </button>
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="downloadInvoicePdf(latestOrder ? latestOrder.id : null)" class="py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center justify-center gap-1 transition">
-            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF Invoice
+          <button onclick="shareWhatsApp()" class="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md transition" title="Share current invoice on WhatsApp">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> Bill on WhatsApp
           </button>
-          <button type="button" onclick="downloadInvoiceJpeg(latestOrder ? latestOrder.id : null)" class="py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1 transition">
-            <i data-lucide="image" class="w-3.5 h-3.5"></i> JPEG Invoice
+          <button onclick="shareStatementWhatsApp(latestOrder ? latestOrder.buyerId : null)" class="py-2.5 px-2 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md transition" title="Share full statement with previous bills on WhatsApp">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Statement Slip
           </button>
         </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="openInvoiceModal(latestOrder ? latestOrder.id : null)" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center justify-center gap-1 transition">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> B&W Invoice
+          </button>
+          <button type="button" onclick="openCustomerStatementModal(latestOrder ? latestOrder.buyerId : null)" class="py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1 transition">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement Slip
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="downloadInvoicePdf(latestOrder ? latestOrder.id : null)" class="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[11px] flex items-center justify-center gap-1 transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Invoice PDF
+          </button>
+          <button type="button" onclick="downloadStatementPdf(latestOrder ? latestOrder.buyerId : null)" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Statement PDF
+          </button>
+        </div>
+
         <button type="button" id="success-btn-fulfill-now" onclick="closeOrderSuccessModal(); if(latestOrder) openDeliveryConfirmModal(latestOrder.id);" class="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
           <i data-lucide="truck" class="w-4 h-4"></i> Confirm Delivery Now
         </button>
@@ -1303,98 +1345,95 @@
 
       <!-- Scrollable Printable Card Area -->
       <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
-        <!-- A4 Printable Quotation Card -->
-        <div id="quotation-printable-card" class="bg-white rounded-2xl shadow-md border border-slate-300 w-full max-w-2xl p-6 sm:p-8 font-sans text-slate-900 printable-section space-y-6">
+        <!-- A4 Printable Quotation Card (Official Black & White Format) -->
+        <div id="quotation-printable-card" class="bg-white text-black font-sans w-full max-w-2xl p-6 sm:p-8 border-2 border-black printable-section space-y-4 shadow-sm">
           
-          <!-- Company & Quotation Header -->
-          <div class="flex justify-between items-start border-b-2 border-slate-900 pb-5 gap-4">
+          <!-- Solid Black Header Bar -->
+          <div class="bg-black text-white p-4 text-center space-y-1">
+            <h1 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white" id="quote-company-name">Sri Govinda Food Products</h1>
+            <div class="text-xs italic text-slate-200" id="quote-company-tagline">"Purity and Quality, 'Our Speciality'."</div>
+            <div class="inline-block px-4 py-0.5 border border-white text-xs font-black uppercase tracking-widest mt-1">
+              QUOTATION
+            </div>
+          </div>
+
+          <!-- Contact & Meta Bar -->
+          <div class="border-b-2 border-black pb-2 text-xs flex justify-between items-start gap-4">
+            <div class="space-y-0.5">
+              <div class="text-[11px] leading-tight" id="quote-company-address">#17, 1st cross, Jai Layout, Gantiganahalli, Singanayakanahalli, Yelahanka, Bangalore 64</div>
+              <div class="text-[11px] font-mono font-bold" id="quote-company-contact">Phone: +91 9972374711 / 9731988411</div>
+              <div class="text-[11px] font-mono font-bold">GSTIN: <span id="quote-company-gstin">29AFVPD7658B1Z1</span></div>
+            </div>
+            <div class="text-right border-l-2 border-black pl-3 space-y-0.5">
+              <div><span class="font-bold">DATE:</span> <span id="quote-date" class="font-mono font-bold">-</span></div>
+              <div><span class="font-bold">REF NO:</span> <span id="quote-ref-number" class="font-mono font-bold">QTN-1001</span></div>
+              <div class="text-[10px] text-black">VALIDITY: <b>3 Months</b></div>
+            </div>
+          </div>
+
+          <!-- Quotation / Bill For Box -->
+          <div class="border-2 border-black p-3 text-xs grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <div class="flex items-center gap-2">
-                <div class="w-9 h-9 rounded-xl bg-indigo-700 text-white flex items-center justify-center font-black text-lg">SG</div>
-                <div>
-                  <h1 class="text-xl font-black tracking-tight text-slate-950 uppercase" id="quote-company-name">Sri Govinda's Food Products</h1>
-                  <p class="text-xs font-mono font-bold text-indigo-700">GSTIN: <span id="quote-company-gstin">29AFVPD7658B1Z1</span></p>
+              <span class="font-black uppercase text-[10px] block">quotation/bill for:</span>
+              <h3 class="text-sm font-black uppercase mt-0.5" id="quote-cust-name">-</h3>
+              <p class="text-[11px] mt-0.5" id="quote-cust-address">-</p>
+              <p class="text-[11px] font-mono mt-0.5" id="quote-cust-phone">-</p>
+            </div>
+            <div class="sm:text-right space-y-1">
+              <div><span class="font-bold uppercase text-[10px]">Customer Category:</span> <span id="quote-cust-tier" class="font-bold block">Retail Partner</span></div>
+              <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="quote-cust-route" class="font-bold block">-</span></div>
+              <div class="text-[10px] font-black uppercase border border-black p-1 inline-block mt-1">MOQ: As agreed / product</div>
+            </div>
+          </div>
+
+          <!-- Product Rates Grid Table (Solid black borders) -->
+          <table class="w-full text-left text-xs border-collapse border-2 border-black text-black">
+            <thead>
+              <tr class="border-b-2 border-black font-black uppercase text-[10px] bg-slate-50">
+                <th class="border-r border-black p-1.5 text-center w-10">Sl No</th>
+                <th class="border-r border-black p-1.5">DESCRIPTION</th>
+                <th class="border-r border-black p-1.5 text-center w-24">UNIT SIZE(KG)</th>
+                <th class="border-r border-black p-1.5 text-right w-24">RATE/kg</th>
+                <th class="p-1.5 text-center w-36">SPECIAL TERMS / DISCOUNT</th>
+              </tr>
+            </thead>
+            <tbody id="quote-items-tbody" class="divide-y divide-black font-mono text-xs">
+              <!-- Quotation items rendered dynamically -->
+            </tbody>
+          </table>
+
+          <!-- Terms & Banking Section -->
+          <div class="border-2 border-black p-3 text-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
+              <div class="text-[10px] font-black uppercase tracking-wider">Terms & Notes:</div>
+              <p class="text-[11px] leading-tight">• Payment terms: Payment on delivery of goods.</p>
+              <p class="text-[11px] leading-tight">• Price valid for 3 months from quotation date.</p>
+              <p class="text-[11px] leading-tight">• For any queries concerning this quotation, please reach out to me at <b>9731988411 / 9972374711</b>.</p>
+              <div class="pt-1 text-[10px] font-mono space-y-0.5">
+                <div>Bank: <b id="quote-bank-name">State Bank of India</b></div>
+                <div>A/C: <b id="quote-bank-acc-num">38920194820</b> (IFSC: <b id="quote-bank-ifsc">SBIN0001234</b>)</div>
+                <div>UPI: <b id="quote-bank-upi">9731988411@upi</b></div>
+              </div>
+            </div>
+
+            <div class="flex flex-col justify-between items-center sm:items-end text-center sm:text-right">
+              <div class="p-1 border border-black bg-white inline-block">
+                <div id="quote-upi-qrcode" class="w-[84px] h-[84px] flex items-center justify-center"></div>
+                <div class="text-[8px] font-black uppercase mt-0.5">UPI Quick Pay</div>
+              </div>
+              <div class="w-48 pt-4">
+                <div class="h-6"></div>
+                <div class="border-t border-black pt-1 text-center">
+                  <span class="text-[10px] font-black uppercase block">Proprietor Signature</span>
+                  <span class="text-[9px]">Sri Govinda Food Products</span>
                 </div>
               </div>
-              <p class="text-[11px] text-slate-500 mt-2 max-w-sm" id="quote-company-address">Food Industrial Area, Bengaluru, Karnataka</p>
-              <p class="text-[11px] text-slate-500 font-mono" id="quote-company-contact">Phone: +91 98450 12345 | Email: orders@srigovindafoods.com</p>
-            </div>
-            <div class="text-right flex-shrink-0">
-              <span class="inline-block px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 font-black text-xs uppercase tracking-wider">
-                Price Quotation
-              </span>
-              <div class="text-xs font-mono font-bold text-slate-800 mt-2" id="quote-ref-number">QTN-1001</div>
-              <div class="text-[11px] text-slate-500 mt-0.5">Date: <span id="quote-date" class="font-mono text-slate-800">-</span></div>
-              <div class="text-[11px] text-slate-500">Valid For: <span class="font-mono text-slate-800">30 Days</span></div>
             </div>
           </div>
 
-          <!-- Customer Quoted Details -->
-          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex justify-between items-start gap-4">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quotation Prepared For:</span>
-              <h3 class="text-base font-extrabold text-slate-900 mt-0.5" id="quote-cust-name">-</h3>
-              <p class="text-xs text-slate-600 mt-0.5" id="quote-cust-address">-</p>
-              <p class="text-xs font-mono text-slate-600 mt-0.5" id="quote-cust-phone">-</p>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer Category</span>
-              <div class="text-xs font-bold text-slate-800 mt-0.5" id="quote-cust-tier">Retail Partner</div>
-              <div class="text-[11px] text-slate-500 mt-1">Route Beat: <span id="quote-cust-route" class="font-semibold text-slate-700">-</span></div>
-            </div>
-          </div>
-
-          <!-- Product Price Schedule Table -->
-          <div>
-            <div class="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2">Agreed Pricing Schedule</div>
-            <table class="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr class="border-b-2 border-slate-200 text-slate-600 text-[10px] uppercase font-bold">
-                  <th class="py-2 pr-2 text-center w-8">#</th>
-                  <th class="py-2 px-2">Product Description</th>
-                  <th class="py-2 px-2">Pack Size</th>
-                  <th class="py-2 px-2 text-right">Standard MRP</th>
-                  <th class="py-2 px-2 text-right">Quoted Rate</th>
-                  <th class="py-2 pl-2 text-right">Discount</th>
-                </tr>
-              </thead>
-              <tbody id="quote-items-tbody" class="divide-y divide-slate-100 font-mono text-xs">
-                <!-- Quotation items rendered dynamically -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Banking & Dynamic UPI QR Code Section -->
-          <div class="pt-2 border-t border-slate-200">
-            <div class="bg-gradient-to-br from-slate-50 to-indigo-50/40 rounded-2xl p-4 border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div class="space-y-1 text-xs flex-1">
-                <div class="text-[10px] uppercase font-black text-indigo-700 tracking-wider">Official Bank Account for Transfers</div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Name:</span> <b id="quote-bank-acc-name">Sri Govinda's Food Products</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Bank Name:</span> <b id="quote-bank-name">State Bank of India</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Number:</span> <b id="quote-bank-acc-num" class="font-mono">38920194820</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">IFSC Code:</span> <b id="quote-bank-ifsc" class="font-mono">SBIN0001234</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">UPI ID:</span> <b id="quote-bank-upi" class="font-mono text-indigo-700">srigovinda@sbi</b></div>
-              </div>
-              <div class="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex-shrink-0 text-center">
-                <div id="quote-upi-qrcode" class="w-[100px] h-[100px] flex items-center justify-center"></div>
-                <span class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Scan to Pay via UPI</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Terms & Authorized Signatory Footer -->
-          <div class="pt-3 border-t border-slate-200 flex justify-between items-end text-xs">
-            <div class="text-[10px] text-slate-500 space-y-0.5 max-w-xs">
-              <p class="font-bold text-slate-700">Terms & Conditions:</p>
-              <p>• Prices quoted are valid for 30 days from date of issue.</p>
-              <p>• Goods once sold will not be taken back unless damaged upon receipt.</p>
-              <p>• Subject to Bengaluru jurisdiction.</p>
-            </div>
-            <div class="text-center">
-              <div class="w-36 border-b border-slate-400 mb-1"></div>
-              <span class="text-[10px] font-bold uppercase text-slate-700 block">Authorized Signatory</span>
-              <span class="text-[9px] text-slate-400">Sri Govinda's Food Products</span>
-            </div>
+          <!-- Bottom Thank You Banner -->
+          <div class="bg-black text-white py-1.5 text-center font-black text-xs uppercase tracking-widest">
+            THANK YOU FOR YOUR BUSINESS.
           </div>
 
         </div>
@@ -1437,113 +1476,282 @@
 
       <!-- Scrollable Printable Card Area -->
       <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
-        <!-- A4 Printable Invoice Card -->
-        <div id="invoice-printable-card" class="bg-white rounded-2xl shadow-md border border-slate-300 w-full max-w-2xl p-6 sm:p-8 font-sans text-slate-900 printable-section space-y-5">
+        <!-- A4 Printable Bill of Supply / Tax Invoice Card (Official Black & White Format) -->
+        <div id="invoice-printable-card" class="bg-white text-black font-sans w-full max-w-2xl p-6 sm:p-8 border-2 border-black printable-section space-y-4 shadow-sm">
           
-          <!-- Company & Tax Invoice Header -->
-          <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4 gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <div class="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-black text-lg">SG</div>
-                <div>
-                  <h1 class="text-xl font-black tracking-tight text-slate-950 uppercase" id="invoice-company-name">Sri Govinda's Food Products</h1>
-                  <p class="text-xs font-mono font-bold text-emerald-700">GSTIN: <span id="invoice-company-gstin">29AFVPD7658B1Z1</span></p>
+          <!-- Top Section: Header -->
+          <div class="flex justify-between items-start gap-4">
+            <!-- Left: Company Identity -->
+            <div class="space-y-1">
+              <div class="text-xs font-black uppercase tracking-wider underline">Bill of Supply</div>
+              <h1 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-black" id="invoice-company-name">Sri Govinda Food Products</h1>
+              <p class="text-[11px] leading-tight text-black max-w-sm" id="invoice-company-address">17, Jai Layout, 1st cross, Gantiganahalli, Singanayakanahalli post, Yelahanka, Bengaluru - 560064</p>
+              <div class="text-xs font-black text-black">GST No: <span id="invoice-company-gstin" class="font-mono font-black">29AFVPD7658B1Z1</span></div>
+              <div class="text-[11px] text-black font-mono font-bold" id="invoice-company-contact">Phone: +91 9972374711 / 9731988411</div>
+            </div>
+
+            <!-- Right: Bill No & Date in Box -->
+            <div class="border-2 border-black p-2.5 text-xs text-black min-w-[170px] space-y-1">
+              <div><span class="font-bold">Date:</span> <span id="invoice-date" class="font-mono font-bold">-</span></div>
+              <div><span class="font-bold">Bill No:</span> <span id="invoice-ref-number" class="font-mono font-black">#ORD-1001</span></div>
+              <div id="invoice-fulfillment-badge" class="pt-0.5 text-[10px] font-bold"></div>
+            </div>
+          </div>
+
+          <!-- Composition Taxable Notice Strip (Exactly matching official format) -->
+          <div class="border-y-2 border-black py-1 px-2 text-center text-[10px] font-black uppercase tracking-wider text-black">
+            composition taxable person, not eligible to collect tax on supplies
+          </div>
+
+          <!-- Purchaser Details Box -->
+          <div class="border-2 border-black p-3 text-xs text-black grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <div><span class="font-bold uppercase text-[10px]">Purchaser Name:</span> <b id="invoice-cust-name" class="text-sm block font-black">-</b></div>
+              <div><span class="font-bold uppercase text-[10px]">Ad / Ph:</span> <span id="invoice-cust-address" class="block leading-tight">-</span> <span id="invoice-cust-phone" class="font-mono font-semibold block">-</span></div>
+            </div>
+            <div class="space-y-1 sm:text-right">
+              <div><span class="font-bold uppercase text-[10px]">GST No:</span> <span id="invoice-cust-gstin" class="font-mono font-bold block">Unregistered / Retail</span></div>
+              <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="invoice-route" class="font-bold block">-</span></div>
+              <div><span class="font-bold uppercase text-[10px]">Payment Mode:</span> <b id="invoice-pay-mode" class="font-mono font-black block">-</b></div>
+            </div>
+          </div>
+
+          <!-- Items Table (Pure black grid table matching sample) -->
+          <table class="w-full text-left text-xs border-collapse border-2 border-black text-black">
+            <thead>
+              <tr class="border-b-2 border-black font-black uppercase text-[10px] bg-slate-50">
+                <th class="border-r border-black p-1.5 text-center w-10">Sl No:</th>
+                <th class="border-r border-black p-1.5 w-20">Code</th>
+                <th class="border-r border-black p-1.5">Description of Goods</th>
+                <th class="border-r border-black p-1.5 text-right w-16">Qty / Kg</th>
+                <th class="border-r border-black p-1.5 text-right w-20">Rate</th>
+                <th class="p-1.5 text-right w-24">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="invoice-items-tbody" class="divide-y divide-black font-mono text-xs">
+              <!-- Line items rendered dynamically -->
+            </tbody>
+          </table>
+
+          <!-- Below Table: Terms, Banking, UPI QR, and Signature Box -->
+          <div class="border-2 border-black p-3 text-xs text-black grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Left: Payment Terms & Bank Details -->
+            <div class="space-y-2 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-wider">Payment Terms:</div>
+                <div class="font-bold text-xs">In favour of Sri Govinda Food Products</div>
+              </div>
+              <div class="space-y-0.5 text-[11px] font-mono">
+                <div>Bank: <b id="invoice-bank-name">State Bank of India</b></div>
+                <div>A/C Name: <b id="invoice-bank-acc-name">Sri Govinda Food Products</b></div>
+                <div>A/C No: <b id="invoice-bank-acc-num">38920194820</b></div>
+                <div>IFSC: <b id="invoice-bank-ifsc">SBIN0001234</b></div>
+                <div>UPI ID: <b id="invoice-bank-upi">9731988411@upi</b></div>
+              </div>
+              <div class="flex items-center gap-3 pt-1">
+                <div class="p-1 border border-black bg-white inline-block">
+                  <div id="invoice-upi-qrcode" class="w-[84px] h-[84px] flex items-center justify-center"></div>
+                </div>
+                <div class="text-[9px] font-bold text-black uppercase leading-tight space-y-1">
+                  <div>• Scan & Pay via UPI</div>
+                  <div>• Dispute if any, subject to Bangalore Jurisdiction</div>
+                  <div>• Goods once sold will not be taken back / or exchange</div>
                 </div>
               </div>
-              <p class="text-[11px] text-slate-500 mt-2 max-w-sm" id="invoice-company-address">Food Industrial Area, Bengaluru, Karnataka</p>
-              <p class="text-[11px] text-slate-500 font-mono" id="invoice-company-contact">Phone: +91 98450 12345 | Email: orders@srigovindafoods.com</p>
             </div>
-            <div class="text-right flex-shrink-0">
-              <span class="inline-block px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-black text-xs uppercase tracking-wider">
-                Tax Invoice
-              </span>
-              <div class="text-sm font-mono font-black text-slate-900 mt-2" id="invoice-ref-number">#ORD-1001</div>
-              <div class="text-[11px] text-slate-500 mt-0.5">Date: <span id="invoice-date" class="font-mono text-slate-800">-</span></div>
-              <div id="invoice-fulfillment-badge" class="mt-1"></div>
+
+            <!-- Right: Totals, Words, Notes, Signature -->
+            <div class="space-y-3 flex flex-col justify-between">
+              <div class="space-y-1.5 font-mono text-xs text-right">
+                <div class="flex justify-between text-black"><span>Items Subtotal:</span> <span id="invoice-subtotal" class="font-bold">₹0</span></div>
+                <div class="flex justify-between text-black" id="invoice-rebate-row"><span>Special Rebate:</span> <span id="invoice-rebate" class="font-bold">-₹0</span></div>
+                <div class="flex justify-between text-black font-black text-base border-t-2 border-black pt-1">
+                  <span>Total Amount:</span> <span id="invoice-net-payable">₹0</span>
+                </div>
+                <div class="text-left font-sans pt-1">
+                  <span class="text-[10px] font-bold uppercase block text-black">Amount in Words:</span>
+                  <p class="font-bold italic text-xs leading-tight" id="invoice-amount-words">Rupees Zero Only</p>
+                  <p class="text-[10px] mt-1" id="invoice-notes-display"></p>
+                </div>
+              </div>
+
+              <!-- Proprietor Name and Signature Box (Exactly as in sample) -->
+              <div class="pt-4 text-center">
+                <div class="h-8"></div>
+                <div class="border-t border-black pt-1">
+                  <span class="text-[10px] font-black uppercase tracking-wider block">Proprietor Name and Signature</span>
+                  <span class="text-[9px] text-black">Sri Govinda Food Products</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Billed Customer Details -->
-          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex justify-between items-start gap-4">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Billed & Delivered To:</span>
-              <h3 class="text-base font-extrabold text-slate-900 mt-0.5" id="invoice-cust-name">-</h3>
-              <p class="text-xs text-slate-600 mt-0.5" id="invoice-cust-address">-</p>
-              <p class="text-xs font-mono text-slate-600 mt-0.5" id="invoice-cust-phone">-</p>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Order Beat & Terms</span>
-              <div class="text-xs font-semibold text-slate-700 mt-0.5">Route: <span id="invoice-route">-</span></div>
-              <div class="text-xs font-semibold text-slate-700 mt-0.5">Payment Mode: <b id="invoice-pay-mode" class="text-indigo-700">-</b></div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Line Items Table -->
+  <!-- ==============================================================================
+       MODAL: OFFICIAL BLACK & WHITE CUSTOMER STATEMENT OF ACCOUNT & OUTSTANDING SLIP
+       ============================================================================== -->
+  <div id="modal-statement-view" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Header Toolbar -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white border border-slate-700">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          </div>
           <div>
-            <table class="w-full text-left text-xs border-collapse">
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Customer Statement of Account</h3>
+            <p class="text-[11px] text-slate-400">Sri Govinda Food Products • Outstanding Bills & Total Receivables</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="downloadStatementPdf()" class="px-3 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-xs transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF Slip
+          </button>
+          <button type="button" onclick="downloadStatementJpeg()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="image" class="w-3.5 h-3.5"></i> JPEG
+          </button>
+          <button type="button" onclick="shareStatementWhatsApp()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+          </button>
+          <button type="button" onclick="printStatementCard()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" onclick="closeCustomerStatementModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Printable Card Area -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
+        <!-- A4 Printable Statement Card (Official B&W Format) -->
+        <div id="statement-printable-card" class="bg-white text-black font-sans w-full max-w-2xl p-6 sm:p-8 border-2 border-black printable-section space-y-4 shadow-sm">
+          <!-- Header -->
+          <div class="flex justify-between items-start gap-4">
+            <div class="space-y-1">
+              <div class="text-xs font-black uppercase tracking-wider underline">Statement of Account & Outstanding Bills</div>
+              <h1 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-black" id="stmt-company-name">Sri Govinda Food Products</h1>
+              <p class="text-[11px] leading-tight text-black max-w-sm" id="stmt-company-address">17, Jai Layout, 1st cross, Gantiganahalli, Singanayakanahalli post, Yelahanka, Bengaluru - 560064</p>
+              <div class="text-xs font-black text-black">GST No: <span id="stmt-company-gstin" class="font-mono font-black">29AFVPD7658B1Z1</span></div>
+              <div class="text-[11px] text-black font-mono font-bold" id="stmt-company-contact">Phone: +91 9972374711 / 9731988411</div>
+            </div>
+
+            <div class="border-2 border-black p-2.5 text-xs text-black min-w-[170px] space-y-1">
+              <div><span class="font-bold">Date:</span> <span id="stmt-date" class="font-mono font-bold">-</span></div>
+              <div><span class="font-bold">Stmt ID:</span> <span id="stmt-ref-number" class="font-mono font-black">STMT-1001</span></div>
+              <div><span class="font-bold">Status:</span> <span id="stmt-status-text" class="font-black">Active Due</span></div>
+            </div>
+          </div>
+
+          <!-- Divider Notice Banner -->
+          <div class="border-y-2 border-black py-1 px-2 text-center text-[10px] font-black uppercase tracking-wider text-black">
+            official receivables statement • please verify previous bills and arrange settlement
+          </div>
+
+          <!-- Customer Details Box -->
+          <div class="border-2 border-black p-3 text-xs text-black grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <div><span class="font-bold uppercase text-[10px]">Customer / Account Name:</span> <b id="stmt-cust-name" class="text-sm block font-black">-</b></div>
+              <div><span class="font-bold uppercase text-[10px]">Address & Contact:</span> <span id="stmt-cust-address" class="block leading-tight">-</span> <span id="stmt-cust-phone" class="font-mono font-semibold block">-</span></div>
+            </div>
+            <div class="space-y-1 sm:text-right">
+              <div><span class="font-bold uppercase text-[10px]">Customer Category:</span> <span id="stmt-cust-tier" class="font-bold block">Retail Partner</span></div>
+              <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="stmt-cust-route" class="font-bold block">-</span></div>
+              <div><span class="font-bold uppercase text-[10px]">Credit Limit:</span> <span id="stmt-cust-credit-limit" class="font-mono font-bold block">₹50,000</span></div>
+            </div>
+          </div>
+
+          <!-- Prominent Receivables Summary Box (Previous Bills, Latest Bill, Combined Total) -->
+          <div class="border-2 border-black p-3.5 bg-slate-50 space-y-2">
+            <div class="text-[10px] font-black uppercase tracking-wider text-black border-b border-black pb-1">
+              Receivables Breakdown & Outstanding Balance
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+              <div class="border border-black p-2 bg-white">
+                <span class="text-[9px] uppercase font-bold block text-black">Previous Outstanding</span>
+                <span id="stmt-prev-due" class="text-sm font-black text-black">₹0</span>
+              </div>
+              <div class="border border-black p-2 bg-white">
+                <span class="text-[9px] uppercase font-bold block text-black">Latest / Current Bill</span>
+                <span id="stmt-latest-bill" class="text-sm font-black text-black">₹0</span>
+              </div>
+              <div class="border-2 border-black p-2 bg-white text-right">
+                <span class="text-[9px] uppercase font-black block text-black">Total Receivables Due</span>
+                <span id="stmt-total-receivables" class="text-base font-black text-black">₹0</span>
+              </div>
+            </div>
+            <div class="text-xs pt-1">
+              <span class="text-[10px] font-bold uppercase text-black">Total Receivables in Words:</span>
+              <p id="stmt-total-words" class="font-bold italic text-black text-xs leading-tight">Rupees Zero Only</p>
+            </div>
+          </div>
+
+          <!-- Transaction Ledger Table (List of Previous Invoices / Bills) -->
+          <div>
+            <div class="text-[10px] font-black uppercase tracking-wider mb-1 text-black">Previous Commercial Bills Ledger:</div>
+            <table class="w-full text-left text-xs border-collapse border-2 border-black text-black">
               <thead>
-                <tr class="border-b-2 border-slate-200 text-slate-600 text-[10px] uppercase font-bold">
-                  <th class="py-2 pr-2 text-center w-8">#</th>
-                  <th class="py-2 px-2">Item Description</th>
-                  <th class="py-2 px-2">Pack</th>
-                  <th class="py-2 px-2 text-right">Qty</th>
-                  <th class="py-2 px-2 text-right">Unit Rate</th>
-                  <th class="py-2 pl-2 text-right">Amount (₹)</th>
+                <tr class="border-b-2 border-black font-black uppercase text-[10px] bg-slate-50">
+                  <th class="border-r border-black p-1.5 text-center w-8">#</th>
+                  <th class="border-r border-black p-1.5 w-24">Date</th>
+                  <th class="border-r border-black p-1.5 w-24">Bill No</th>
+                  <th class="border-r border-black p-1.5">Items Summary</th>
+                  <th class="border-r border-black p-1.5 w-24">Pay Mode</th>
+                  <th class="border-r border-black p-1.5 text-right w-24">Amount</th>
+                  <th class="p-1.5 text-center w-24">Status</th>
                 </tr>
               </thead>
-              <tbody id="invoice-items-tbody" class="divide-y divide-slate-100 font-mono text-xs">
-                <!-- Line items rendered dynamically -->
+              <tbody id="stmt-bills-tbody" class="divide-y divide-black font-mono text-xs">
+                <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
 
-          <!-- Calculations & Net Payable -->
-          <div class="border-t-2 border-slate-200 pt-3 flex justify-between items-start gap-4">
-            <div class="space-y-1 text-xs flex-1">
-              <span class="text-[10px] uppercase font-bold text-slate-400 block">Amount In Words:</span>
-              <p class="font-bold text-slate-800 italic" id="invoice-amount-words">Rupees Zero Only</p>
-              <p class="text-[11px] text-slate-400" id="invoice-notes-display"></p>
+          <!-- Banking & Dynamic UPI QR Section -->
+          <div class="border-2 border-black p-3 text-xs text-black grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
+              <div class="text-[10px] font-black uppercase tracking-wider">Settlement & Bank Transfer Details:</div>
+              <div class="space-y-0.5 text-[11px] font-mono">
+                <div>Bank: <b id="stmt-bank-name">State Bank of India</b></div>
+                <div>A/C Name: <b id="stmt-bank-acc-name">Sri Govinda Food Products</b></div>
+                <div>A/C No: <b id="stmt-bank-acc-num">38920194820</b></div>
+                <div>IFSC: <b id="stmt-bank-ifsc">SBIN0001234</b></div>
+                <div>UPI ID: <b id="stmt-bank-upi">9731988411@upi</b></div>
+              </div>
+              <p class="text-[9px] font-bold leading-tight pt-1">
+                Kindly clear pending balance via NEFT / RTGS / UPI. For payment confirmations, share receipt on WhatsApp to +91 9731988411 / 9972374711.
+              </p>
             </div>
-            <div class="w-60 font-mono text-xs space-y-1 text-right">
-              <div class="flex justify-between text-slate-500"><span>Items Subtotal:</span> <span id="invoice-subtotal">₹0</span></div>
-              <div class="flex justify-between text-rose-600" id="invoice-rebate-row"><span>Special Rebate:</span> <span id="invoice-rebate">-₹0</span></div>
-              <div class="flex justify-between text-slate-900 font-black text-sm pt-1 border-t border-slate-300">
-                <span>Net Total:</span> <span class="text-emerald-700" id="invoice-net-payable">₹0</span>
+
+            <div class="flex flex-col justify-between items-center sm:items-end text-center sm:text-right">
+              <div class="flex items-center gap-2">
+                <div class="p-1 border border-black bg-white inline-block">
+                  <div id="stmt-upi-qrcode" class="w-[84px] h-[84px] flex items-center justify-center"></div>
+                </div>
+                <div class="text-left text-[9px] font-bold leading-tight space-y-0.5">
+                  <div class="uppercase font-black">Scan to Pay Total Receivables</div>
+                  <div>GPay, PhonePe, Paytm, BHIM</div>
+                </div>
+              </div>
+
+              <div class="w-48 pt-4">
+                <div class="h-6"></div>
+                <div class="border-t border-black pt-1 text-center">
+                  <span class="text-[10px] font-black uppercase block">Authorized Signatory</span>
+                  <span class="text-[9px]">Sri Govinda Food Products</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Banking & Dynamic UPI Payment QR Code Section -->
-          <div class="pt-2 border-t border-slate-200">
-            <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-2xl p-4 border border-emerald-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div class="space-y-1 text-xs flex-1">
-                <div class="text-[10px] uppercase font-black text-emerald-700 tracking-wider">Bank Transfer & UPI Settlement</div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Name:</span> <b id="invoice-bank-acc-name">Sri Govinda's Food Products</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Bank Name:</span> <b id="invoice-bank-name">State Bank of India</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">Account Number:</span> <b id="invoice-bank-acc-num" class="font-mono">38920194820</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">IFSC Code:</span> <b id="invoice-bank-ifsc" class="font-mono">SBIN0001234</b></div>
-                <div class="text-slate-800"><span class="text-slate-500 font-semibold">UPI ID:</span> <b id="invoice-bank-upi" class="font-mono text-emerald-700">srigovinda@sbi</b></div>
-              </div>
-              <div class="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex-shrink-0 text-center">
-                <div id="invoice-upi-qrcode" class="w-[100px] h-[100px] flex items-center justify-center"></div>
-                <span class="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Scan & Pay Exact Amount</span>
-              </div>
-            </div>
+          <!-- Bottom Footer Banner -->
+          <div class="bg-black text-white py-1 text-center font-bold text-[10px] uppercase tracking-wider">
+            Thank you for partnering with Sri Govinda Food Products • Purity and Quality, Our Speciality
           </div>
-
-          <!-- Invoice Footer & Signatory -->
-          <div class="pt-3 border-t border-slate-200 flex justify-between items-end text-xs">
-            <div class="text-[10px] text-slate-500 space-y-0.5 max-w-xs">
-              <p class="font-bold text-slate-700">Declaration:</p>
-              <p>We declare that this invoice shows the actual price of goods described and that all particulars are true and correct.</p>
-            </div>
-            <div class="text-center">
-              <div class="w-36 border-b border-slate-400 mb-1"></div>
-              <span class="text-[10px] font-bold uppercase text-slate-700 block">Authorized Signatory</span>
-              <span class="text-[9px] text-slate-400">Sri Govinda's Food Products</span>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -1571,6 +1779,10 @@
         <div>
           <label class="block text-slate-700 font-bold mb-1">Company Name</label>
           <input type="text" id="set-company-name" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+        </div>
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Company Tagline</label>
+          <input type="text" id="set-company-tagline" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl" placeholder="Purity and Quality, 'Our Speciality'.">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -2061,18 +2273,49 @@
     function onOrderCustomerChanged() {
       const custId = document.getElementById('order-customer-select').value;
       const c = customers.find(x => x.id === custId);
+      const snapName = document.getElementById('snap-cust-name');
+      const snapTier = document.getElementById('snap-tier');
+      const snapRoute = document.getElementById('snap-route');
+      const snapPhone = document.getElementById('snap-phone');
+      const snapDue = document.getElementById('snap-due');
+      const snapDueBadge = document.getElementById('snap-due-badge');
+
       if (c) {
-        document.getElementById('snap-tier').innerText = c.tier || 'Retail';
-        document.getElementById('snap-route').innerText = c.homeRoute || 'Not assigned';
-        document.getElementById('snap-due').innerText = formatINR(c.pendingUdhaar || 0);
+        if (snapName) snapName.innerText = c.name;
+        if (snapTier) snapTier.innerText = c.tier || 'Retail';
+        if (snapRoute) snapRoute.innerText = (c.homeRoute || 'Not assigned').split(':')[0];
+        if (snapPhone) snapPhone.innerText = c.phone ? `📞 ${c.phone}` : 'No phone listed';
+        const due = Number(c.pendingUdhaar || 0);
+        if (snapDue) snapDue.innerText = formatINR(due);
+        if (snapDueBadge) {
+          if (due > 0) {
+            snapDueBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-100 text-rose-800 border border-rose-300 font-mono font-black text-sm';
+            snapDue.innerText = formatINR(due) + ' Outstanding';
+          } else {
+            snapDueBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono font-bold text-xs';
+            snapDue.innerText = '₹0 (No Dues)';
+          }
+        }
         if (c.homeRoute) document.getElementById('order-route-select').value = c.homeRoute;
       } else {
-        document.getElementById('snap-tier').innerText = '-';
-        document.getElementById('snap-route').innerText = '-';
-        document.getElementById('snap-due').innerText = '₹0';
+        if (snapName) snapName.innerText = 'Select a customer above';
+        if (snapTier) snapTier.innerText = '-';
+        if (snapRoute) snapRoute.innerText = '-';
+        if (snapPhone) snapPhone.innerText = '-';
+        if (snapDue) snapDue.innerText = '₹0';
+        if (snapDueBadge) snapDueBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-mono font-black text-sm';
       }
       renderOrderCatalog();
       calculateOrderTotals();
+    }
+
+    function openCurrentCustomerStatement() {
+      const custId = document.getElementById('order-customer-select')?.value;
+      if (!custId) {
+        alert("Please select a customer from the dropdown first to view their statement slip.");
+        return;
+      }
+      openCustomerStatementModal(custId);
     }
 
     function renderOrderCatalog() {
@@ -2154,6 +2397,8 @@
       let lineItems = 0;
       let subtotal = 0;
       const currentCustId = document.getElementById('order-customer-select')?.value;
+      const currentCust = customers.find(c => c.id === currentCustId);
+      const prevDue = currentCust ? Number(currentCust.pendingUdhaar || 0) : 0;
 
       Object.keys(cart).forEach(pId => {
         const qty = cart[pId];
@@ -2170,11 +2415,22 @@
 
       const rebate = parseFloat(document.getElementById('order-rebate')?.value) || 0;
       const netPayable = Math.max(0, subtotal - rebate);
+      const combinedReceivables = prevDue + netPayable;
 
-      document.getElementById('cart-item-count').innerText = lineItems;
-      document.getElementById('cart-total-qty').innerText = totalUnits;
-      document.getElementById('cart-net-total').innerText = formatINR(netPayable);
-      document.getElementById('btn-submit-order').disabled = (totalUnits === 0);
+      const itemCountEl = document.getElementById('cart-item-count');
+      const qtyEl = document.getElementById('cart-total-qty');
+      const netEl = document.getElementById('cart-net-total');
+      const prevDueEl = document.getElementById('cart-prev-due');
+      const combinedEl = document.getElementById('cart-combined-receivables');
+
+      if (itemCountEl) itemCountEl.innerText = lineItems;
+      if (qtyEl) qtyEl.innerText = totalUnits;
+      if (netEl) netEl.innerText = formatINR(netPayable);
+      if (prevDueEl) prevDueEl.innerText = formatINR(prevDue);
+      if (combinedEl) combinedEl.innerText = formatINR(combinedReceivables);
+
+      const submitBtn = document.getElementById('btn-submit-order');
+      if (submitBtn) submitBtn.disabled = (totalUnits === 0);
     }
 
     function setOrderFulfillmentStage(stage) {
@@ -2315,10 +2571,25 @@
 
     function showOrderSuccess(o) {
       const isDelivered = (getOrderStatus(o) === 'Delivered');
+      const cust = customers.find(c => c.id === o.buyerId);
+      const currentTotalDue = cust ? Number(cust.pendingUdhaar || 0) : 0;
+      const prevDue = (o.paymentMode === 'Credit / Udhaar') 
+        ? Math.max(0, currentTotalDue - o.netPayable) 
+        : currentTotalDue;
+      const combinedReceivables = (o.paymentMode === 'Credit / Udhaar') 
+        ? currentTotalDue 
+        : (prevDue + o.netPayable);
+
       document.getElementById('success-order-id').innerText = '#' + o.id;
       document.getElementById('success-cust-name').innerText = o.buyerName;
       document.getElementById('success-net-amount').innerText = formatINR(o.netPayable);
       document.getElementById('success-pay-mode').innerText = o.paymentMode;
+
+      const prevDueEl = document.getElementById('success-prev-due');
+      if (prevDueEl) prevDueEl.innerText = formatINR(prevDue);
+
+      const totalReceivablesEl = document.getElementById('success-total-receivables');
+      if (totalReceivablesEl) totalReceivablesEl.innerText = formatINR(combinedReceivables);
 
       const titleEl = document.getElementById('success-modal-title');
       if (titleEl) {
@@ -2969,6 +3240,9 @@
           <td class="p-3 font-mono text-slate-600">${escapeHtml(c.phone || '-')}</td>
           <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
+            <button onclick="openCustomerStatementModal('${c.id}')" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View & Download Official Statement Slip">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
+            </button>
             <button onclick="openCustomerPricingModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition" title="Open Custom Price List & Generate Quotation">
               <i data-lucide="tag" class="w-3.5 h-3.5"></i> Price List & Quote
             </button>
@@ -3893,23 +4167,37 @@
     // 12. COMPANY & BANKING SETTINGS (LOCALSTORAGE PERSISTED)
     // ==============================================================================
     const DEFAULT_COMPANY_SETTINGS = {
-      companyName: "Sri Govinda's Food Products",
+      companyName: "Sri Govinda Food Products",
+      tagline: "Purity and Quality, 'Our Speciality'.",
       gstin: "29AFVPD7658B1Z1",
-      address: "Food Industrial Area, Bengaluru, Karnataka - 560001",
-      phone: "+91 98450 12345",
+      address: "17, Jai Layout, 1st cross, Gantiganahalli, Singanayakanahalli post, Yelahanka, Bengaluru - 560064",
+      phone: "+91 9972374711 / 9731988411",
       email: "orders@srigovindafoods.com",
       bankName: "State Bank of India",
-      accountName: "Sri Govinda's Food Products",
+      accountName: "Sri Govinda Food Products",
       accountNumber: "38920194820",
       ifsc: "SBIN0001234",
-      branch: "Industrial Estate Branch",
-      upiId: "srigovinda@sbi"
+      branch: "Yelahanka Branch, Bengaluru",
+      upiId: "9731988411@upi"
     };
 
     function getCompanySettings() {
       try {
         const saved = localStorage.getItem('sg_company_settings');
-        if (saved) return { ...DEFAULT_COMPANY_SETTINGS, ...JSON.parse(saved) };
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // If legacy placeholder data exists, update with official company credentials
+          if (parsed.address && parsed.address.includes("Food Industrial Area")) {
+            delete parsed.address;
+          }
+          if (parsed.phone && parsed.phone.includes("98450")) {
+            delete parsed.phone;
+          }
+          if (parsed.upiId && parsed.upiId.includes("srigovinda@sbi")) {
+            delete parsed.upiId;
+          }
+          return { ...DEFAULT_COMPANY_SETTINGS, ...parsed };
+        }
       } catch (e) {}
       return DEFAULT_COMPANY_SETTINGS;
     }
@@ -3921,6 +4209,9 @@
     function openCompanySettingsModal() {
       const s = getCompanySettings();
       document.getElementById('set-company-name').value = s.companyName;
+      if (document.getElementById('set-company-tagline')) {
+        document.getElementById('set-company-tagline').value = s.tagline || DEFAULT_COMPANY_SETTINGS.tagline;
+      }
       document.getElementById('set-company-gstin').value = s.gstin;
       document.getElementById('set-company-phone').value = s.phone || '';
       document.getElementById('set-company-address').value = s.address || '';
@@ -3942,14 +4233,15 @@
       e.preventDefault();
       const settings = {
         companyName: document.getElementById('set-company-name').value.trim() || DEFAULT_COMPANY_SETTINGS.companyName,
+        tagline: document.getElementById('set-company-tagline')?.value.trim() || DEFAULT_COMPANY_SETTINGS.tagline,
         gstin: document.getElementById('set-company-gstin').value.trim().toUpperCase() || DEFAULT_COMPANY_SETTINGS.gstin,
-        phone: document.getElementById('set-company-phone').value.trim(),
-        address: document.getElementById('set-company-address').value.trim(),
-        bankName: document.getElementById('set-bank-name').value.trim(),
-        accountName: document.getElementById('set-bank-acc-name').value.trim(),
-        accountNumber: document.getElementById('set-bank-acc-num').value.trim(),
-        ifsc: document.getElementById('set-bank-ifsc').value.trim().toUpperCase(),
-        upiId: document.getElementById('set-bank-upi').value.trim()
+        phone: document.getElementById('set-company-phone').value.trim() || DEFAULT_COMPANY_SETTINGS.phone,
+        address: document.getElementById('set-company-address').value.trim() || DEFAULT_COMPANY_SETTINGS.address,
+        bankName: document.getElementById('set-bank-name').value.trim() || DEFAULT_COMPANY_SETTINGS.bankName,
+        accountName: document.getElementById('set-bank-acc-name').value.trim() || DEFAULT_COMPANY_SETTINGS.accountName,
+        accountNumber: document.getElementById('set-bank-acc-num').value.trim() || DEFAULT_COMPANY_SETTINGS.accountNumber,
+        ifsc: document.getElementById('set-bank-ifsc').value.trim().toUpperCase() || DEFAULT_COMPANY_SETTINGS.ifsc,
+        upiId: document.getElementById('set-bank-upi').value.trim() || DEFAULT_COMPANY_SETTINGS.upiId
       };
       saveCompanySettings(settings);
       closeCompanySettingsModal();
@@ -4345,9 +4637,12 @@
 
       // Company branding & GSTIN
       document.getElementById('quote-company-name').innerText = settings.companyName;
+      if (document.getElementById('quote-company-tagline')) {
+        document.getElementById('quote-company-tagline').innerText = settings.tagline || "Purity and Quality, 'Our Speciality'.";
+      }
       document.getElementById('quote-company-gstin').innerText = settings.gstin;
       document.getElementById('quote-company-address').innerText = settings.address;
-      document.getElementById('quote-company-contact').innerText = `Phone: ${settings.phone} | Email: ${settings.email}`;
+      document.getElementById('quote-company-contact').innerText = `Phone: ${settings.phone}`;
 
       // Ref and dates
       const now = new Date();
@@ -4362,10 +4657,10 @@
       document.getElementById('quote-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
       document.getElementById('quote-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
 
-      // Quotation items schedule
+      // Quotation items schedule (5 columns matching official B&W grid)
       const tbody = document.getElementById('quote-items-tbody');
       if (products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">No products configured in catalog.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No products configured in catalog.</td></tr>`;
       } else {
         tbody.innerHTML = products.map((p, idx) => {
           const agreedRate = getCustomerProductRate(targetCustId, p);
@@ -4375,20 +4670,19 @@
 
           return `
             <tr class="hover:bg-slate-50 transition">
-              <td class="py-2 pr-2 text-center text-slate-400 font-sans">${idx + 1}</td>
-              <td class="py-2 px-2">
-                <span class="font-bold text-slate-900 font-sans">${escapeHtml(p.name)}</span>
-                <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(p.sku)}</span>
+              <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
+              <td class="border-r border-black p-1.5">
+                <span class="font-bold text-black font-sans">${escapeHtml(p.name)}</span>
+                <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(p.sku)}</span>
               </td>
-              <td class="py-2 px-2 text-slate-600 font-sans">${escapeHtml(p.unitSize || '-')}</td>
-              <td class="py-2 px-2 text-right text-slate-500 font-mono">${formatINR(baseRate)}</td>
-              <td class="py-2 px-2 text-right font-black text-indigo-700 font-mono text-sm">${formatINR(agreedRate)}</td>
-              <td class="py-2 pl-2 text-right font-sans">
+              <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(p.unitSize || '-')}</td>
+              <td class="border-r border-black p-1.5 text-right font-mono font-black text-sm">${formatINR(agreedRate)}</td>
+              <td class="p-1.5 text-center font-sans">
                 ${hasDiscount ? `
-                  <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                  <span class="inline-block px-1.5 py-0.5 border border-black font-bold text-[10px]">
                     -${discountPct}% (Save ${formatINR(baseRate - agreedRate)})
                   </span>
-                ` : `<span class="text-[10px] text-slate-400">Standard MRP</span>`}
+                ` : `<span class="text-[10px] text-black">Standard Rate</span>`}
               </td>
             </tr>
           `;
@@ -4470,7 +4764,7 @@
     }
 
     // ==============================================================================
-    // 18. OFFICIAL TAX INVOICE VIEW & EXPORT LOGIC
+    // 18. OFFICIAL TAX INVOICE / BILL OF SUPPLY VIEW & EXPORT LOGIC
     // ==============================================================================
     let currentViewingOrderId = null;
 
@@ -4491,7 +4785,7 @@
       document.getElementById('invoice-company-name').innerText = settings.companyName;
       document.getElementById('invoice-company-gstin').innerText = settings.gstin;
       document.getElementById('invoice-company-address').innerText = settings.address;
-      document.getElementById('invoice-company-contact').innerText = `Phone: ${settings.phone} | Email: ${settings.email}`;
+      document.getElementById('invoice-company-contact').innerText = `Phone: ${settings.phone}`;
 
       // Ref and dates
       document.getElementById('invoice-ref-number').innerText = '#' + o.id;
@@ -4500,8 +4794,8 @@
       const badgeEl = document.getElementById('invoice-fulfillment-badge');
       if (badgeEl) {
         badgeEl.innerHTML = isDelivered 
-          ? `<span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">✅ Delivered & Fulfilled</span>`
-          : `<span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">🚚 Pending Delivery</span>`;
+          ? `<span class="inline-flex items-center gap-1 text-[10px] font-black border border-black px-1.5 py-0.5">✅ Delivered & Fulfilled</span>`
+          : `<span class="inline-flex items-center gap-1 text-[10px] font-black border border-black px-1.5 py-0.5">🚚 Pending Delivery</span>`;
       }
 
       // Customer info
@@ -4509,27 +4803,30 @@
       const custObj = customers.find(c => c.id === o.buyerId);
       document.getElementById('invoice-cust-address').innerText = (custObj && custObj.address) ? custObj.address : 'Store Delivery Address as registered';
       document.getElementById('invoice-cust-phone').innerText = o.buyerPhone ? `📞 ${o.buyerPhone}` : 'No phone listed';
+      
+      const custGstinEl = document.getElementById('invoice-cust-gstin');
+      if (custGstinEl) custGstinEl.innerText = (custObj && custObj.gstin) ? custObj.gstin : 'Unregistered / Retail';
+
       document.getElementById('invoice-route').innerText = (o.dispatchRoute || '-').split(':')[0];
       document.getElementById('invoice-pay-mode').innerText = o.paymentMode;
 
-      // Line items
+      // Line items (6 columns matching official B&W Bill of Supply layout)
       const tbody = document.getElementById('invoice-items-tbody');
       if (Array.isArray(o.items) && o.items.length > 0) {
         tbody.innerHTML = o.items.map((it, idx) => `
           <tr class="hover:bg-slate-50 transition">
-            <td class="py-2 pr-2 text-center text-slate-400 font-sans">${idx + 1}</td>
-            <td class="py-2 px-2">
-              <span class="font-bold text-slate-900 font-sans">${escapeHtml(it.name)}</span>
-              <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(it.sku || '')}</span>
+            <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
+            <td class="border-r border-black p-1.5 font-mono text-[11px] font-bold">${escapeHtml(it.sku || '-')}</td>
+            <td class="border-r border-black p-1.5 font-sans font-bold text-black">
+              ${escapeHtml(it.name)} ${it.unitSize ? `<span class="text-[10px] font-normal text-slate-600">(${escapeHtml(it.unitSize)})</span>` : ''}
             </td>
-            <td class="py-2 px-2 text-slate-600 font-sans">${escapeHtml(it.unitSize || '-')}</td>
-            <td class="py-2 px-2 text-right font-black font-mono">${it.qty}</td>
-            <td class="py-2 px-2 text-right text-slate-700 font-mono">${formatINR(it.rate)}</td>
-            <td class="py-2 pl-2 text-right font-black text-slate-900 font-mono">${formatINR(it.total)}</td>
+            <td class="border-r border-black p-1.5 text-right font-bold font-mono">${it.qty}</td>
+            <td class="border-r border-black p-1.5 text-right font-mono">${formatINR(it.rate)}</td>
+            <td class="p-1.5 text-right font-black font-mono">${formatINR(it.total)}</td>
           </tr>
         `).join('');
       } else {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">No items listed on order.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items listed on order.</td></tr>`;
       }
 
       // Calculations & amount in words
@@ -4590,6 +4887,194 @@
 
     function shareCurrentInvoiceWhatsApp() {
       shareWhatsApp(currentViewingOrderId);
+    }
+
+    // ==============================================================================
+    // 19. OFFICIAL CUSTOMER STATEMENT OF ACCOUNT & OUTSTANDING BILLS LOGIC
+    // ==============================================================================
+    let currentStatementCustomerId = null;
+
+    function openCustomerStatementModal(custId) {
+      const targetCustId = custId || (latestOrder ? latestOrder.buyerId : (customers[0] ? customers[0].id : null));
+      if (!targetCustId) {
+        alert("Please select a customer to view statement.");
+        return;
+      }
+      currentStatementCustomerId = targetCustId;
+      const cust = customers.find(c => c.id === targetCustId);
+      if (!cust) return;
+
+      const settings = getCompanySettings();
+
+      // Company info
+      document.getElementById('stmt-company-name').innerText = settings.companyName;
+      document.getElementById('stmt-company-gstin').innerText = settings.gstin;
+      document.getElementById('stmt-company-address').innerText = settings.address;
+      document.getElementById('stmt-company-contact').innerText = `Phone: ${settings.phone}`;
+
+      // Dates & Reference
+      const now = new Date();
+      const refNum = 'STMT-' + (cust.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'SG')) + '-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('stmt-ref-number').innerText = refNum;
+      document.getElementById('stmt-date').innerText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      // Customer particulars
+      document.getElementById('stmt-cust-name').innerText = cust.name;
+      document.getElementById('stmt-cust-address').innerText = cust.address || 'Address as per records';
+      document.getElementById('stmt-cust-phone').innerText = cust.phone ? `📞 ${cust.phone}` : 'No phone listed';
+      document.getElementById('stmt-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
+      document.getElementById('stmt-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+      document.getElementById('stmt-cust-credit-limit').innerText = formatINR(cust.creditLimit || 50000);
+
+      // Customer past orders
+      const custOrders = orders.filter(o => o.buyerId === cust.id || o.buyerName === cust.name);
+      const totalOutstanding = Number(cust.pendingUdhaar || 0);
+
+      // Calculate previous due and latest bill
+      const latestOrderForCust = custOrders[0] || null;
+      let latestBillAmount = 0;
+      let prevBillsDue = totalOutstanding;
+
+      if (latestOrderForCust) {
+        latestBillAmount = Number(latestOrderForCust.netPayable || 0);
+        if (latestOrderForCust.paymentMode === 'Credit / Udhaar') {
+          prevBillsDue = Math.max(0, totalOutstanding - latestBillAmount);
+        }
+      }
+
+      document.getElementById('stmt-prev-due').innerText = formatINR(prevBillsDue);
+      document.getElementById('stmt-latest-bill').innerText = formatINR(latestBillAmount);
+      document.getElementById('stmt-total-receivables').innerText = formatINR(totalOutstanding);
+      document.getElementById('stmt-total-words').innerText = numberToWordsINR(totalOutstanding);
+
+      const statusEl = document.getElementById('stmt-status-text');
+      if (statusEl) {
+        statusEl.innerText = totalOutstanding > 0 ? "Active Due" : "All Cleared";
+        statusEl.className = totalOutstanding > 0 ? "font-black text-rose-600" : "font-black text-emerald-700";
+      }
+
+      // Ledger Table
+      const tbody = document.getElementById('stmt-bills-tbody');
+      if (custOrders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No previous bills recorded for this customer.</td></tr>`;
+      } else {
+        tbody.innerHTML = custOrders.slice(0, 15).map((o, idx) => {
+          const itemsSummary = Array.isArray(o.items) 
+            ? o.items.map(it => `${it.qty}x ${it.name}`).join(', ') 
+            : `${o.totalUnits || 0} units`;
+          const isDelivered = (getOrderStatus(o) === 'Delivered');
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
+              <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.date)}</td>
+              <td class="border-r border-black p-1.5 font-mono font-bold text-black">#${escapeHtml(o.id)}</td>
+              <td class="border-r border-black p-1.5 font-sans truncate max-w-[180px]" title="${escapeHtml(itemsSummary)}">${escapeHtml(itemsSummary)}</td>
+              <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.paymentMode || 'Credit')}</td>
+              <td class="border-r border-black p-1.5 text-right font-mono font-black">${formatINR(o.netPayable)}</td>
+              <td class="p-1.5 text-center font-sans text-[10px] font-bold">
+                ${isDelivered ? '✅ Delivered' : '🚚 In Transit'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Banking Details
+      document.getElementById('stmt-bank-name').innerText = settings.bankName;
+      document.getElementById('stmt-bank-acc-name').innerText = settings.accountName;
+      document.getElementById('stmt-bank-acc-num').innerText = settings.accountNumber;
+      document.getElementById('stmt-bank-ifsc').innerText = settings.ifsc;
+      document.getElementById('stmt-bank-upi').innerText = settings.upiId;
+
+      // Dynamic UPI QR code with total receivables!
+      generateUpiQrCode('stmt-upi-qrcode', settings.upiId, settings.companyName, totalOutstanding, 'STMT-' + cust.name.substring(0, 4).toUpperCase());
+
+      document.getElementById('modal-statement-view').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCustomerStatementModal() {
+      document.getElementById('modal-statement-view').classList.add('hidden');
+    }
+
+    function downloadStatementPdf(custId) {
+      if (custId && custId !== currentStatementCustomerId) {
+        openCustomerStatementModal(custId);
+      }
+      const cust = customers.find(c => c.id === currentStatementCustomerId);
+      const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+      downloadElementAsPdf('statement-printable-card', `Statement_${name}`);
+    }
+
+    function downloadStatementJpeg(custId) {
+      if (custId && custId !== currentStatementCustomerId) {
+        openCustomerStatementModal(custId);
+      }
+      const cust = customers.find(c => c.id === currentStatementCustomerId);
+      const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+      downloadElementAsJpeg('statement-printable-card', `Statement_${name}`);
+    }
+
+    function printStatementCard() {
+      window.print();
+    }
+
+    function shareStatementWhatsApp(custId) {
+      const targetCustId = custId || currentStatementCustomerId || (latestOrder ? latestOrder.buyerId : null);
+      if (!targetCustId) return;
+      const cust = customers.find(c => c.id === targetCustId);
+      if (!cust) return;
+
+      const settings = getCompanySettings();
+      const custOrders = orders.filter(o => o.buyerId === cust.id || o.buyerName === cust.name);
+      const totalOutstanding = Number(cust.pendingUdhaar || 0);
+
+      const latestOrderForCust = custOrders[0] || null;
+      let latestBillAmount = 0;
+      let prevBillsDue = totalOutstanding;
+
+      if (latestOrderForCust) {
+        latestBillAmount = Number(latestOrderForCust.netPayable || 0);
+        if (latestOrderForCust.paymentMode === 'Credit / Udhaar') {
+          prevBillsDue = Math.max(0, totalOutstanding - latestBillAmount);
+        }
+      }
+
+      // Recent bills lines
+      const recentBillsText = custOrders.slice(0, 5).map(o => 
+        `• ${o.date} | Bill #${o.id} | *${formatINR(o.netPayable)}* (${o.paymentMode})`
+      ).join('\n') || '• No previous bills recorded';
+
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*GSTIN: ${settings.gstin}*\n` +
+        `--------------------------------\n` +
+        `*STATEMENT OF OUTSTANDING BILLS & RECEIVABLES*\n` +
+        `Customer: *${cust.name}* [${cust.tier || 'Retail'}]\n` +
+        `Date: ${new Date().toLocaleDateString('en-IN')}\n` +
+        `--------------------------------\n` +
+        `*RECEIVABLES SUMMARY:*\n` +
+        `• Previous Bills Due: *${formatINR(prevBillsDue)}*\n` +
+        `• Latest Bill Net: *${formatINR(latestBillAmount)}*\n` +
+        `• *TOTAL RECEIVABLES DUE: ${formatINR(totalOutstanding)}*\n` +
+        `(${numberToWordsINR(totalOutstanding)})\n` +
+        `--------------------------------\n` +
+        `*RECENT COMMERCIAL BILLS:*\n${recentBillsText}\n` +
+        `--------------------------------\n` +
+        `*BANK ACCOUNT FOR SETTLEMENT:*\n` +
+        `Bank: ${settings.bankName}\n` +
+        `A/C Name: ${settings.accountName}\n` +
+        `A/C No: ${settings.accountNumber}\n` +
+        `IFSC: ${settings.ifsc}\n` +
+        `UPI ID: ${settings.upiId}\n` +
+        `--------------------------------\n` +
+        `Kindly clear the outstanding balance via UPI or Bank transfer.\n` +
+        `For queries, please contact +91 9731988411 / 9972374711.\nThank you!`;
+
+      const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
     }
 
     // 19. BOOTSTRAP
