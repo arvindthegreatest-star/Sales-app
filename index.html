@@ -1594,7 +1594,7 @@
 
           <div>
             <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Terms & Notes (Bullets separated by new line)</label>
-            <textarea id="quote-edit-terms" oninput="handleQuoteFieldLiveChange()" rows="2" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-tight" placeholder="Payment on delivery of goods..."></textarea>
+            <textarea id="quote-edit-terms" oninput="handleQuoteFieldLiveChange()" rows="2" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-tight" placeholder="Price valid for 3 months from quotation date..."></textarea>
           </div>
 
           <!-- Interactive Quotation Products Manager Table -->
@@ -1731,41 +1731,43 @@
             </tbody>
           </table>
 
-          <!-- Terms & Banking Section -->
-          <div class="border-2 border-black p-3 text-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
-              <div class="text-[10px] font-black uppercase tracking-wider">Terms & Notes:</div>
-              <div id="quote-terms-notes" class="text-[11px] leading-tight space-y-0.5">
-                <p>• Payment terms: Payment on delivery of goods.</p>
-                <p>• Price valid for 3 months from quotation date.</p>
-                <p>• For any queries concerning this quotation, please reach out to me at <b>9731988411 / 9972374711</b>.</p>
+          <!-- Terms & Confirmation Section (No Bank or Payment Details) -->
+          <div class="border-2 border-black p-3.5 text-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2 border-b sm:border-b-0 sm:border-r border-black sm:pr-4 pb-3 sm:pb-0 flex flex-col justify-between">
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-wider mb-1">Quotation Terms & Notes:</div>
+                <div id="quote-terms-notes" class="text-[11px] leading-tight space-y-1 font-sans">
+                  <p>• Price valid for 3 months from quotation date.</p>
+                  <p>• For any queries or orders concerning this quotation, please reach out to us at <b>9731988411 / 9972374711</b>.</p>
+                </div>
               </div>
-              <div class="pt-1 text-[10px] font-mono space-y-0.5">
-                <div>Bank: <b id="quote-bank-name">State Bank of India</b></div>
-                <div>A/C Name: <b id="quote-bank-acc-name">Sri Govinda Food Products</b></div>
-                <div>A/C: <b id="quote-bank-acc-num">38920194820</b> (IFSC: <b id="quote-bank-ifsc">SBIN0001234</b>)</div>
-                <div>UPI: <b id="quote-bank-upi">9731988411@upi</b></div>
+
+              <!-- Thank you statement to confirm quotation -->
+              <div class="p-2.5 border border-black bg-slate-50 mt-2">
+                <p class="font-bold text-[11px] text-black italic">
+                  "Thank you for your trust in us. We look forward to serving you with our highest standards of purity and quality."
+                </p>
+                <span class="text-[9px] text-slate-600 block mt-0.5">— Sri Govinda Food Products</span>
               </div>
             </div>
 
-            <div class="flex flex-col justify-between items-center sm:items-end text-center sm:text-right">
-              <div class="p-1 border border-black bg-white inline-block">
-                <div id="quote-upi-qrcode" class="w-[84px] h-[84px] flex items-center justify-center"></div>
-                <div class="text-[8px] font-black uppercase mt-0.5">UPI Quick Pay</div>
+            <div class="flex flex-col justify-between items-center sm:items-end text-center sm:text-right pt-2 sm:pt-0">
+              <div class="space-y-1 text-[11px]">
+                <div class="font-bold">Place: <span class="font-normal">Bengaluru</span></div>
+                <div class="text-[10px] text-slate-600">Official Quotation Slip</div>
               </div>
-              <div class="w-48 pt-4">
-                <div class="h-6"></div>
-                <div class="border-t border-black pt-1 text-center">
-                  <span class="text-[10px] font-black uppercase block">Proprietor Signature</span>
-                  <span class="text-[9px]">Sri Govinda Food Products</span>
+              <div class="w-52 pt-8">
+                <div class="border-t border-black pt-1.5 text-center">
+                  <span class="text-[10px] font-black uppercase block tracking-wider">Authorized Signatory</span>
+                  <span class="text-[9px] font-semibold">Sri Govinda Food Products</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Bottom Thank You Banner -->
-          <div class="bg-black text-white py-1.5 text-center font-black text-xs uppercase tracking-widest">
-            THANK YOU FOR YOUR BUSINESS.
+          <!-- Bottom Confirmation Statement Banner -->
+          <div class="bg-black text-white py-2 text-center font-black text-xs uppercase tracking-widest">
+            THANK YOU FOR YOUR TRUST IN US.
           </div>
 
         </div>
@@ -6037,7 +6039,7 @@
             date: defaultDate,
             validity: '3 Months',
             moq: 'As agreed / product',
-            termsNotes: '• Payment terms: Payment on delivery of goods.\n• Price valid for 3 months from quotation date.\n• For any queries concerning this quotation, please reach out to me at 9731988411 / 9972374711.',
+            termsNotes: '• Price valid for 3 months from quotation date.\n• For any queries or orders concerning this quotation, please reach out to us at 9731988411 / 9972374711.\n• Thank you for your trust in us. We look forward to serving you with purity and quality.',
             items: selectedItems,
             isCurrentActive: true,
             created_at: now.toISOString()
@@ -6076,7 +6078,7 @@
           date: defaultDate,
           validity: '3 Months',
           moq: 'As agreed / product',
-          termsNotes: '• Payment terms: Payment on delivery of goods.\n• Price valid for 3 months from quotation date.\n• For any queries concerning this quotation, please reach out to me at 9731988411 / 9972374711.',
+          termsNotes: '• Price valid for 3 months from quotation date.\n• For any queries or orders concerning this quotation, please reach out to us at 9731988411 / 9972374711.\n• Thank you for your trust in us. We look forward to serving you with purity and quality.',
           items: defaultItems,
           isCurrentActive: true,
           created_at: now.toISOString()
@@ -6164,22 +6166,12 @@
         }).join('');
       }
 
-      // Terms & Banking
+      // Terms & Notes
       const termsBox = document.getElementById('quote-terms-notes');
       if (termsBox) {
         const lines = (q.termsNotes || '').split('\n').filter(l => l.trim() !== '');
         termsBox.innerHTML = lines.map(l => `<p>${escapeHtml(l)}</p>`).join('');
       }
-      if (document.getElementById('quote-bank-acc-name')) {
-        document.getElementById('quote-bank-acc-name').innerText = settings.accountName;
-      }
-      document.getElementById('quote-bank-name').innerText = settings.bankName;
-      document.getElementById('quote-bank-acc-num').innerText = settings.accountNumber;
-      document.getElementById('quote-bank-ifsc').innerText = settings.ifsc;
-      document.getElementById('quote-bank-upi').innerText = settings.upiId;
-
-      // Dynamic UPI QR
-      generateUpiQrCode('quote-upi-qrcode', settings.upiId, settings.companyName, 0, q.id);
     }
 
     function toggleQuotationManagerEditor(forceState = null) {
@@ -6649,14 +6641,9 @@
         `--------------------------------\n` +
         `*DECIDED PRODUCT RATES:*\n${lines}\n` +
         `--------------------------------\n` +
-        `*OFFICIAL BANK DETAILS:*\n` +
-        `Bank: ${settings.bankName}\n` +
-        `A/C Name: ${settings.accountName}\n` +
-        `A/C No: ${settings.accountNumber}\n` +
-        `IFSC: ${settings.ifsc}\n` +
-        `UPI ID: ${settings.upiId}\n` +
-        `--------------------------------\n` +
-        `For bookings & dispatch, reply directly to this message.\nThank you!`;
+        `*Thank you for your trust in us.*\n` +
+        `We look forward to serving you with purity and quality.\n` +
+        `For bookings & dispatch, reply directly to this message.`;
 
       const directPhone = (cust.contactPhone || cust.phone || '').replace(/\D/g, '');
       const phoneToUse = directPhone.length === 10 ? ('91' + directPhone) : directPhone;
