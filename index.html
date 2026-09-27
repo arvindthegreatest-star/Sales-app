@@ -1444,11 +1444,10 @@
                   <input type="checkbox" id="cust-pricing-select-all" onchange="toggleSelectAllQuoteProducts(this.checked)" checked title="Select/Deselect all products for Quotation" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer">
                 </th>
                 <th class="p-2.5">Product / SKU</th>
-                <th class="p-2.5 text-center">Unit Weight (Kg)</th>
-                <th class="p-2.5 text-right">Standard MRP</th>
-                <th class="p-2.5 text-center min-w-[150px]">Discounted Price (₹ / unit)</th>
-                <th class="p-2.5 text-right min-w-[130px]">Specific Price / Kg</th>
-                <th class="p-2.5 text-center">Discount / Savings</th>
+                <th class="p-2.5 text-center">Unit Weight</th>
+                <th class="p-2.5 text-right min-w-[130px]">Standard Rate / Kg</th>
+                <th class="p-2.5 text-center min-w-[150px]">Quoted Price (₹ / unit)</th>
+                <th class="p-2.5 text-right min-w-[130px]">Quoted Rate / Kg</th>
                 <th class="p-2.5 text-center rounded-r-xl w-24">Action</th>
               </tr>
             </thead>
@@ -1643,9 +1642,9 @@
                   <tr>
                     <th class="p-2 pl-3">Product / SKU</th>
                     <th class="p-2 w-24">Unit Pack</th>
-                    <th class="p-2 w-28 text-right">Unit Price (₹)</th>
-                    <th class="p-2 w-24 text-right">Rate / Kg</th>
-                    <th class="p-2 min-w-[130px]">Special Terms / Discount</th>
+                    <th class="p-2 w-28 text-right">Standard Rate / Kg</th>
+                    <th class="p-2 w-28 text-right">Quoted Price (₹)</th>
+                    <th class="p-2 w-24 text-right">Quoted Rate / Kg</th>
                     <th class="p-2 text-center w-20">Action</th>
                   </tr>
                 </thead>
@@ -1721,9 +1720,9 @@
                 <th class="border-r border-black p-1.5 text-center w-10">Sl No</th>
                 <th class="border-r border-black p-1.5">DESCRIPTION</th>
                 <th class="border-r border-black p-1.5 text-center w-20">UNIT PACK</th>
-                <th class="border-r border-black p-1.5 text-right w-24">UNIT PRICE (₹)</th>
-                <th class="border-r border-black p-1.5 text-right w-24">RATE / KG (₹)</th>
-                <th class="p-1.5 text-center w-36">SPECIAL TERMS / DISCOUNT</th>
+                <th class="border-r border-black p-1.5 text-right w-28">STANDARD RATE / KG (₹)</th>
+                <th class="border-r border-black p-1.5 text-right w-28">QUOTED PRICE (₹)</th>
+                <th class="p-1.5 text-right w-28">QUOTED RATE / KG (₹)</th>
               </tr>
             </thead>
             <tbody id="quote-items-tbody" class="divide-y divide-black font-mono text-xs">
@@ -5646,7 +5645,7 @@
       if (!currentCustomerPricingProductIds || currentCustomerPricingProductIds.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="p-8 text-center text-slate-500">
+            <td colspan="7" class="p-8 text-center text-slate-500">
               <div class="max-w-md mx-auto space-y-2">
                 <div class="w-10 h-10 mx-auto rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg"><i data-lucide="package-search" class="w-5 h-5"></i></div>
                 <p class="font-bold text-slate-800 text-sm">No products added for this customer's quotation yet.</p>
@@ -5679,20 +5678,6 @@
         const isOverridden = (existingOverride !== '' && existingOverride !== null);
         const baseRate = Number(p.baseRate || 0);
 
-        // Variance calculation
-        let varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
-        if (isOverridden) {
-          const diff = Number(existingOverride) - baseRate;
-          const pct = baseRate > 0 ? ((diff / baseRate) * 100).toFixed(1) : 0;
-          if (diff < 0) {
-            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">-${Math.abs(pct)}% (Save ${formatINR(Math.abs(diff))})</span>`;
-          } else if (diff > 0) {
-            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">+${pct}% (+${formatINR(diff)})</span>`;
-          } else {
-            varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Same as MRP</span>`;
-          }
-        }
-
         const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 0;
         const currentPrice = isOverridden ? Number(existingOverride) : baseRate;
         const currentRateKg = calculateRatePerKg(currentPrice, p.unitSize || weightKg);
@@ -5712,8 +5697,8 @@
               <div class="text-[9px] text-slate-400 mt-0.5">${escapeHtml(p.unitSize || '')}</div>
             </td>
             <td class="p-2.5 text-right font-mono text-slate-700">
-              <span class="font-bold">${formatINR(baseRate)}</span>
-              ${baseRateKg ? `<div class="text-[9px] font-normal text-slate-400">≈ ${formatINR(baseRateKg)}/kg</div>` : ''}
+              <span class="font-bold text-xs">${baseRateKg ? `${formatINR(baseRateKg)} / kg` : '—'}</span>
+              <div class="text-[9px] font-normal text-slate-400">MRP: ${formatINR(baseRate)}</div>
             </td>
             <td class="p-2.5 text-center">
               <div class="inline-flex items-center relative">
@@ -5733,9 +5718,6 @@
               <span id="ratekg-val-${escapeHtml(p.id)}" class="${isOverridden ? 'font-black text-xs text-indigo-700' : 'font-bold text-xs text-slate-700'}">
                 ${currentRateKg ? `${formatINR(currentRateKg)} / kg` : '—'}
               </span>
-            </td>
-            <td class="p-2.5 text-center" id="variance-cell-${escapeHtml(p.id)}">
-              ${varianceHtml}
             </td>
             <td class="p-2.5 text-center">
               <div class="flex items-center justify-center gap-1">
@@ -5970,8 +5952,6 @@
       const selectedItems = selectedProds.map(p => {
         const agreedRate = getCustomerProductRate(currentPricingCustomerId, p);
         const baseRate = Number(p.baseRate || 0);
-        const hasDiscount = (agreedRate < baseRate);
-        const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
         const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0;
         return {
           productId: p.id,
@@ -5981,7 +5961,7 @@
           unitWeightKg: weightKg,
           rate: agreedRate,
           baseRate: baseRate,
-          specialTerms: hasDiscount ? `-${discountPct}% Special Rate` : 'Standard Rate'
+          specialTerms: ''
         };
       });
 
@@ -6051,8 +6031,6 @@
         const defaultItems = products.map(p => {
           const agreedRate = getCustomerProductRate(targetCustId, p);
           const baseRate = Number(p.baseRate || 0);
-          const hasDiscount = (agreedRate < baseRate);
-          const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
           const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0;
           return {
             productId: p.id,
@@ -6062,7 +6040,7 @@
             unitWeightKg: weightKg,
             rate: agreedRate,
             baseRate: baseRate,
-            specialTerms: hasDiscount ? `-${discountPct}% Special Rate` : 'Standard Rate'
+            specialTerms: ''
           };
         });
 
@@ -6135,31 +6113,31 @@
         tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400 font-sans">No products added to quotation. Use Edit Quote to add products.</td></tr>`;
       } else {
         tbody.innerHTML = q.items.map((it, idx) => {
-          const ratePerKg = calculateRatePerKg(it.rate, it.unitSize);
+          const prodObj = products.find(p => String(p.id) === String(it.productId) || String(p.sku) === String(it.sku));
+          const baseRate = Number(it.baseRate !== undefined && it.baseRate !== null ? it.baseRate : (prodObj ? prodObj.baseRate : 0));
+          const unitSize = it.unitSize || (prodObj ? prodObj.unitSize : '-');
+          const unitWeightKg = it.unitWeightKg || (prodObj ? (prodObj.unitWeightKg || parseUnitSizeToKg(prodObj.unitSize)) : parseUnitSizeToKg(unitSize)) || 1.0;
+          
+          const stdRatePerKg = calculateRatePerKg(baseRate, unitSize || unitWeightKg);
+          const quotedRatePerKg = calculateRatePerKg(it.rate, unitSize || unitWeightKg);
+
           return `
           <tr class="hover:bg-slate-50 transition">
             <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
             <td class="border-r border-black p-1.5">
               <span class="font-bold text-black font-sans">${escapeHtml(it.name)}</span>
-              <div class="text-[10px] text-black font-mono font-semibold mt-0.5">
-                (${formatINR(it.rate)} per unit, ${ratePerKg ? `${formatINR(ratePerKg)} per kg` : '-'})
-              </div>
               <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(it.sku || '-')}</span>
             </td>
-            <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(it.unitSize || '-')}</td>
+            <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(unitSize)}</td>
+            <td class="border-r border-black p-1.5 text-right font-mono font-semibold text-xs text-slate-700">
+              ${stdRatePerKg ? `${formatINR(stdRatePerKg)}<span class="text-[9px] font-normal text-slate-500 block">/ kg</span>` : '<span class="text-slate-400 font-normal text-[10px]">—</span>'}
+            </td>
             <td class="border-r border-black p-1.5 text-right font-mono font-black text-xs sm:text-sm text-black">
               ${formatINR(it.rate)}
               <span class="text-[9px] font-normal text-slate-500 block">/ pack</span>
             </td>
-            <td class="border-r border-black p-1.5 text-right font-mono font-bold text-xs text-black">
-              ${ratePerKg ? `${formatINR(ratePerKg)}<span class="text-[9px] font-normal text-slate-500 block">/ kg</span>` : '<span class="text-slate-400 font-normal text-[10px]">—</span>'}
-            </td>
-            <td class="p-1.5 text-center font-sans">
-              ${it.specialTerms ? `
-                <span class="inline-block px-1.5 py-0.5 border border-black font-bold text-[10px]">
-                  ${escapeHtml(it.specialTerms)}
-                </span>
-              ` : `<span class="text-[10px] text-black">Standard Rate</span>`}
+            <td class="p-1.5 text-right font-mono font-black text-xs sm:text-sm text-black">
+              ${quotedRatePerKg ? `${formatINR(quotedRatePerKg)}<span class="text-[9px] font-normal text-slate-500 block">/ kg</span>` : '<span class="text-slate-400 font-normal text-[10px]">—</span>'}
             </td>
           </tr>
         `;
@@ -6258,26 +6236,19 @@
 
         // Effective values
         let unitSize = '';
-        let rate = '';
-        let specialTerms = '';
+        let rate = 0;
+        const baseRate = Number(p.baseRate || 0);
 
         if (isInQuote) {
           unitSize = existingQuoteItem.unitSize || p.unitSize || '-';
           rate = (existingQuoteItem.rate !== undefined && existingQuoteItem.rate !== null) ? existingQuoteItem.rate : (p.baseRate || 0);
-          specialTerms = existingQuoteItem.specialTerms || '';
         } else {
           unitSize = p.unitSize || (p.unitWeightKg ? `${p.unitWeightKg}kg` : '1kg');
           const custRate = getCustomerProductRate(currentQuotationCustomerId, p);
           rate = (custRate !== null && custRate !== undefined) ? custRate : (p.baseRate || 0);
-          const baseRate = Number(p.baseRate || 0);
-          if (rate < baseRate && baseRate > 0) {
-            const discPct = (((baseRate - rate) / baseRate) * 100).toFixed(0);
-            specialTerms = `-${discPct}% Special Rate`;
-          } else {
-            specialTerms = 'Standard MRP';
-          }
         }
 
+        const stdRateKg = calculateRatePerKg(baseRate, unitSize);
         const rateKg = calculateRatePerKg(rate, unitSize);
 
         return `
@@ -6299,6 +6270,12 @@
                      placeholder="e.g. 500g"
                      class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500">
             </td>
+            <td class="p-2 text-right font-mono" id="qe-stdratekg-cell-${escapeHtml(p.id)}">
+              <span class="text-[11px] font-bold text-slate-700">
+                ${stdRateKg ? `${formatINR(stdRateKg)}/kg` : '—'}
+              </span>
+              <div class="text-[9px] text-slate-400">MRP: ${formatINR(baseRate)}</div>
+            </td>
             <td class="p-2 text-right">
               <div class="inline-flex items-center relative w-full">
                 <span class="absolute left-2 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
@@ -6314,14 +6291,6 @@
               <span class="text-[11px] font-bold ${isInQuote ? 'text-indigo-700' : 'text-slate-600'}">
                 ${rateKg ? `${formatINR(rateKg)}/kg` : '—'}
               </span>
-            </td>
-            <td class="p-2">
-              <input type="text"
-                     id="qe-terms-${escapeHtml(p.id)}"
-                     value="${escapeHtml(specialTerms)}"
-                     oninput="onQuoteEditorRowVariableChanged('${escapeHtml(p.id)}')"
-                     placeholder="e.g. -10% Discount"
-                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-700 outline-none focus:border-indigo-500">
             </td>
             <td class="p-2 text-center">
               ${isInQuote ? `
@@ -6346,14 +6315,26 @@
       if (!currentQuotationData) return;
       const unitSizeEl = document.getElementById(`qe-unitsize-${prodId}`);
       const rateEl = document.getElementById(`qe-rate-${prodId}`);
-      const termsEl = document.getElementById(`qe-terms-${prodId}`);
       const rateKgCell = document.getElementById(`qe-ratekg-cell-${prodId}`);
+      const stdRateKgCell = document.getElementById(`qe-stdratekg-cell-${prodId}`);
 
       const unitSize = unitSizeEl ? unitSizeEl.value.trim() : '';
       const rate = rateEl ? (parseFloat(rateEl.value) || 0) : 0;
-      const terms = termsEl ? termsEl.value.trim() : '';
+      const prod = products.find(p => String(p.id) === String(prodId));
+      const baseRate = prod ? Number(prod.baseRate || 0) : 0;
 
       const rateKg = calculateRatePerKg(rate, unitSize);
+      const stdRateKg = calculateRatePerKg(baseRate, unitSize);
+
+      if (stdRateKgCell) {
+        stdRateKgCell.innerHTML = `
+          <span class="text-[11px] font-bold text-slate-700">
+            ${stdRateKg ? `${formatINR(stdRateKg)}/kg` : '—'}
+          </span>
+          <div class="text-[9px] text-slate-400">MRP: ${formatINR(baseRate)}</div>
+        `;
+      }
+
       if (rateKgCell) {
         rateKgCell.innerHTML = `<span class="text-[11px] font-bold text-indigo-700">${rateKg ? `${formatINR(rateKg)}/kg` : '—'}</span>`;
       }
@@ -6364,7 +6345,8 @@
         existing.unitSize = unitSize;
         existing.unitWeightKg = parseUnitSizeToKg(unitSize) || 1.0;
         existing.rate = rate;
-        existing.specialTerms = terms;
+        existing.baseRate = baseRate;
+        existing.specialTerms = '';
         renderPrintableQuotationCard();
       }
     }
@@ -6376,11 +6358,9 @@
 
       const unitSizeEl = document.getElementById(`qe-unitsize-${prodId}`);
       const rateEl = document.getElementById(`qe-rate-${prodId}`);
-      const termsEl = document.getElementById(`qe-terms-${prodId}`);
 
       const unitSize = unitSizeEl ? unitSizeEl.value.trim() : (prod.unitSize || '1kg');
       const rate = rateEl ? (parseFloat(rateEl.value) || 0) : (prod.baseRate || 0);
-      const terms = termsEl ? termsEl.value.trim() : 'Standard Rate';
       const weightKg = parseUnitSizeToKg(unitSize) || prod.unitWeightKg || 1.0;
 
       if (!Array.isArray(currentQuotationData.items)) {
@@ -6392,7 +6372,8 @@
         currentQuotationData.items[existingIdx].unitSize = unitSize;
         currentQuotationData.items[existingIdx].unitWeightKg = weightKg;
         currentQuotationData.items[existingIdx].rate = rate;
-        currentQuotationData.items[existingIdx].specialTerms = terms;
+        currentQuotationData.items[existingIdx].baseRate = Number(prod.baseRate || 0);
+        currentQuotationData.items[existingIdx].specialTerms = '';
       } else {
         currentQuotationData.items.push({
           productId: prod.id,
@@ -6402,7 +6383,7 @@
           unitWeightKg: weightKg,
           rate,
           baseRate: Number(prod.baseRate || 0),
-          specialTerms: terms
+          specialTerms: ''
         });
       }
 
@@ -6429,11 +6410,9 @@
         if (!exists) {
           const unitSizeEl = document.getElementById(`qe-unitsize-${p.id}`);
           const rateEl = document.getElementById(`qe-rate-${p.id}`);
-          const termsEl = document.getElementById(`qe-terms-${p.id}`);
 
           const unitSize = unitSizeEl ? unitSizeEl.value.trim() : (p.unitSize || '1kg');
           const rate = rateEl ? (parseFloat(rateEl.value) || 0) : (getCustomerProductRate(currentQuotationCustomerId, p) || p.baseRate || 0);
-          const terms = termsEl ? termsEl.value.trim() : 'Standard MRP';
           const weightKg = parseUnitSizeToKg(unitSize) || p.unitWeightKg || 1.0;
 
           currentQuotationData.items.push({
@@ -6444,7 +6423,7 @@
             unitWeightKg: weightKg,
             rate,
             baseRate: Number(p.baseRate || 0),
-            specialTerms: terms
+            specialTerms: ''
           });
         }
       });
@@ -6496,16 +6475,16 @@
       currentQuotationData.items = products.map(p => {
         const agreedRate = getCustomerProductRate(targetCustId, p);
         const baseRate = Number(p.baseRate || 0);
-        const hasDiscount = (agreedRate < baseRate);
-        const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+        const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0;
         return {
           productId: p.id,
           sku: p.sku,
           name: p.name,
           unitSize: p.unitSize || '-',
+          unitWeightKg: weightKg,
           rate: agreedRate,
           baseRate: baseRate,
-          specialTerms: hasDiscount ? `-${discountPct}% (Save ${formatINR(baseRate - agreedRate)})` : 'Standard Rate'
+          specialTerms: ''
         };
       });
 
@@ -6625,8 +6604,13 @@
           }));
 
       const lines = itemsToShare.map(it => {
-        const rKg = calculateRatePerKg(it.rate, it.unitWeightKg || it.unitSize);
-        return `• *${it.name}* (${it.unitSize}): *${formatINR(it.rate)} per unit* ${rKg ? `(${formatINR(rKg)}/kg)` : ''} ${it.specialTerms ? `[${it.specialTerms}]` : ''}`;
+        const prodObj = products.find(p => String(p.id) === String(it.productId) || String(p.sku) === String(it.sku));
+        const baseRate = Number(it.baseRate !== undefined && it.baseRate !== null ? it.baseRate : (prodObj ? prodObj.baseRate : 0));
+        const unitSize = it.unitSize || (prodObj ? prodObj.unitSize : '-');
+        const unitWeightKg = it.unitWeightKg || (prodObj ? (prodObj.unitWeightKg || parseUnitSizeToKg(prodObj.unitSize)) : parseUnitSizeToKg(unitSize)) || 1.0;
+        const stdRateKg = calculateRatePerKg(baseRate, unitSize || unitWeightKg);
+        const rKg = calculateRatePerKg(it.rate, unitWeightKg || unitSize);
+        return `• *${it.name}* (${unitSize}): Quoted *${formatINR(it.rate)}/pack* ${rKg ? `(${formatINR(rKg)}/kg)` : ''}${stdRateKg ? ` [Std: ${formatINR(stdRateKg)}/kg]` : ''}`;
       }).join('\n');
 
       const text = `*${settings.companyName.toUpperCase()}*\n` +
