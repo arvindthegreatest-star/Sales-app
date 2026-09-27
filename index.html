@@ -1444,17 +1444,36 @@
                   <input type="checkbox" id="cust-pricing-select-all" onchange="toggleSelectAllQuoteProducts(this.checked)" checked title="Select/Deselect all products for Quotation" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer">
                 </th>
                 <th class="p-2.5">Product / SKU</th>
-                <th class="p-2.5">Unit Weight (Kg)</th>
+                <th class="p-2.5 text-center">Unit Weight (Kg)</th>
                 <th class="p-2.5 text-right">Standard MRP</th>
-                <th class="p-2.5 text-center min-w-[170px]">Customer Quote Price (₹ / unit)</th>
-                <th class="p-2.5 text-center">Variance / Discount</th>
-                <th class="p-2.5 text-center rounded-r-xl">Action</th>
+                <th class="p-2.5 text-center min-w-[150px]">Discounted Price (₹ / unit)</th>
+                <th class="p-2.5 text-right min-w-[130px]">Specific Price / Kg</th>
+                <th class="p-2.5 text-center">Discount / Savings</th>
+                <th class="p-2.5 text-center rounded-r-xl w-24">Action</th>
               </tr>
             </thead>
             <tbody id="cust-bulk-pricing-tbody" class="divide-y divide-slate-100">
               <!-- Rendered dynamically -->
             </tbody>
           </table>
+        </div>
+
+        <!-- Add Product From List Section at Bottom of List -->
+        <div class="mt-4 p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex items-center justify-between gap-3 flex-wrap shadow-xs">
+          <div class="flex items-center gap-2 flex-1 min-w-[280px]">
+            <span class="p-1.5 rounded-lg bg-indigo-600 text-white"><i data-lucide="package-plus" class="w-4 h-4"></i></span>
+            <select id="cust-pricing-add-prod-select" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="addProductToCustomerPricingList()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Product from List
+            </button>
+            <button type="button" onclick="addAllCatalogProductsToCustomerPricing()" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer" title="Add all catalog products to list">
+              <i data-lucide="list-plus" class="w-3.5 h-3.5 text-indigo-600"></i> Add All
+            </button>
+          </div>
         </div>
       </div>
 
@@ -5489,6 +5508,7 @@
     // 16. CUSTOMER BULK PRICING ENGINE (OPEN TABLE LIST VIEW, NOT DROPDOWN)
     // ==============================================================================
     let currentPricingCustomerId = null;
+    let currentCustomerPricingProductIds = [];
 
     function openCustomerPricingModal(custId) {
       const targetCustId = custId || (customers[0] ? customers[0].id : null);
@@ -5505,7 +5525,29 @@
       document.getElementById('cust-pricing-customer-route').innerText = (cust.homeRoute || 'Not assigned').split(':')[0];
       document.getElementById('cust-bulk-pricing-search').value = '';
 
+      // Initialize customer quote products list:
+      // If customer has existing contract overrides, load those products.
+      // Else if customer has an active quotation, load those products.
+      // Otherwise, initialize with all catalog products.
+      const existingOverrides = contractPricing.filter(c => String(c.buyerId) === String(targetCustId));
+      const activeQuote = customerQuotations.find(q => String(q.customerId) === String(targetCustId) && q.isCurrentActive);
+
+      if (existingOverrides.length > 0) {
+        const overrideIds = existingOverrides.map(c => String(c.productId));
+        currentCustomerPricingProductIds = products
+          .filter(p => overrideIds.includes(String(p.id)) || overrideIds.includes(String(p.sku)))
+          .map(p => p.id);
+      } else if (activeQuote && Array.isArray(activeQuote.items) && activeQuote.items.length > 0) {
+        const quoteProdIds = activeQuote.items.map(it => String(it.productId || it.sku));
+        currentCustomerPricingProductIds = products
+          .filter(p => quoteProdIds.includes(String(p.id)) || quoteProdIds.includes(String(p.sku)))
+          .map(p => p.id);
+      } else {
+        currentCustomerPricingProductIds = products.map(p => p.id);
+      }
+
       renderCustomerBulkPricingTable();
+      populateCustomerPricingAddProductDropdown();
       document.getElementById('modal-customer-pricing').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
@@ -5514,15 +5556,99 @@
       document.getElementById('modal-customer-pricing').classList.add('hidden');
     }
 
+    function populateCustomerPricingAddProductDropdown() {
+      const select = document.getElementById('cust-pricing-add-prod-select');
+      if (!select) return;
+
+      const available = products.filter(p => !currentCustomerPricingProductIds.includes(p.id));
+      if (available.length === 0) {
+        select.innerHTML = `<option value="">-- All Catalog Products Added to List --</option>`;
+        select.disabled = true;
+      } else {
+        select.disabled = false;
+        select.innerHTML = `<option value="">-- Select Product from Catalog to Add (${available.length} available) --</option>` +
+          available.map(p => {
+            const wKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || '';
+            const weightLabel = wKg ? ` [${wKg}kg]` : (p.unitSize ? ` [${p.unitSize}]` : '');
+            return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.sku)} - ${escapeHtml(p.name)}${weightLabel} (MRP ${formatINR(p.baseRate)})</option>`;
+          }).join('');
+      }
+    }
+
+    function addProductToCustomerPricingList() {
+      const select = document.getElementById('cust-pricing-add-prod-select');
+      if (!select || !select.value) {
+        alert("Please select a product from the dropdown list to add.");
+        return;
+      }
+      const prodId = select.value;
+      if (!currentCustomerPricingProductIds.includes(prodId)) {
+        currentCustomerPricingProductIds.push(prodId);
+      }
+      renderCustomerBulkPricingTable();
+      populateCustomerPricingAddProductDropdown();
+
+      // Focus and highlight the Discounted Price input on the newly added product
+      setTimeout(() => {
+        const inp = document.getElementById(`bulk-input-${prodId}`);
+        if (inp) {
+          inp.focus();
+          inp.select();
+        }
+      }, 50);
+    }
+
+    function addAllCatalogProductsToCustomerPricing() {
+      currentCustomerPricingProductIds = products.map(p => p.id);
+      renderCustomerBulkPricingTable();
+      populateCustomerPricingAddProductDropdown();
+    }
+
+    function removeProductFromCustomerPricingList(prodId) {
+      const p = products.find(x => String(x.id) === String(prodId));
+      const pName = p ? p.name : 'product';
+      if (!confirm(`Remove "${pName}" from this customer's quotation / pricing list?`)) return;
+
+      currentCustomerPricingProductIds = currentCustomerPricingProductIds.filter(id => String(id) !== String(prodId));
+      
+      // Clear any override rate for this product from contractPricing
+      if (currentPricingCustomerId) {
+        contractPricing = contractPricing.filter(c => 
+          !(String(c.buyerId) === String(currentPricingCustomerId) && 
+            (String(c.productId) === String(prodId) || (p && String(c.productId) === String(p.sku))))
+        );
+      }
+
+      renderCustomerBulkPricingTable();
+      populateCustomerPricingAddProductDropdown();
+    }
+
     function renderCustomerBulkPricingTable() {
       const tbody = document.getElementById('cust-bulk-pricing-tbody');
-      if (!products || products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No products configured in catalog. Add products in Manager Hub to set customer pricing.</td></tr>`;
+      if (!tbody) return;
+
+      if (!currentCustomerPricingProductIds || currentCustomerPricingProductIds.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-8 text-center text-slate-500">
+              <div class="max-w-md mx-auto space-y-2">
+                <div class="w-10 h-10 mx-auto rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg"><i data-lucide="package-search" class="w-5 h-5"></i></div>
+                <p class="font-bold text-slate-800 text-sm">No products added for this customer's quotation yet.</p>
+                <p class="text-[11px] text-slate-400">Select a product from the list below and click <b>"Add Product from List"</b> to set customer prices and include in the quotation.</p>
+              </div>
+            </td>
+          </tr>
+        `;
         updateCustomerBulkPricingBadge();
+        if (window.lucide) lucide.createIcons();
         return;
       }
 
-      tbody.innerHTML = products.map(p => {
+      const activeProducts = currentCustomerPricingProductIds
+        .map(id => products.find(p => String(p.id) === String(id)))
+        .filter(Boolean);
+
+      tbody.innerHTML = activeProducts.map(p => {
         let existingOverride = '';
         if (currentPricingCustomerId) {
           const cp = contractPricing.find(c => 
@@ -5536,7 +5662,6 @@
 
         const isOverridden = (existingOverride !== '' && existingOverride !== null);
         const baseRate = Number(p.baseRate || 0);
-        const stock = getProductStock(p);
 
         // Variance calculation
         let varianceHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
@@ -5566,7 +5691,7 @@
               <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
               <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</div>
             </td>
-            <td class="p-2.5">
+            <td class="p-2.5 text-center">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">⚖️ ${weightKg ? weightKg + ' kg' : '-'}</span>
               <div class="text-[9px] text-slate-400 mt-0.5">${escapeHtml(p.unitSize || '')}</div>
             </td>
@@ -5575,31 +5700,36 @@
               ${baseRateKg ? `<div class="text-[9px] font-normal text-slate-400">≈ ${formatINR(baseRateKg)}/kg</div>` : ''}
             </td>
             <td class="p-2.5 text-center">
-              <div class="inline-flex flex-col items-center">
-                <div class="inline-flex items-center relative">
-                  <span class="absolute left-2.5 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
-                  <input type="number" step="any" min="0"
-                         id="bulk-input-${escapeHtml(p.id)}"
-                         data-pricing-prod-id="${escapeHtml(p.id)}"
-                         data-base-rate="${baseRate}"
-                         data-weight-kg="${weightKg}"
-                         value="${isOverridden ? existingOverride : ''}"
-                         placeholder="${baseRate}"
-                         oninput="onBulkPricingInputChanged(this)"
-                         class="w-28 pl-6 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono text-right outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-                <div id="ratekg-sub-${escapeHtml(p.id)}" class="text-[10px] font-mono text-indigo-700 font-bold mt-0.5">
-                  ${currentRateKg ? `≈ ${formatINR(currentRateKg)}/kg` : ''}
-                </div>
+              <div class="inline-flex items-center relative">
+                <span class="absolute left-2.5 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
+                <input type="number" step="any" min="0"
+                       id="bulk-input-${escapeHtml(p.id)}"
+                       data-pricing-prod-id="${escapeHtml(p.id)}"
+                       data-base-rate="${baseRate}"
+                       data-weight-kg="${weightKg}"
+                       value="${isOverridden ? existingOverride : ''}"
+                       placeholder="${baseRate}"
+                       oninput="onBulkPricingInputChanged(this)"
+                       class="w-28 pl-6 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono text-right outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
               </div>
+            </td>
+            <td class="p-2.5 text-right font-mono" id="ratekg-cell-${escapeHtml(p.id)}">
+              <span id="ratekg-val-${escapeHtml(p.id)}" class="${isOverridden ? 'font-black text-xs text-indigo-700' : 'font-bold text-xs text-slate-700'}">
+                ${currentRateKg ? `${formatINR(currentRateKg)} / kg` : '—'}
+              </span>
             </td>
             <td class="p-2.5 text-center" id="variance-cell-${escapeHtml(p.id)}">
               ${varianceHtml}
             </td>
             <td class="p-2.5 text-center">
-              <button type="button" onclick="resetSingleCustPrice('${escapeHtml(p.id)}')" title="Reset to standard MRP" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-              </button>
+              <div class="flex items-center justify-center gap-1">
+                <button type="button" onclick="removeProductFromCustomerPricingList('${escapeHtml(p.id)}')" title="Delete product from quote list" class="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition cursor-pointer">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="resetSingleCustPrice('${escapeHtml(p.id)}')" title="Reset price to standard MRP" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition cursor-pointer">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -5615,7 +5745,7 @@
       const weightVal = parseFloat(inputEl.getAttribute('data-weight-kg')) || 0;
       const val = (inputEl.value || '').trim();
       const varianceCell = document.getElementById(`variance-cell-${prodId}`);
-      const rateSubEl = document.getElementById(`ratekg-sub-${prodId}`);
+      const rateValEl = document.getElementById(`ratekg-val-${prodId}`);
 
       const prod = products.find(x => String(x.id) === String(prodId));
       const effectiveWeight = weightVal > 0 ? weightVal : (prod ? (prod.unitWeightKg || parseUnitSizeToKg(prod.unitSize)) : 0);
@@ -5637,8 +5767,14 @@
           }
         }
 
-        if (rateSubEl && effectiveWeight > 0 && !isNaN(num)) {
-          rateSubEl.innerText = `≈ ${formatINR(num / effectiveWeight)}/kg`;
+        if (rateValEl) {
+          if (effectiveWeight > 0 && !isNaN(num) && num >= 0) {
+            rateValEl.innerText = `${formatINR(num / effectiveWeight)} / kg`;
+            rateValEl.className = 'font-black text-xs text-indigo-700';
+          } else {
+            rateValEl.innerText = '—';
+            rateValEl.className = 'text-xs text-slate-400';
+          }
         }
       } else {
         inputEl.classList.remove('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
@@ -5646,8 +5782,14 @@
         if (varianceCell) {
           varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
         }
-        if (rateSubEl && effectiveWeight > 0) {
-          rateSubEl.innerText = `≈ ${formatINR(baseRate / effectiveWeight)}/kg`;
+        if (rateValEl) {
+          if (effectiveWeight > 0 && baseRate > 0) {
+            rateValEl.innerText = `${formatINR(baseRate / effectiveWeight)} / kg`;
+            rateValEl.className = 'font-bold text-xs text-slate-700';
+          } else {
+            rateValEl.innerText = '—';
+            rateValEl.className = 'text-xs text-slate-400';
+          }
         }
       }
       updateCustomerBulkPricingBadge();
