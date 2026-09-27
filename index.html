@@ -2717,7 +2717,13 @@
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
             const { data } = await supabaseClient.from('products').select('*');
-            if (data) { products = data; refreshAllUI(); }
+            if (data) { 
+              products = data.map(p => ({
+                ...p,
+                unitWeightKg: p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0
+              })); 
+              refreshAllUI(); 
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, async () => {
             const { data } = await supabaseClient.from('routes').select('*');
@@ -2751,7 +2757,12 @@
       if (!supabaseClient) return;
       try {
         const { data: dbProducts } = await supabaseClient.from('products').select('*');
-        if (dbProducts) products = dbProducts;
+        if (dbProducts) {
+          products = dbProducts.map(p => ({
+            ...p,
+            unitWeightKg: p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0
+          }));
+        }
 
         const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
         if (dbBuyers) customers = dbBuyers;
@@ -5014,8 +5025,20 @@
 
       if (supabaseClient) {
         try {
-          const { error } = await supabaseClient.from('products').upsert([record]);
-          if (error) alert("Supabase save error: " + error.message);
+          const dbPayload = {
+            id: record.id,
+            sku: record.sku,
+            name: record.name,
+            category: record.category,
+            unitSize: record.unitSize,
+            baseRate: record.baseRate,
+            initialStock: record.initialStock
+          };
+          const { error } = await supabaseClient.from('products').upsert([dbPayload]);
+          if (error) {
+            console.error("Supabase product save error:", error);
+            alert("Supabase save error: " + error.message);
+          }
         } catch (err) {
           console.error(err);
         }
