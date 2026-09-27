@@ -1597,48 +1597,62 @@
             <textarea id="quote-edit-terms" oninput="handleQuoteFieldLiveChange()" rows="2" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-tight" placeholder="Payment on delivery of goods..."></textarea>
           </div>
 
-          <!-- Product Picker: Add / Remove Products to Quote -->
-          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div class="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
-              <span class="flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Select Product to Add to Quote</span>
-              <span class="text-[10px] text-slate-400 font-normal">Pick from catalog and customize rate & terms</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-end">
-              <div class="sm:col-span-4">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Catalog Product</label>
-                <select id="quote-editor-prod-select" onchange="onQuoteEditorProductSelected()" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
-                  <!-- Populated dynamically -->
-                </select>
+          <!-- Interactive Quotation Products Manager Table -->
+          <div class="rounded-2xl border border-slate-200 bg-white p-3 space-y-2.5">
+            <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="p-1.5 rounded-xl bg-indigo-100 text-indigo-700"><i data-lucide="layers" class="w-4 h-4"></i></span>
+                <div>
+                  <h5 class="font-black text-xs text-slate-900 uppercase tracking-wider">Quotation Products & Rate Customizer</h5>
+                  <p class="text-[10px] text-slate-500">Edit any variable directly in the row. Click <b>(+)</b> to add to quote or <b>🗑️</b> to remove.</p>
+                </div>
               </div>
-              <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Pack</label>
-                <input type="text" id="quote-editor-unit-size" oninput="updateQuoteEditorRateKgPreview()" placeholder="500g" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
-              </div>
-              <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Price (₹ / pack)</label>
-                <input type="number" step="0.5" id="quote-editor-rate" oninput="updateQuoteEditorRateKgPreview()" placeholder="160" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
-                <div id="quote-editor-ratekg-preview" class="text-[9px] font-mono text-indigo-600 font-semibold mt-0.5 truncate"></div>
-              </div>
-              <div class="sm:col-span-3">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Discount / Special Terms</label>
-                <input type="text" id="quote-editor-terms-note" placeholder="e.g. -5% Special Rate" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
-              </div>
-              <div class="sm:col-span-1">
-                <button type="button" onclick="addProductToStagedQuote()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center" title="Add Product to Quotation">
-                  <i data-lucide="plus" class="w-4 h-4"></i>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="addAllCatalogProductsToQuote()" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition flex items-center gap-1">
+                  <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Add All
+                </button>
+                <button type="button" onclick="clearAllProductsFromQuote()" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition flex items-center gap-1">
+                  <i data-lucide="trash" class="w-3.5 h-3.5"></i> Clear Quote
                 </button>
               </div>
             </div>
-          </div>
 
-          <!-- Staged Items Quick Removal List -->
-          <div>
-            <div class="text-[10px] font-bold uppercase text-slate-500 mb-1 flex items-center justify-between">
-              <span>Items Currently in this Quote (<span id="quote-staged-count">0</span>)</span>
-              <span class="text-[9px] text-slate-400">Click 🗑️ to remove an item from the quote</span>
+            <!-- Filter tabs & search -->
+            <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl text-[11px] font-bold">
+                <button type="button" id="quote-filter-tab-all" onclick="setQuoteEditorTab('all')" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition">
+                  All Catalog (<span id="quote-tab-all-count">0</span>)
+                </button>
+                <button type="button" id="quote-filter-tab-quoted" onclick="setQuoteEditorTab('quoted')" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">
+                  In Quotation (<span id="quote-tab-quoted-count">0</span>)
+                </button>
+                <button type="button" id="quote-filter-tab-available" onclick="setQuoteEditorTab('available')" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">
+                  Available to Add (<span id="quote-tab-avail-count">0</span>)
+                </button>
+              </div>
+              <div class="relative flex-1 min-w-[180px] max-w-xs">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2"></i>
+                <input type="text" id="quote-editor-search" oninput="filterQuoteEditorTable()" placeholder="Filter products by name or SKU..." class="w-full pl-8 pr-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500">
+              </div>
             </div>
-            <div id="quote-staged-items-list" class="max-h-36 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl bg-white text-xs">
-              <!-- Rendered dynamically -->
+
+            <!-- Table of Products -->
+            <div class="max-h-72 overflow-y-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10">
+                  <tr>
+                    <th class="p-2 pl-3">Product / SKU</th>
+                    <th class="p-2 w-24">Unit Pack</th>
+                    <th class="p-2 w-28 text-right">Unit Price (₹)</th>
+                    <th class="p-2 w-24 text-right">Rate / Kg</th>
+                    <th class="p-2 min-w-[130px]">Special Terms / Discount</th>
+                    <th class="p-2 text-center w-20">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="quote-editor-products-tbody" class="divide-y divide-slate-100 bg-white">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -6070,7 +6084,7 @@
       }
 
       renderPrintableQuotationCard();
-      populateQuoteEditorDropdowns();
+      renderQuoteEditorProductsTable();
       populateQuoteEditorFields();
 
       document.getElementById('modal-quotation-view').classList.remove('hidden');
@@ -6187,51 +6201,272 @@
       }
     }
 
-    function populateQuoteEditorDropdowns() {
-      const select = document.getElementById('quote-editor-prod-select');
-      if (!select) return;
+    let currentQuoteEditorTab = 'all';
+
+    function setQuoteEditorTab(tab) {
+      currentQuoteEditorTab = tab;
+      const tabs = ['all', 'quoted', 'available'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('quote-filter-tab-' + t);
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition';
+          }
+        }
+      });
+      filterQuoteEditorTable();
+    }
+
+    function filterQuoteEditorTable() {
+      const q = (document.getElementById('quote-editor-search')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#quote-editor-products-tbody .quote-editor-row');
+      rows.forEach(r => {
+        const inQuote = r.getAttribute('data-in-quote') === '1';
+        const text = r.getAttribute('data-search') || '';
+
+        let matchTab = true;
+        if (currentQuoteEditorTab === 'quoted') matchTab = inQuote;
+        else if (currentQuoteEditorTab === 'available') matchTab = !inQuote;
+
+        const matchSearch = (!q || text.includes(q));
+        r.style.display = (matchTab && matchSearch) ? '' : 'none';
+      });
+    }
+
+    function renderQuoteEditorProductsTable() {
+      const tbody = document.getElementById('quote-editor-products-tbody');
+      if (!tbody || !currentQuotationData) return;
+
+      const items = currentQuotationData.items || [];
+      const quoteProdIdMap = new Map();
+      items.forEach((it, idx) => {
+        const key = String(it.productId || it.sku);
+        quoteProdIdMap.set(key, { ...it, quoteIdx: idx });
+      });
+
+      // Update count badges
+      const totalCatalog = products.length;
+      const quotedCount = items.length;
+      const availCount = Math.max(0, totalCatalog - quotedCount);
+
+      if (document.getElementById('quote-tab-all-count')) document.getElementById('quote-tab-all-count').innerText = totalCatalog;
+      if (document.getElementById('quote-tab-quoted-count')) document.getElementById('quote-tab-quoted-count').innerText = quotedCount;
+      if (document.getElementById('quote-tab-avail-count')) document.getElementById('quote-tab-avail-count').innerText = availCount;
+
       if (products.length === 0) {
-        select.innerHTML = `<option value="">-- No Catalog Products --</option>`;
-      } else {
-        select.innerHTML = `<option value="">-- Select Product from Catalog --</option>` + products.map(p => `
-          <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-unitsize="${escapeHtml(p.unitSize)}" data-baserate="${p.baseRate}">
-            ${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})
-          </option>
-        `).join('');
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No products configured in catalog.</td></tr>`;
+        return;
       }
+
+      tbody.innerHTML = products.map(p => {
+        const existingQuoteItem = quoteProdIdMap.get(String(p.id)) || quoteProdIdMap.get(String(p.sku));
+        const isInQuote = !!existingQuoteItem;
+
+        // Effective values
+        let unitSize = '';
+        let rate = '';
+        let specialTerms = '';
+
+        if (isInQuote) {
+          unitSize = existingQuoteItem.unitSize || p.unitSize || '-';
+          rate = (existingQuoteItem.rate !== undefined && existingQuoteItem.rate !== null) ? existingQuoteItem.rate : (p.baseRate || 0);
+          specialTerms = existingQuoteItem.specialTerms || '';
+        } else {
+          unitSize = p.unitSize || (p.unitWeightKg ? `${p.unitWeightKg}kg` : '1kg');
+          const custRate = getCustomerProductRate(currentQuotationCustomerId, p);
+          rate = (custRate !== null && custRate !== undefined) ? custRate : (p.baseRate || 0);
+          const baseRate = Number(p.baseRate || 0);
+          if (rate < baseRate && baseRate > 0) {
+            const discPct = (((baseRate - rate) / baseRate) * 100).toFixed(0);
+            specialTerms = `-${discPct}% Special Rate`;
+          } else {
+            specialTerms = 'Standard MRP';
+          }
+        }
+
+        const rateKg = calculateRatePerKg(rate, unitSize);
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition quote-editor-row ${isInQuote ? 'bg-indigo-50/20' : ''}"
+              data-in-quote="${isInQuote ? '1' : '0'}"
+              data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <td class="p-2 pl-3">
+              <div class="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(p.name)}</span>
+                ${isInQuote ? `<span class="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black">✓ In Quote</span>` : ''}
+              </div>
+              <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)} • Base MRP: ${formatINR(p.baseRate)}</div>
+            </td>
+            <td class="p-2">
+              <input type="text"
+                     id="qe-unitsize-${escapeHtml(p.id)}"
+                     value="${escapeHtml(unitSize)}"
+                     oninput="onQuoteEditorRowVariableChanged('${escapeHtml(p.id)}')"
+                     placeholder="e.g. 500g"
+                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500">
+            </td>
+            <td class="p-2 text-right">
+              <div class="inline-flex items-center relative w-full">
+                <span class="absolute left-2 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
+                <input type="number" step="any" min="0"
+                       id="qe-rate-${escapeHtml(p.id)}"
+                       value="${rate}"
+                       oninput="onQuoteEditorRowVariableChanged('${escapeHtml(p.id)}')"
+                       placeholder="${p.baseRate}"
+                       class="w-full pl-5 pr-1.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-right text-slate-900 outline-none focus:border-indigo-500">
+              </div>
+            </td>
+            <td class="p-2 text-right font-mono" id="qe-ratekg-cell-${escapeHtml(p.id)}">
+              <span class="text-[11px] font-bold ${isInQuote ? 'text-indigo-700' : 'text-slate-600'}">
+                ${rateKg ? `${formatINR(rateKg)}/kg` : '—'}
+              </span>
+            </td>
+            <td class="p-2">
+              <input type="text"
+                     id="qe-terms-${escapeHtml(p.id)}"
+                     value="${escapeHtml(specialTerms)}"
+                     oninput="onQuoteEditorRowVariableChanged('${escapeHtml(p.id)}')"
+                     placeholder="e.g. -10% Discount"
+                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-700 outline-none focus:border-indigo-500">
+            </td>
+            <td class="p-2 text-center">
+              ${isInQuote ? `
+                <button type="button" onclick="removeQuoteItemDirectly('${escapeHtml(p.id)}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 w-full cursor-pointer" title="Remove from quotation">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
+                </button>
+              ` : `
+                <button type="button" onclick="addQuoteItemDirectly('${escapeHtml(p.id)}')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-xs transition flex items-center justify-center gap-1 w-full cursor-pointer" title="Add directly to quotation">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add (+)
+                </button>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      filterQuoteEditorTable();
+      if (window.lucide) lucide.createIcons();
     }
 
-    function updateQuoteEditorRateKgPreview() {
-      const previewEl = document.getElementById('quote-editor-ratekg-preview');
-      if (!previewEl) return;
-      const rate = parseFloat(document.getElementById('quote-editor-rate')?.value);
-      const unitSize = document.getElementById('quote-editor-unit-size')?.value;
+    function onQuoteEditorRowVariableChanged(prodId) {
+      if (!currentQuotationData) return;
+      const unitSizeEl = document.getElementById(`qe-unitsize-${prodId}`);
+      const rateEl = document.getElementById(`qe-rate-${prodId}`);
+      const termsEl = document.getElementById(`qe-terms-${prodId}`);
+      const rateKgCell = document.getElementById(`qe-ratekg-cell-${prodId}`);
+
+      const unitSize = unitSizeEl ? unitSizeEl.value.trim() : '';
+      const rate = rateEl ? (parseFloat(rateEl.value) || 0) : 0;
+      const terms = termsEl ? termsEl.value.trim() : '';
+
       const rateKg = calculateRatePerKg(rate, unitSize);
-      if (rateKg) {
-        previewEl.innerText = `≈ ${formatINR(rateKg)} / kg`;
-      } else {
-        previewEl.innerText = '';
+      if (rateKgCell) {
+        rateKgCell.innerHTML = `<span class="text-[11px] font-bold text-indigo-700">${rateKg ? `${formatINR(rateKg)}/kg` : '—'}</span>`;
+      }
+
+      // If item is in quotation, update in currentQuotationData and refresh printable slip live
+      const existing = (currentQuotationData.items || []).find(it => String(it.productId) === String(prodId) || String(it.sku) === String(prodId));
+      if (existing) {
+        existing.unitSize = unitSize;
+        existing.unitWeightKg = parseUnitSizeToKg(unitSize) || 1.0;
+        existing.rate = rate;
+        existing.specialTerms = terms;
+        renderPrintableQuotationCard();
       }
     }
 
-    function onQuoteEditorProductSelected() {
-      const select = document.getElementById('quote-editor-prod-select');
-      if (!select || !select.value) return;
-      const prod = products.find(p => String(p.id) === String(select.value));
+    function addQuoteItemDirectly(prodId) {
+      if (!currentQuotationData) return;
+      const prod = products.find(p => String(p.id) === String(prodId));
       if (!prod) return;
 
-      document.getElementById('quote-editor-unit-size').value = prod.unitSize || '';
-      const custRate = getCustomerProductRate(currentQuotationCustomerId, prod);
-      document.getElementById('quote-editor-rate').value = custRate || prod.baseRate || 0;
-      updateQuoteEditorRateKgPreview();
-      
-      const baseRate = Number(prod.baseRate || 0);
-      if (custRate < baseRate && baseRate > 0) {
-        const discPct = (((baseRate - custRate) / baseRate) * 100).toFixed(0);
-        document.getElementById('quote-editor-terms-note').value = `-${discPct}% Special Rate`;
-      } else {
-        document.getElementById('quote-editor-terms-note').value = 'Agreed Rate';
+      const unitSizeEl = document.getElementById(`qe-unitsize-${prodId}`);
+      const rateEl = document.getElementById(`qe-rate-${prodId}`);
+      const termsEl = document.getElementById(`qe-terms-${prodId}`);
+
+      const unitSize = unitSizeEl ? unitSizeEl.value.trim() : (prod.unitSize || '1kg');
+      const rate = rateEl ? (parseFloat(rateEl.value) || 0) : (prod.baseRate || 0);
+      const terms = termsEl ? termsEl.value.trim() : 'Standard Rate';
+      const weightKg = parseUnitSizeToKg(unitSize) || prod.unitWeightKg || 1.0;
+
+      if (!Array.isArray(currentQuotationData.items)) {
+        currentQuotationData.items = [];
       }
+
+      const existingIdx = currentQuotationData.items.findIndex(it => String(it.productId) === String(prod.id));
+      if (existingIdx >= 0) {
+        currentQuotationData.items[existingIdx].unitSize = unitSize;
+        currentQuotationData.items[existingIdx].unitWeightKg = weightKg;
+        currentQuotationData.items[existingIdx].rate = rate;
+        currentQuotationData.items[existingIdx].specialTerms = terms;
+      } else {
+        currentQuotationData.items.push({
+          productId: prod.id,
+          sku: prod.sku,
+          name: prod.name,
+          unitSize,
+          unitWeightKg: weightKg,
+          rate,
+          baseRate: Number(prod.baseRate || 0),
+          specialTerms: terms
+        });
+      }
+
+      renderQuoteEditorProductsTable();
+      renderPrintableQuotationCard();
+    }
+
+    function removeQuoteItemDirectly(prodId) {
+      if (!currentQuotationData || !Array.isArray(currentQuotationData.items)) return;
+      const prod = products.find(p => String(p.id) === String(prodId));
+      currentQuotationData.items = currentQuotationData.items.filter(it => 
+        String(it.productId) !== String(prodId) && (!prod || String(it.sku) !== String(prod.sku))
+      );
+      renderQuoteEditorProductsTable();
+      renderPrintableQuotationCard();
+    }
+
+    function addAllCatalogProductsToQuote() {
+      if (!currentQuotationData) return;
+      if (!Array.isArray(currentQuotationData.items)) currentQuotationData.items = [];
+
+      products.forEach(p => {
+        const exists = currentQuotationData.items.some(it => String(it.productId) === String(p.id) || String(it.sku) === String(p.sku));
+        if (!exists) {
+          const unitSizeEl = document.getElementById(`qe-unitsize-${p.id}`);
+          const rateEl = document.getElementById(`qe-rate-${p.id}`);
+          const termsEl = document.getElementById(`qe-terms-${p.id}`);
+
+          const unitSize = unitSizeEl ? unitSizeEl.value.trim() : (p.unitSize || '1kg');
+          const rate = rateEl ? (parseFloat(rateEl.value) || 0) : (getCustomerProductRate(currentQuotationCustomerId, p) || p.baseRate || 0);
+          const terms = termsEl ? termsEl.value.trim() : 'Standard MRP';
+          const weightKg = parseUnitSizeToKg(unitSize) || p.unitWeightKg || 1.0;
+
+          currentQuotationData.items.push({
+            productId: p.id,
+            sku: p.sku,
+            name: p.name,
+            unitSize,
+            unitWeightKg: weightKg,
+            rate,
+            baseRate: Number(p.baseRate || 0),
+            specialTerms: terms
+          });
+        }
+      });
+
+      renderQuoteEditorProductsTable();
+      renderPrintableQuotationCard();
+    }
+
+    function clearAllProductsFromQuote() {
+      if (!currentQuotationData) return;
+      if (!confirm("Are you sure you want to remove all products from this quotation?")) return;
+      currentQuotationData.items = [];
+      renderQuoteEditorProductsTable();
+      renderPrintableQuotationCard();
     }
 
     function populateQuoteEditorFields() {
@@ -6246,93 +6481,7 @@
       document.getElementById('quote-edit-tier').value = q.tier || 'Retail Partner';
       document.getElementById('quote-edit-terms').value = q.termsNotes || '';
 
-      renderStagedQuoteItemsList();
-    }
-
-    function renderStagedQuoteItemsList() {
-      const container = document.getElementById('quote-staged-items-list');
-      const countEl = document.getElementById('quote-staged-count');
-      if (!container || !currentQuotationData) return;
-
-      const items = currentQuotationData.items || [];
-      if (countEl) countEl.innerText = items.length;
-
-      if (items.length === 0) {
-        container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs">No items currently in quote. Select a product above to add.</div>`;
-        return;
-      }
-
-      container.innerHTML = items.map((it, idx) => {
-        const rateKg = calculateRatePerKg(it.rate, it.unitSize);
-        return `
-        <div class="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-bold text-slate-900">${idx + 1}. ${escapeHtml(it.name)}</span>
-              <span class="text-[10px] font-mono text-slate-500 font-semibold">(${escapeHtml(it.unitSize)})</span>
-              ${it.specialTerms ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">${escapeHtml(it.specialTerms)}</span>` : ''}
-            </div>
-            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-0.5">
-              ${formatINR(it.rate)} / pack ${rateKg ? `<span class="text-slate-500 font-normal">(${formatINR(rateKg)}/kg)</span>` : ''}
-            </div>
-          </div>
-          <button type="button" onclick="removeProductFromQuote(${idx})" class="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="Remove from Quote">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      `;
-      }).join('');
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function addProductToStagedQuote() {
-      const select = document.getElementById('quote-editor-prod-select');
-      if (!select || !select.value) {
-        alert("Please select a product from catalog to add.");
-        return;
-      }
-      const prod = products.find(p => String(p.id) === String(select.value));
-      if (!prod) return;
-
-      const unitSize = document.getElementById('quote-editor-unit-size')?.value.trim() || prod.unitSize || '-';
-      const rate = parseFloat(document.getElementById('quote-editor-rate')?.value) || 0;
-      const termsNote = document.getElementById('quote-editor-terms-note')?.value.trim() || 'Standard Rate';
-
-      if (!currentQuotationData.items) currentQuotationData.items = [];
-
-      // If already present, update rate & terms; otherwise add
-      const existingIdx = currentQuotationData.items.findIndex(i => String(i.productId) === String(prod.id));
-      if (existingIdx >= 0) {
-        currentQuotationData.items[existingIdx].unitSize = unitSize;
-        currentQuotationData.items[existingIdx].rate = rate;
-        currentQuotationData.items[existingIdx].specialTerms = termsNote;
-      } else {
-        currentQuotationData.items.push({
-          productId: prod.id,
-          sku: prod.sku,
-          name: prod.name,
-          unitSize,
-          rate,
-          baseRate: Number(prod.baseRate || 0),
-          specialTerms: termsNote
-        });
-      }
-
-      renderStagedQuoteItemsList();
-      renderPrintableQuotationCard();
-
-      // Reset selection
-      select.value = '';
-      document.getElementById('quote-editor-rate').value = '';
-      document.getElementById('quote-editor-terms-note').value = '';
-      updateQuoteEditorRateKgPreview();
-    }
-
-    function removeProductFromQuote(idx) {
-      if (!currentQuotationData || !currentQuotationData.items) return;
-      currentQuotationData.items.splice(idx, 1);
-      renderStagedQuoteItemsList();
-      renderPrintableQuotationCard();
+      renderQuoteEditorProductsTable();
     }
 
     function handleQuoteFieldLiveChange() {
@@ -6368,7 +6517,7 @@
         };
       });
 
-      renderStagedQuoteItemsList();
+      renderQuoteEditorProductsTable();
       renderPrintableQuotationCard();
     }
 
