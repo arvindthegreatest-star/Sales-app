@@ -684,8 +684,8 @@
                 <th class="p-3">SKU</th>
                 <th class="p-3">Product Name</th>
                 <th class="p-3">Category</th>
-                <th class="p-3">Packaging Unit</th>
-                <th class="p-3 text-right">Base Rate (₹)</th>
+                <th class="p-3">Unit Weight (Kg)</th>
+                <th class="p-3 text-right">Unit Price (₹ / pack)</th>
                 <th class="p-3 text-right">Initial</th>
                 <th class="p-3 text-right text-indigo-600 font-bold">Inward (+)</th>
                 <th class="p-3 text-right text-rose-600 font-bold">Sold/Out (-)</th>
@@ -1034,14 +1034,19 @@
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Packaging Unit Size *</label>
-            <input type="text" id="prod-unit-size" oninput="updateProductModalRateKgPreview()" required placeholder="e.g. 500g pouch, 1kg pack" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-0.5">Unit Weight in Kg (0.1kg - __kg) *</label>
+            <input type="number" id="prod-weight-kg" step="0.01" min="0.05" oninput="onProductModalWeightChanged()" required placeholder="e.g. 0.5 (for 500g)" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-xs">
+            <span class="text-[9px] text-slate-400 block mt-0.5">0.1 = 100g • 0.25 = 250g • 1 = 1kg</span>
           </div>
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Base Rate (₹) *</label>
-            <input type="number" id="prod-rate" oninput="updateProductModalRateKgPreview()" required min="0" step="any" placeholder="0.00" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
-            <div id="prod-ratekg-preview" class="text-[10px] font-mono text-indigo-600 font-semibold mt-0.5 truncate"></div>
+            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-0.5">Unit Price (₹ / pack) *</label>
+            <input type="number" id="prod-rate" oninput="updateProductModalRateKgPreview()" required min="0" step="any" placeholder="160.00" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-xs">
+            <div id="prod-ratekg-preview" class="text-[10px] font-mono text-indigo-700 font-bold mt-0.5 truncate"></div>
           </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Packaging Description / Label</label>
+          <input type="text" id="prod-unit-size" placeholder="Auto-generated e.g. 500g pouch" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs">
         </div>
         <div>
           <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Initial Stock Baseline (Units)</label>
@@ -1405,8 +1410,8 @@
           </p>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="openQuotationModal(currentPricingCustomerId)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
-            <i data-lucide="file-text" class="w-4 h-4"></i> Generate Quotation
+          <button type="button" onclick="generateQuotationFromSelectedPricing()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Generate quotation using selected products">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Generate Quotation (<span id="btn-quote-selected-count">0</span> Selected)
           </button>
           <button type="button" onclick="closeCustomerPricingModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition">
             <i data-lucide="x" class="w-5 h-5"></i>
@@ -1435,11 +1440,13 @@
           <table class="w-full text-left text-xs border-collapse">
             <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10">
               <tr>
-                <th class="p-2.5 rounded-l-xl">Product / SKU</th>
-                <th class="p-2.5">Pack Size</th>
-                <th class="p-2.5 text-right">Stock</th>
+                <th class="p-2.5 pl-3 w-10 text-center rounded-l-xl">
+                  <input type="checkbox" id="cust-pricing-select-all" onchange="toggleSelectAllQuoteProducts(this.checked)" checked title="Select/Deselect all products for Quotation" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer">
+                </th>
+                <th class="p-2.5">Product / SKU</th>
+                <th class="p-2.5">Unit Weight (Kg)</th>
                 <th class="p-2.5 text-right">Standard MRP</th>
-                <th class="p-2.5 text-center">Decided Custom Price (₹)</th>
+                <th class="p-2.5 text-center min-w-[170px]">Customer Quote Price (₹ / unit)</th>
                 <th class="p-2.5 text-center">Variance / Discount</th>
                 <th class="p-2.5 text-center rounded-r-xl">Action</th>
               </tr>
@@ -1451,17 +1458,20 @@
         </div>
       </div>
 
-      <!-- Footer Bar with Save At Once -->
+      <!-- Footer Bar with Save At Once & Upload to Quote -->
       <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
         <div class="text-xs text-slate-500">
-          💡 Alter any product's price directly and click <b>Save All Prices At Once</b>. All orders for this customer will automatically use these rates.
+          💡 Select products with checkboxes and set customer quote prices. Click <b>Upload Selected to Quote</b> to generate a custom quotation.
         </div>
         <div class="flex items-center gap-2">
           <button type="button" onclick="closeCustomerPricingModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
             Close
           </button>
-          <button type="button" onclick="saveAllCustomerPricesAtOnce()" id="btn-save-cust-prices" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
-            <i data-lucide="check-check" class="w-4 h-4"></i> Save All Prices At Once
+          <button type="button" onclick="saveAllCustomerPricesAtOnce(true)" id="btn-save-cust-prices" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="check-check" class="w-4 h-4"></i> Save Prices
+          </button>
+          <button type="button" onclick="generateQuotationFromSelectedPricing()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Upload Selected to Quote
           </button>
         </div>
       </div>
@@ -2569,9 +2579,10 @@
     const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
 
-    // PARSE UNIT SIZE TO KG (supports '500g', '250 gm', '1kg', '10 kg', '0.5kg', '750g', '500ml', etc.)
+    // PARSE UNIT SIZE TO KG (supports '500g', '250 gm', '1kg', '10 kg', '0.5kg', '750g', '500ml', or direct numeric kg)
     function parseUnitSizeToKg(unitSize) {
-      if (!unitSize) return null;
+      if (!unitSize && unitSize !== 0) return null;
+      if (typeof unitSize === 'number' && !isNaN(unitSize) && unitSize > 0) return unitSize;
       const str = String(unitSize).trim().toLowerCase();
       
       // 1. Grams: 100g, 250g, 500g, 100 gm, 250 grams, 100g pouch, etc.
@@ -2602,7 +2613,7 @@
       }
 
       const numOnly = parseFloat(str);
-      if (!isNaN(numOnly) && str === String(numOnly)) {
+      if (!isNaN(numOnly) && str === String(numOnly) && numOnly > 0) {
         return numOnly;
       }
 
@@ -2611,7 +2622,7 @@
 
     // CALCULATE RATE PER KG FROM UNIT PACK PRICE & UNIT SIZE
     function calculateRatePerKg(unitPrice, unitSize) {
-      const kg = parseUnitSizeToKg(unitSize);
+      const kg = (typeof unitSize === 'number' && !isNaN(unitSize) && unitSize > 0) ? unitSize : parseUnitSizeToKg(unitSize);
       const price = parseFloat(unitPrice);
       if (!kg || kg <= 0 || isNaN(price) || price <= 0) return null;
       return price / kg;
@@ -4883,7 +4894,10 @@
             <td class="p-3 font-mono font-bold text-slate-600 uppercase">${escapeHtml(p.sku)}</td>
             <td class="p-3 font-bold text-slate-900">${escapeHtml(p.name)}</td>
             <td class="p-3 text-slate-600">${escapeHtml(p.category || 'General')}</td>
-            <td class="p-3 font-mono"><span class="px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-800 text-xs">📦 ${escapeHtml(p.unitSize)}</span></td>
+            <td class="p-3 font-mono">
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-800 text-xs">⚖️ ${p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || '-'} kg</span>
+              <span class="text-[10px] text-slate-400 font-normal block mt-0.5">${escapeHtml(p.unitSize || '')}</span>
+            </td>
             <td class="p-3 font-mono text-right">
               <span class="font-black text-emerald-700">${formatINR(p.baseRate)}</span>
               ${(() => {
@@ -4910,13 +4924,31 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function onProductModalWeightChanged() {
+      const weightInput = document.getElementById('prod-weight-kg');
+      const unitSizeInput = document.getElementById('prod-unit-size');
+      if (!weightInput) return;
+      const w = parseFloat(weightInput.value);
+      if (w > 0) {
+        const curLabel = (unitSizeInput.value || '').trim();
+        const isAutoGenerated = !curLabel || /^\d+(\.\d+)?\s*(g|kg|gm)$/i.test(curLabel);
+        if (isAutoGenerated) {
+          unitSizeInput.value = w >= 1 ? `${w}kg` : `${Math.round(w * 1000)}g`;
+        }
+      }
+      updateProductModalRateKgPreview();
+    }
+
     function updateProductModalRateKgPreview() {
       const preview = document.getElementById('prod-ratekg-preview');
       if (!preview) return;
       const rate = parseFloat(document.getElementById('prod-rate')?.value);
+      const weightVal = parseFloat(document.getElementById('prod-weight-kg')?.value);
       const unitSize = document.getElementById('prod-unit-size')?.value;
-      const rKg = calculateRatePerKg(rate, unitSize);
-      if (rKg) {
+      const effectiveKg = weightVal > 0 ? weightVal : parseUnitSizeToKg(unitSize);
+
+      if (effectiveKg > 0 && rate >= 0) {
+        const rKg = rate / effectiveKg;
         preview.innerText = `≈ ${formatINR(rKg)} / kg`;
       } else {
         preview.innerText = '';
@@ -4934,12 +4966,16 @@
           document.getElementById('prod-sku').value = p.sku;
           document.getElementById('prod-name').value = p.name;
           document.getElementById('prod-category').value = p.category || '';
-          document.getElementById('prod-unit-size').value = p.unitSize;
+          const wKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || '';
+          document.getElementById('prod-weight-kg').value = wKg;
+          document.getElementById('prod-unit-size').value = p.unitSize || (wKg ? (wKg >= 1 ? `${wKg}kg` : `${Math.round(wKg * 1000)}g`) : '');
           document.getElementById('prod-rate').value = p.baseRate;
           document.getElementById('prod-initial-stock').value = p.initialStock || 0;
         }
       } else {
         document.getElementById('modal-product-title').innerText = "Add New Product";
+        document.getElementById('prod-weight-kg').value = '';
+        document.getElementById('prod-unit-size').value = '';
       }
 
       updateProductModalRateKgPreview();
@@ -4956,7 +4992,9 @@
       const sku = document.getElementById('prod-sku').value.trim().toUpperCase();
       const name = document.getElementById('prod-name').value.trim();
       const category = document.getElementById('prod-category').value.trim() || 'General';
-      const unitSize = document.getElementById('prod-unit-size').value.trim();
+      const rawUnitSize = document.getElementById('prod-unit-size').value.trim();
+      const weightKg = parseFloat(document.getElementById('prod-weight-kg').value) || parseUnitSizeToKg(rawUnitSize) || 1.0;
+      const unitSize = rawUnitSize || (weightKg >= 1 ? `${weightKg}kg` : `${Math.round(weightKg * 1000)}g`);
       const baseRate = parseFloat(document.getElementById('prod-rate').value) || 0;
       const initialStock = parseFloat(document.getElementById('prod-initial-stock').value) || 0;
 
@@ -4966,6 +5004,7 @@
         name,
         category,
         unitSize,
+        unitWeightKg: weightKg,
         baseRate,
         initialStock
       };
@@ -5490,36 +5529,45 @@
           }
         }
 
+        const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 0;
+        const currentPrice = isOverridden ? Number(existingOverride) : baseRate;
+        const currentRateKg = calculateRatePerKg(currentPrice, p.unitSize || weightKg);
+        const baseRateKg = calculateRatePerKg(baseRate, p.unitSize || weightKg);
+
         return `
           <tr class="hover:bg-slate-50/80 transition cust-bulk-row" data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <td class="p-2.5 pl-3 text-center">
+              <input type="checkbox" class="cust-pricing-quote-check w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer" data-pricing-prod-id="${escapeHtml(p.id)}" onchange="updateCustomerBulkPricingBadge()" checked title="Include in Quotation">
+            </td>
             <td class="p-2.5">
               <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
               <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</div>
             </td>
             <td class="p-2.5">
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
-              ${(() => {
-                const rKg = calculateRatePerKg(baseRate, p.unitSize);
-                return rKg ? `<div class="text-[9px] font-mono text-slate-400 mt-0.5">≈ ${formatINR(rKg)}/kg</div>` : '';
-              })()}
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">⚖️ ${weightKg ? weightKg + ' kg' : '-'}</span>
+              <div class="text-[9px] text-slate-400 mt-0.5">${escapeHtml(p.unitSize || '')}</div>
             </td>
-            <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : 'text-slate-600'}">
-              ${stock.balance}
-            </td>
-            <td class="p-2.5 text-right font-mono font-bold text-slate-700">
-              ${formatINR(baseRate)}
+            <td class="p-2.5 text-right font-mono text-slate-700">
+              <span class="font-bold">${formatINR(baseRate)}</span>
+              ${baseRateKg ? `<div class="text-[9px] font-normal text-slate-400">≈ ${formatINR(baseRateKg)}/kg</div>` : ''}
             </td>
             <td class="p-2.5 text-center">
-              <div class="inline-flex items-center relative">
-                <span class="absolute left-2.5 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
-                <input type="number" step="any" min="0"
-                       id="bulk-input-${escapeHtml(p.id)}"
-                       data-pricing-prod-id="${escapeHtml(p.id)}"
-                       data-base-rate="${baseRate}"
-                       value="${isOverridden ? existingOverride : ''}"
-                       placeholder="${baseRate}"
-                       oninput="onBulkPricingInputChanged(this)"
-                       class="w-28 pl-6 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono text-right outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+              <div class="inline-flex flex-col items-center">
+                <div class="inline-flex items-center relative">
+                  <span class="absolute left-2.5 text-xs font-mono font-bold text-slate-400 pointer-events-none">₹</span>
+                  <input type="number" step="any" min="0"
+                         id="bulk-input-${escapeHtml(p.id)}"
+                         data-pricing-prod-id="${escapeHtml(p.id)}"
+                         data-base-rate="${baseRate}"
+                         data-weight-kg="${weightKg}"
+                         value="${isOverridden ? existingOverride : ''}"
+                         placeholder="${baseRate}"
+                         oninput="onBulkPricingInputChanged(this)"
+                         class="w-28 pl-6 pr-2 py-1.5 bg-white border ${isOverridden ? 'border-indigo-500 bg-indigo-50/20 text-indigo-900 font-bold' : 'border-slate-300 text-slate-800'} rounded-xl text-xs font-mono text-right outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+                <div id="ratekg-sub-${escapeHtml(p.id)}" class="text-[10px] font-mono text-indigo-700 font-bold mt-0.5">
+                  ${currentRateKg ? `≈ ${formatINR(currentRateKg)}/kg` : ''}
+                </div>
               </div>
             </td>
             <td class="p-2.5 text-center" id="variance-cell-${escapeHtml(p.id)}">
@@ -5541,8 +5589,13 @@
     function onBulkPricingInputChanged(inputEl) {
       const prodId = inputEl.getAttribute('data-pricing-prod-id');
       const baseRate = parseFloat(inputEl.getAttribute('data-base-rate')) || 0;
+      const weightVal = parseFloat(inputEl.getAttribute('data-weight-kg')) || 0;
       const val = (inputEl.value || '').trim();
       const varianceCell = document.getElementById(`variance-cell-${prodId}`);
+      const rateSubEl = document.getElementById(`ratekg-sub-${prodId}`);
+
+      const prod = products.find(x => String(x.id) === String(prodId));
+      const effectiveWeight = weightVal > 0 ? weightVal : (prod ? (prod.unitWeightKg || parseUnitSizeToKg(prod.unitSize)) : 0);
 
       if (val !== '') {
         const num = parseFloat(val);
@@ -5560,11 +5613,18 @@
             varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Same as MRP</span>`;
           }
         }
+
+        if (rateSubEl && effectiveWeight > 0 && !isNaN(num)) {
+          rateSubEl.innerText = `≈ ${formatINR(num / effectiveWeight)}/kg`;
+        }
       } else {
         inputEl.classList.remove('border-indigo-500', 'bg-indigo-50/20', 'text-indigo-900', 'font-bold');
         inputEl.classList.add('border-slate-300');
         if (varianceCell) {
           varianceCell.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standard MRP</span>`;
+        }
+        if (rateSubEl && effectiveWeight > 0) {
+          rateSubEl.innerText = `≈ ${formatINR(baseRate / effectiveWeight)}/kg`;
         }
       }
       updateCustomerBulkPricingBadge();
@@ -5608,23 +5668,48 @@
       });
     }
 
+    function toggleSelectAllQuoteProducts(checked) {
+      const checkBoxes = document.querySelectorAll('#cust-bulk-pricing-tbody .cust-pricing-quote-check');
+      checkBoxes.forEach(cb => {
+        const row = cb.closest('tr');
+        if (!row || row.style.display !== 'none') {
+          cb.checked = checked;
+        }
+      });
+      updateCustomerBulkPricingBadge();
+    }
+
     function updateCustomerBulkPricingBadge() {
       const badge = document.getElementById('cust-pricing-badge');
-      if (!badge) return;
       const inputs = document.querySelectorAll('#cust-bulk-pricing-tbody input[data-pricing-prod-id]');
       let count = 0;
       inputs.forEach(inp => {
         if (inp.value && inp.value.trim() !== '') count++;
       });
-      badge.innerText = `${count} Custom Override${count !== 1 ? 's' : ''}`;
-      if (count > 0) {
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
-      } else {
-        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+      if (badge) {
+        badge.innerText = `${count} Custom Override${count !== 1 ? 's' : ''}`;
+        if (count > 0) {
+          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
+        } else {
+          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+        }
+      }
+
+      // Live count of selected products for quotation
+      const checkedBoxes = document.querySelectorAll('#cust-bulk-pricing-tbody .cust-pricing-quote-check:checked');
+      const totalBoxes = document.querySelectorAll('#cust-bulk-pricing-tbody .cust-pricing-quote-check');
+      const quoteCountBadge = document.getElementById('btn-quote-selected-count');
+      if (quoteCountBadge) {
+        quoteCountBadge.innerText = checkedBoxes.length;
+      }
+      const selectAllCb = document.getElementById('cust-pricing-select-all');
+      if (selectAllCb && totalBoxes.length > 0) {
+        selectAllCb.checked = (checkedBoxes.length === totalBoxes.length);
+        selectAllCb.indeterminate = (checkedBoxes.length > 0 && checkedBoxes.length < totalBoxes.length);
       }
     }
 
-    async function saveAllCustomerPricesAtOnce() {
+    async function saveAllCustomerPricesAtOnce(showAlert = true) {
       if (!currentPricingCustomerId) return;
       const cust = customers.find(c => c.id === currentPricingCustomerId);
       if (!cust) return;
@@ -5670,14 +5755,58 @@
 
       if (saveBtn) { 
         saveBtn.disabled = false; 
-        saveBtn.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> Save All Prices At Once'; 
+        saveBtn.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> Save Prices'; 
       }
 
       renderCustomersTable();
       renderOrderCatalog();
       if (window.lucide) lucide.createIcons();
 
-      alert(`✅ Saved ${overridesToSave.length} customized product rate(s) for ${cust.name}!`);
+      if (showAlert) {
+        alert(`✅ Saved ${overridesToSave.length} customized product rate(s) for ${cust.name}!`);
+      }
+    }
+
+    async function generateQuotationFromSelectedPricing() {
+      if (!currentPricingCustomerId) return;
+      const cust = customers.find(c => c.id === currentPricingCustomerId);
+      if (!cust) return;
+
+      // 1. Silently save any entered custom prices
+      await saveAllCustomerPricesAtOnce(false);
+
+      // 2. Identify chosen products from checkboxes
+      const checkedBoxes = Array.from(document.querySelectorAll('#cust-bulk-pricing-tbody .cust-pricing-quote-check:checked'));
+      if (checkedBoxes.length === 0) {
+        alert("Please select at least one product using the checkboxes to upload to the quotation.");
+        return;
+      }
+
+      const selectedProdIds = new Set(checkedBoxes.map(cb => String(cb.getAttribute('data-pricing-prod-id'))));
+      const selectedProds = products.filter(p => selectedProdIds.has(String(p.id)));
+
+      // 3. Construct quote items with customer-specific prices & converted rate/kg
+      const selectedItems = selectedProds.map(p => {
+        const agreedRate = getCustomerProductRate(currentPricingCustomerId, p);
+        const baseRate = Number(p.baseRate || 0);
+        const hasDiscount = (agreedRate < baseRate);
+        const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+        const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0;
+        return {
+          productId: p.id,
+          sku: p.sku,
+          name: p.name,
+          unitSize: p.unitSize || (weightKg + 'kg'),
+          unitWeightKg: weightKg,
+          rate: agreedRate,
+          baseRate: baseRate,
+          specialTerms: hasDiscount ? `-${discountPct}% Special Rate` : 'Standard Rate'
+        };
+      });
+
+      // 4. Close pricing modal and launch quotation studio with chosen items
+      closeCustomerPricingModal();
+      openQuotationModal(currentPricingCustomerId, null, selectedItems);
     }
 
     // ==============================================================================
@@ -5687,7 +5816,7 @@
     let currentQuotationData = null;
     let isQuotationEditorOpen = false;
 
-    function openQuotationModal(custId, quoteId = null) {
+    function openQuotationModal(custId, quoteId = null, selectedItems = null) {
       const targetCustId = custId || currentPricingCustomerId || (customers[0] ? customers[0].id : null);
       if (!targetCustId) {
         alert("Please select a customer to generate a quotation.");
@@ -5712,7 +5841,30 @@
       const defaultDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
       // Staged quotation data object
-      if (existingQuote) {
+      if (selectedItems && selectedItems.length > 0) {
+        if (existingQuote) {
+          currentQuotationData = JSON.parse(JSON.stringify(existingQuote));
+          currentQuotationData.items = selectedItems;
+        } else {
+          currentQuotationData = {
+            id: defaultRef,
+            customerId: cust.id,
+            customerName: cust.name,
+            contactPerson: cust.contactPerson || '',
+            contactPhone: cust.contactPhone || cust.phone || '',
+            contactRole: cust.contactRole || '',
+            tier: cust.tier || 'Retail',
+            route: (cust.homeRoute || 'General Beat').split(':')[0],
+            date: defaultDate,
+            validity: '3 Months',
+            moq: 'As agreed / product',
+            termsNotes: '• Payment terms: Payment on delivery of goods.\n• Price valid for 3 months from quotation date.\n• For any queries concerning this quotation, please reach out to me at 9731988411 / 9972374711.',
+            items: selectedItems,
+            isCurrentActive: true,
+            created_at: now.toISOString()
+          };
+        }
+      } else if (existingQuote) {
         currentQuotationData = JSON.parse(JSON.stringify(existingQuote));
       } else {
         const defaultItems = products.map(p => {
@@ -5720,14 +5872,16 @@
           const baseRate = Number(p.baseRate || 0);
           const hasDiscount = (agreedRate < baseRate);
           const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+          const weightKg = p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0;
           return {
             productId: p.id,
             sku: p.sku,
             name: p.name,
             unitSize: p.unitSize || '-',
+            unitWeightKg: weightKg,
             rate: agreedRate,
             baseRate: baseRate,
-            specialTerms: hasDiscount ? `-${discountPct}% (Save ${formatINR(baseRate - agreedRate)})` : 'Standard Rate'
+            specialTerms: hasDiscount ? `-${discountPct}% Special Rate` : 'Standard Rate'
           };
         });
 
@@ -5806,6 +5960,9 @@
             <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
             <td class="border-r border-black p-1.5">
               <span class="font-bold text-black font-sans">${escapeHtml(it.name)}</span>
+              <div class="text-[10px] text-black font-mono font-semibold mt-0.5">
+                (${formatINR(it.rate)} per unit, ${ratePerKg ? `${formatINR(ratePerKg)} per kg` : '-'})
+              </div>
               <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(it.sku || '-')}</span>
             </td>
             <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(it.unitSize || '-')}</td>
@@ -6161,7 +6318,10 @@
             specialTerms: ''
           }));
 
-      const lines = itemsToShare.map(it => `• *${it.name}* (${it.unitSize}): *${formatINR(it.rate)}* ${it.specialTerms ? `(${it.specialTerms})` : ''}`).join('\n');
+      const lines = itemsToShare.map(it => {
+        const rKg = calculateRatePerKg(it.rate, it.unitWeightKg || it.unitSize);
+        return `• *${it.name}* (${it.unitSize}): *${formatINR(it.rate)} per unit* ${rKg ? `(${formatINR(rKg)}/kg)` : ''} ${it.specialTerms ? `[${it.specialTerms}]` : ''}`;
+      }).join('\n');
 
       const text = `*${settings.companyName.toUpperCase()}*\n` +
         `*GSTIN: ${settings.gstin}*\n` +
@@ -6259,9 +6419,11 @@
             <td class="border-r border-black p-1.5 font-mono text-[11px] font-bold">${escapeHtml(it.sku || '-')}</td>
             <td class="border-r border-black p-1.5 font-sans">
               <span class="font-bold text-black">${escapeHtml(it.name)}</span>
-              <div class="text-[10px] text-slate-600 font-mono flex items-center gap-2 mt-0.5">
-                <span>Pack: <b>${escapeHtml(it.unitSize || '-')}</b></span>
-                ${ratePerKg ? `<span class="text-slate-500 font-normal">| Equiv. Rate: <b>${formatINR(ratePerKg)}/kg</b></span>` : ''}
+              <div class="text-[10px] text-black font-mono font-semibold mt-0.5">
+                (${formatINR(it.rate)} per unit, ${ratePerKg ? `${formatINR(ratePerKg)} per kg` : '-'})
+              </div>
+              <div class="text-[9px] text-slate-500 font-mono mt-0.5">
+                Pack: <b>${escapeHtml(it.unitSize || '-')}</b>
               </div>
             </td>
             <td class="border-r border-black p-1.5 text-center font-bold font-mono">
