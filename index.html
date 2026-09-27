@@ -2573,25 +2573,28 @@
       if (!unitSize) return null;
       const str = String(unitSize).trim().toLowerCase();
       
-      const gMatch = str.match(/^([\d.]+)\s*(?:g|gm|gms|gram|grams)$/);
+      // 1. Grams: 100g, 250g, 500g, 100 gm, 250 grams, 100g pouch, etc.
+      const gMatch = str.match(/([\d.]+)\s*(?:g|gm|gms|gram|grams)\b/);
       if (gMatch) {
         const val = parseFloat(gMatch[1]);
         return isNaN(val) ? null : val / 1000;
       }
       
-      const kgMatch = str.match(/^([\d.]+)\s*(?:kg|kgs|kilo|kilogram|kilograms)$/);
+      // 2. Kilograms: 1kg, 2kg, 5kg, 10kg, 25kg, 50kg, 1.5 kg, 10kg bag, 1kg pack, etc.
+      const kgMatch = str.match(/([\d.]+)\s*(?:kg|kgs|kilo|kilogram|kilograms)\b/);
       if (kgMatch) {
         const val = parseFloat(kgMatch[1]);
         return isNaN(val) ? null : val;
       }
       
-      const lMatch = str.match(/^([\d.]+)\s*(?:l|ltr|liter|liters|litre|litres)$/);
+      // 3. Liters / Milliliters if liquid products
+      const lMatch = str.match(/([\d.]+)\s*(?:l|ltr|liter|liters|litre|litres)\b/);
       if (lMatch) {
         const val = parseFloat(lMatch[1]);
         return isNaN(val) ? null : val;
       }
 
-      const mlMatch = str.match(/^([\d.]+)\s*(?:ml)$/);
+      const mlMatch = str.match(/([\d.]+)\s*(?:ml)\b/);
       if (mlMatch) {
         const val = parseFloat(mlMatch[1]);
         return isNaN(val) ? null : val / 1000;
