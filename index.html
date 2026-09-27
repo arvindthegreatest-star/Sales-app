@@ -679,14 +679,18 @@
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
               <tr>
                 <th class="p-3">SKU</th>
                 <th class="p-3">Product Name</th>
                 <th class="p-3">Category</th>
                 <th class="p-3">Packaging Unit</th>
                 <th class="p-3 text-right">Base Rate (₹)</th>
-                <th class="p-3 text-right">Initial Stock</th>
+                <th class="p-3 text-right">Initial</th>
+                <th class="p-3 text-right text-indigo-600 font-bold">Inward (+)</th>
+                <th class="p-3 text-right text-rose-600 font-bold">Sold/Out (-)</th>
+                <th class="p-3 text-right font-black text-slate-900">Live Available</th>
+                <th class="p-3 text-center">Stock Health</th>
                 <th class="p-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -2509,6 +2513,20 @@
     let orders = [];
     let routes = [];
     let inwardEntries = [];
+    try {
+      const savedInward = localStorage.getItem('sg_inward_entries');
+      if (savedInward) inwardEntries = JSON.parse(savedInward);
+    } catch (e) {
+      inwardEntries = [];
+    }
+
+    function saveInwardEntriesLocally() {
+      try {
+        localStorage.setItem('sg_inward_entries', JSON.stringify(inwardEntries));
+      } catch (e) {
+        console.warn("Error saving inward entries locally:", e);
+      }
+    }
     let sampleGiveaways = [];
     let contractPricing = [];
     let cart = {};
@@ -2645,7 +2663,11 @@
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_inward' }, async () => {
             const { data } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
-            if (data) { inwardEntries = data; refreshAllUI(); }
+            if (data && data.length > 0) { 
+              inwardEntries = data; 
+              saveInwardEntriesLocally();
+              refreshAllUI(); 
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'sample_giveaways' }, async () => {
             const { data } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
@@ -2679,7 +2701,33 @@
         if (dbOrders) orders = dbOrders;
 
         const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
-        if (dbInward) inwardEntries = dbInward;
+        if (dbInward && dbInward.length > 0) {
+          inwardEntries = dbInward;
+          saveInwardEntriesLocally();
+        } else {
+          // If Supabase has 0 records, preserve locally cached inward entries so nothing is lost!
+          const localSaved = localStorage.getItem('sg_inward_entries');
+          if (localSaved) {
+            try {
+              const parsed = JSON.parse(localSaved);
+              if (parsed && parsed.length > 0) {
+                inwardEntries = parsed;
+                // Auto-sync local inward entries to Supabase
+                const sanitized = parsed.map(r => ({
+                  id: r.id,
+                  date: r.date,
+                  product_sku: r.product_sku,
+                  product_name: r.product_name,
+                  unit_size: r.unit_size,
+                  quantity_units: r.quantity_units,
+                  batch_number: r.batch_number,
+                  supplier_or_source: r.supplier_or_source || 'Factory Production'
+                }));
+                supabaseClient.from('inventory_inward').upsert(sanitized).catch(() => {});
+              }
+            } catch (e) {}
+          }
+        }
 
         const { data: dbSamples } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
         if (dbSamples) sampleGiveaways = dbSamples;
@@ -3904,6 +3952,11 @@
           const batchInputId = isPage ? `inward-page-batch-${sku}` : `inward-batch-${sku}`;
           const specificBatch = (document.getElementById(batchInputId)?.value || '').trim();
 
+          const combinedSource = defaultNotes 
+            ? `${defaultSupplier || 'Factory Production'} (${defaultNotes})` 
+            : (defaultSupplier || 'Factory Production');
+
+          // Strictly match Supabase schema columns (no notes column in DB)
           const record = {
             id: 'inw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             date: receiptDate,
@@ -3912,8 +3965,7 @@
             unit_size: unitSize,
             quantity_units: qty,
             batch_number: specificBatch || defaultBatch || 'LOT-' + receiptDate.replace(/-/g, ''),
-            supplier_or_source: defaultSupplier,
-            notes: defaultNotes
+            supplier_or_source: combinedSource
           };
 
           newEntries.push(record);
@@ -3932,14 +3984,19 @@
         saveBtn.innerText = 'Crediting Warehouse Stock...';
       }
 
-      // Add to local state immediately
+      // Add to local state immediately and persist to local storage backup
       newEntries.forEach(entry => inwardEntries.unshift(entry));
+      saveInwardEntriesLocally();
 
       // Persist to Supabase
       if (supabaseClient) {
         try {
           const { error } = await supabaseClient.from('inventory_inward').insert(newEntries);
-          if (error) console.error("Supabase bulk inward insert error:", error);
+          if (error) {
+            console.error("Supabase bulk inward insert error:", error);
+          } else {
+            console.log("Supabase bulk inward saved successfully:", newEntries.length);
+          }
         } catch (err) {
           console.error("Bulk inward database persistence error:", err);
         }
@@ -3959,19 +4016,22 @@
       renderInwardTables();
       renderDashboard();
       renderOrderCatalog();
+      renderProductsTable();
 
-      alert(`✅ Successfully credited +${totalUnits} units across ${newEntries.length} product(s) into warehouse stock!`);
+      alert(`✅ Successfully credited +${totalUnits} units across ${newEntries.length} product(s) into warehouse inventory!`);
     }
 
     async function deleteInwardConfirm(inwardId) {
       if (!confirm("Delete this inward stock entry? (Stock will be deducted)")) return;
       inwardEntries = inwardEntries.filter(e => e.id !== inwardId);
+      saveInwardEntriesLocally();
       if (supabaseClient) {
         try { await supabaseClient.from('inventory_inward').delete().eq('id', inwardId); } catch (e) {}
       }
       renderInwardTables();
       renderDashboard();
       renderOrderCatalog();
+      renderProductsTable();
     }
 
     // 10. CUSTOMERS CRUD (REPS & MANAGERS)
@@ -4740,27 +4800,43 @@
     function renderProductsTable() {
       const tbody = document.getElementById('products-table-body');
       if (products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No products in catalog. Click <b>Add Product</b> to create one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No products in catalog. Click <b>Add Product</b> to create one.</td></tr>`;
         return;
       }
-      tbody.innerHTML = products.map(p => `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="p-3 font-mono font-bold text-slate-500 uppercase">${escapeHtml(p.sku)}</td>
-          <td class="p-3 font-bold text-slate-900">${escapeHtml(p.name)}</td>
-          <td class="p-3 text-slate-600">${escapeHtml(p.category || 'General')}</td>
-          <td class="p-3 font-mono">${escapeHtml(p.unitSize)}</td>
-          <td class="p-3 font-mono font-black text-right text-emerald-700">${formatINR(p.baseRate)}</td>
-          <td class="p-3 font-mono text-right text-slate-600">${p.initialStock || 0}</td>
-          <td class="p-3 text-right space-x-1 whitespace-nowrap">
-            <button onclick="openProductModal('${p.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Product">
-              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-            </button>
-            <button onclick="deleteProductConfirm('${p.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Product">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = products.map(p => {
+        const s = getProductStock(p);
+        let statusBadge = '';
+        if (s.balance <= 0) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800">Out of Stock (0)</span>`;
+        } else if (s.balance <= 10) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Low Stock (${s.balance})</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Healthy (${s.balance})</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 font-mono font-bold text-slate-600 uppercase">${escapeHtml(p.sku)}</td>
+            <td class="p-3 font-bold text-slate-900">${escapeHtml(p.name)}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(p.category || 'General')}</td>
+            <td class="p-3 font-mono">${escapeHtml(p.unitSize)}</td>
+            <td class="p-3 font-mono font-black text-right text-emerald-700">${formatINR(p.baseRate)}</td>
+            <td class="p-3 font-mono text-right text-slate-500">${s.initial}</td>
+            <td class="p-3 font-mono text-right text-indigo-600 font-bold">+${s.inward}</td>
+            <td class="p-3 font-mono text-right text-rose-600 font-bold">-${s.sold + s.samples}</td>
+            <td class="p-3 font-mono text-right font-black text-sm ${s.balance <= 0 ? 'text-rose-600' : s.balance <= 10 ? 'text-amber-600' : 'text-emerald-700'}">${s.balance}</td>
+            <td class="p-3 text-center">${statusBadge}</td>
+            <td class="p-3 text-right space-x-1 whitespace-nowrap">
+              <button onclick="openProductModal('${p.id}')" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Product">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="deleteProductConfirm('${p.id}')" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Product">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
       if (window.lucide) lucide.createIcons();
     }
 
