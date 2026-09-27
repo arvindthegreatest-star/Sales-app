@@ -1581,12 +1581,13 @@
                 </select>
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Size</label>
-                <input type="text" id="quote-editor-unit-size" placeholder="500g" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Pack</label>
+                <input type="text" id="quote-editor-unit-size" oninput="updateQuoteEditorRateKgPreview()" placeholder="500g" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Rate / kg (₹)</label>
-                <input type="number" step="0.5" id="quote-editor-rate" placeholder="180" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Price (₹ / pack)</label>
+                <input type="number" step="0.5" id="quote-editor-rate" oninput="updateQuoteEditorRateKgPreview()" placeholder="160" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+                <div id="quote-editor-ratekg-preview" class="text-[9px] font-mono text-indigo-600 font-semibold mt-0.5 truncate"></div>
               </div>
               <div class="sm:col-span-3">
                 <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Discount / Special Terms</label>
@@ -1675,8 +1676,9 @@
               <tr class="border-b-2 border-black font-black uppercase text-[10px] bg-slate-50">
                 <th class="border-r border-black p-1.5 text-center w-10">Sl No</th>
                 <th class="border-r border-black p-1.5">DESCRIPTION</th>
-                <th class="border-r border-black p-1.5 text-center w-24">UNIT SIZE(KG)</th>
-                <th class="border-r border-black p-1.5 text-right w-24">RATE/kg</th>
+                <th class="border-r border-black p-1.5 text-center w-20">UNIT PACK</th>
+                <th class="border-r border-black p-1.5 text-right w-24">UNIT PRICE (₹)</th>
+                <th class="border-r border-black p-1.5 text-right w-24">RATE / KG (₹)</th>
                 <th class="p-1.5 text-center w-36">SPECIAL TERMS / DISCOUNT</th>
               </tr>
             </thead>
@@ -1850,12 +1852,12 @@
                 </select>
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Qty / Units</label>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Qty (Units)</label>
                 <input type="number" id="inv-edit-add-qty" min="1" value="1" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
               </div>
               <div class="sm:col-span-3">
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Rate / kg (₹)</label>
-                <input type="number" step="0.5" id="inv-edit-add-rate" placeholder="Rate" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Price (₹ / pack)</label>
+                <input type="number" step="0.5" id="inv-edit-add-rate" placeholder="Pack Price" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
               </div>
               <div class="sm:col-span-2">
                 <button type="button" onclick="addItemToStagedInvoice()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1">
@@ -1873,9 +1875,9 @@
                 <thead class="bg-slate-100 text-[10px] font-bold uppercase text-slate-600">
                   <tr>
                     <th class="p-1.5">Item</th>
-                    <th class="p-1.5 text-center w-20">Qty</th>
-                    <th class="p-1.5 text-right w-24">Rate (₹)</th>
-                    <th class="p-1.5 text-right w-24">Total</th>
+                    <th class="p-1.5 text-center w-20">Qty (Units)</th>
+                    <th class="p-1.5 text-right w-24">Unit Price (₹)</th>
+                    <th class="p-1.5 text-right w-24">Total (₹)</th>
                     <th class="p-1.5 text-center w-12">Action</th>
                   </tr>
                 </thead>
@@ -1956,9 +1958,9 @@
                 <th class="border-r border-black p-1.5 text-center w-10">Sl No:</th>
                 <th class="border-r border-black p-1.5 w-20">Code</th>
                 <th class="border-r border-black p-1.5">Description of Goods</th>
-                <th class="border-r border-black p-1.5 text-right w-16">Qty / Kg</th>
-                <th class="border-r border-black p-1.5 text-right w-20">Rate</th>
-                <th class="p-1.5 text-right w-24">Amount</th>
+                <th class="border-r border-black p-1.5 text-center w-24">Qty (Units)</th>
+                <th class="border-r border-black p-1.5 text-right w-24">Unit Price (₹)</th>
+                <th class="p-1.5 text-right w-24">Amount (₹)</th>
               </tr>
             </thead>
             <tbody id="invoice-items-tbody" class="divide-y divide-black font-mono text-xs">
@@ -2565,6 +2567,51 @@
 
     const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+
+    // PARSE UNIT SIZE TO KG (supports '500g', '250 gm', '1kg', '10 kg', '0.5kg', '750g', '500ml', etc.)
+    function parseUnitSizeToKg(unitSize) {
+      if (!unitSize) return null;
+      const str = String(unitSize).trim().toLowerCase();
+      
+      const gMatch = str.match(/^([\d.]+)\s*(?:g|gm|gms|gram|grams)$/);
+      if (gMatch) {
+        const val = parseFloat(gMatch[1]);
+        return isNaN(val) ? null : val / 1000;
+      }
+      
+      const kgMatch = str.match(/^([\d.]+)\s*(?:kg|kgs|kilo|kilogram|kilograms)$/);
+      if (kgMatch) {
+        const val = parseFloat(kgMatch[1]);
+        return isNaN(val) ? null : val;
+      }
+      
+      const lMatch = str.match(/^([\d.]+)\s*(?:l|ltr|liter|liters|litre|litres)$/);
+      if (lMatch) {
+        const val = parseFloat(lMatch[1]);
+        return isNaN(val) ? null : val;
+      }
+
+      const mlMatch = str.match(/^([\d.]+)\s*(?:ml)$/);
+      if (mlMatch) {
+        const val = parseFloat(mlMatch[1]);
+        return isNaN(val) ? null : val / 1000;
+      }
+
+      const numOnly = parseFloat(str);
+      if (!isNaN(numOnly) && str === String(numOnly)) {
+        return numOnly;
+      }
+
+      return null;
+    }
+
+    // CALCULATE RATE PER KG FROM UNIT PACK PRICE & UNIT SIZE
+    function calculateRatePerKg(unitPrice, unitSize) {
+      const kg = parseUnitSizeToKg(unitSize);
+      const price = parseFloat(unitPrice);
+      if (!kg || kg <= 0 || isNaN(price) || price <= 0) return null;
+      return price / kg;
+    }
 
     function sanitizeSupabaseUrl(raw) {
       if (!raw) return '';
@@ -5414,6 +5461,10 @@
             </td>
             <td class="p-2.5">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
+              ${(() => {
+                const rKg = calculateRatePerKg(baseRate, p.unitSize);
+                return rKg ? `<div class="text-[9px] font-mono text-slate-400 mt-0.5">≈ ${formatINR(rKg)}/kg</div>` : '';
+              })()}
             </td>
             <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : 'text-slate-600'}">
               ${stock.balance}
@@ -5709,9 +5760,11 @@
       // Items table
       const tbody = document.getElementById('quote-items-tbody');
       if (!q.items || q.items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 font-sans">No products added to quotation. Use Edit Quote to add products.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400 font-sans">No products added to quotation. Use Edit Quote to add products.</td></tr>`;
       } else {
-        tbody.innerHTML = q.items.map((it, idx) => `
+        tbody.innerHTML = q.items.map((it, idx) => {
+          const ratePerKg = calculateRatePerKg(it.rate, it.unitSize);
+          return `
           <tr class="hover:bg-slate-50 transition">
             <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
             <td class="border-r border-black p-1.5">
@@ -5719,7 +5772,13 @@
               <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(it.sku || '-')}</span>
             </td>
             <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(it.unitSize || '-')}</td>
-            <td class="border-r border-black p-1.5 text-right font-mono font-black text-sm">${formatINR(it.rate)}</td>
+            <td class="border-r border-black p-1.5 text-right font-mono font-black text-xs sm:text-sm text-black">
+              ${formatINR(it.rate)}
+              <span class="text-[9px] font-normal text-slate-500 block">/ pack</span>
+            </td>
+            <td class="border-r border-black p-1.5 text-right font-mono font-bold text-xs text-black">
+              ${ratePerKg ? `${formatINR(ratePerKg)}<span class="text-[9px] font-normal text-slate-500 block">/ kg</span>` : '<span class="text-slate-400 font-normal text-[10px]">—</span>'}
+            </td>
             <td class="p-1.5 text-center font-sans">
               ${it.specialTerms ? `
                 <span class="inline-block px-1.5 py-0.5 border border-black font-bold text-[10px]">
@@ -5728,7 +5787,8 @@
               ` : `<span class="text-[10px] text-black">Standard Rate</span>`}
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       }
 
       // Terms & Banking
@@ -5782,6 +5842,19 @@
       }
     }
 
+    function updateQuoteEditorRateKgPreview() {
+      const previewEl = document.getElementById('quote-editor-ratekg-preview');
+      if (!previewEl) return;
+      const rate = parseFloat(document.getElementById('quote-editor-rate')?.value);
+      const unitSize = document.getElementById('quote-editor-unit-size')?.value;
+      const rateKg = calculateRatePerKg(rate, unitSize);
+      if (rateKg) {
+        previewEl.innerText = `≈ ${formatINR(rateKg)} / kg`;
+      } else {
+        previewEl.innerText = '';
+      }
+    }
+
     function onQuoteEditorProductSelected() {
       const select = document.getElementById('quote-editor-prod-select');
       if (!select || !select.value) return;
@@ -5791,6 +5864,7 @@
       document.getElementById('quote-editor-unit-size').value = prod.unitSize || '';
       const custRate = getCustomerProductRate(currentQuotationCustomerId, prod);
       document.getElementById('quote-editor-rate').value = custRate || prod.baseRate || 0;
+      updateQuoteEditorRateKgPreview();
       
       const baseRate = Number(prod.baseRate || 0);
       if (custRate < baseRate && baseRate > 0) {
@@ -5829,7 +5903,9 @@
         return;
       }
 
-      container.innerHTML = items.map((it, idx) => `
+      container.innerHTML = items.map((it, idx) => {
+        const rateKg = calculateRatePerKg(it.rate, it.unitSize);
+        return `
         <div class="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 flex-wrap">
@@ -5837,13 +5913,16 @@
               <span class="text-[10px] font-mono text-slate-500 font-semibold">(${escapeHtml(it.unitSize)})</span>
               ${it.specialTerms ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">${escapeHtml(it.specialTerms)}</span>` : ''}
             </div>
-            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-0.5">${formatINR(it.rate)} / kg</div>
+            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-0.5">
+              ${formatINR(it.rate)} / pack ${rateKg ? `<span class="text-slate-500 font-normal">(${formatINR(rateKg)}/kg)</span>` : ''}
+            </div>
           </div>
           <button type="button" onclick="removeProductFromQuote(${idx})" class="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="Remove from Quote">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           </button>
         </div>
-      `).join('');
+      `;
+      }).join('');
       if (window.lucide) lucide.createIcons();
     }
 
@@ -5887,6 +5966,7 @@
       select.value = '';
       document.getElementById('quote-editor-rate').value = '';
       document.getElementById('quote-editor-terms-note').value = '';
+      updateQuoteEditorRateKgPreview();
     }
 
     function removeProductFromQuote(idx) {
@@ -6132,18 +6212,33 @@
       // Line items
       const tbody = document.getElementById('invoice-items-tbody');
       if (Array.isArray(o.items) && o.items.length > 0) {
-        tbody.innerHTML = o.items.map((it, idx) => `
+        tbody.innerHTML = o.items.map((it, idx) => {
+          const kgPerUnit = parseUnitSizeToKg(it.unitSize);
+          const totalKg = (kgPerUnit && it.qty) ? (kgPerUnit * it.qty) : null;
+          const ratePerKg = calculateRatePerKg(it.rate, it.unitSize);
+          return `
           <tr class="hover:bg-slate-50 transition">
             <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
             <td class="border-r border-black p-1.5 font-mono text-[11px] font-bold">${escapeHtml(it.sku || '-')}</td>
-            <td class="border-r border-black p-1.5 font-sans font-bold text-black">
-              ${escapeHtml(it.name)} ${it.unitSize ? `<span class="text-[10px] font-normal text-slate-600">(${escapeHtml(it.unitSize)})</span>` : ''}
+            <td class="border-r border-black p-1.5 font-sans">
+              <span class="font-bold text-black">${escapeHtml(it.name)}</span>
+              <div class="text-[10px] text-slate-600 font-mono flex items-center gap-2 mt-0.5">
+                <span>Pack: <b>${escapeHtml(it.unitSize || '-')}</b></span>
+                ${ratePerKg ? `<span class="text-slate-500 font-normal">| Equiv. Rate: <b>${formatINR(ratePerKg)}/kg</b></span>` : ''}
+              </div>
             </td>
-            <td class="border-r border-black p-1.5 text-right font-bold font-mono">${it.qty}</td>
-            <td class="border-r border-black p-1.5 text-right font-mono">${formatINR(it.rate)}</td>
-            <td class="p-1.5 text-right font-black font-mono">${formatINR(it.total)}</td>
+            <td class="border-r border-black p-1.5 text-center font-bold font-mono">
+              <span class="text-xs sm:text-sm text-black">${it.qty}</span>
+              <span class="text-[9px] font-normal text-slate-500 block">${totalKg ? `${Number(totalKg.toFixed(2))} kg net` : 'Units'}</span>
+            </td>
+            <td class="border-r border-black p-1.5 text-right font-mono">
+              <span class="font-bold text-black">${formatINR(it.rate)}</span>
+              <span class="text-[9px] font-normal text-slate-500 block">/ pack</span>
+            </td>
+            <td class="p-1.5 text-right font-black font-mono text-sm">${formatINR(it.total)}</td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       } else {
         tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items listed on order.</td></tr>`;
       }
@@ -6271,11 +6366,13 @@
         return;
       }
 
-      tbody.innerHTML = items.map((it, idx) => `
+      tbody.innerHTML = items.map((it, idx) => {
+        const rateKg = calculateRatePerKg(it.rate, it.unitSize);
+        return `
         <tr class="hover:bg-slate-50 transition">
           <td class="p-1.5">
             <span class="font-bold text-slate-800">${escapeHtml(it.name)}</span>
-            <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(it.sku)} (${escapeHtml(it.unitSize || '-')})</span>
+            <span class="text-[10px] text-slate-500 font-mono block">${escapeHtml(it.sku)} (${escapeHtml(it.unitSize || '-')}) ${rateKg ? `• ≈ ${formatINR(rateKg)}/kg` : ''}</span>
           </td>
           <td class="p-1.5 text-center">
             <input type="number" min="1" value="${it.qty}" onchange="updateInvoiceItemQty(${idx}, this.value)" class="w-16 p-1 bg-white border border-slate-300 rounded text-center font-bold text-xs">
@@ -6290,7 +6387,8 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
       if (window.lucide) lucide.createIcons();
     }
 
