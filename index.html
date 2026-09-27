@@ -119,6 +119,12 @@
           <i data-lucide="map" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span>Routes</span>
         </button>
+
+        <!-- Direct Bank Account & UPI QR Code Management -->
+        <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-emerald-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-emerald-500 shadow-xs cursor-pointer ml-1" title="Manage Official Bank Account & UPI QR Code">
+          <i data-lucide="landmark" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Bank & QR</span>
+        </button>
       </nav>
 
     </div>
@@ -371,6 +377,7 @@
             <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
               <tr>
                 <th class="p-3">Store Name & Address</th>
+                <th class="p-3">Contact Person</th>
                 <th class="p-3">Tier</th>
                 <th class="p-3">Route Beat</th>
                 <th class="p-3">Phone</th>
@@ -467,18 +474,133 @@
     </section>
 
     <!-- 6. INWARD INVENTORY & STOCK RECONCILIATION VIEW (MANAGER ONLY) -->
-    <section id="view-inward" class="hidden space-y-5">
-      <div class="flex items-center justify-between flex-wrap gap-2">
+    <section id="view-inward" class="hidden space-y-6">
+      
+      <!-- Top Title & Quick Action Bar -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-lg font-bold text-slate-900">Inward Inventory & Stock Reconciliation</h2>
-            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager</span>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <span class="p-1.5 rounded-xl bg-indigo-600 text-white shadow-xs">
+                <i data-lucide="arrow-down-to-dot" class="w-5 h-5"></i>
+              </span>
+              Inward Inventory & Stock Reconciliation
+            </h2>
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Manager Mode</span>
           </div>
-          <p class="text-xs text-slate-500">Live formula: Initial + Inward Receipts - Commercial Orders - Free Samples = Live Balance</p>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Live reconciliation formula: Initial Baseline + Inward Receipts − Commercial Orders − Free Samples = <b>Live Warehouse Stock</b>
+          </p>
         </div>
-        <button onclick="openInwardModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
-          <i data-lucide="plus" class="w-4 h-4"></i> Log Inward Stock
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="scrollToInwardEntryCard()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Inward New Stock
+          </button>
+          <button onclick="openInwardModal()" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition" title="Open inward stock entry as a popup modal">
+            <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-slate-400"></i> Popup View
+          </button>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           PRIMARY SECTION: INWARD FACTORY STOCK ARRIVAL (OPEN LIST OF ALL PRODUCTS)
+           ========================================================================= -->
+      <div id="inward-entry-card" class="bg-white rounded-3xl border-2 border-indigo-100 shadow-md overflow-hidden transition">
+        <!-- Card Top Bar -->
+        <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 rounded-md bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-black tracking-wider uppercase">
+                Bulk Inward Entry
+              </span>
+              <h3 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                Factory Stock Arrival List
+              </h3>
+              <span id="inward-page-summary-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                0 products staged (0 units)
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1">
+              Enter incoming stock quantities across products below and credit warehouse inventory at once in a single click.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="clearAllInwardQuantities('page')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Clear Inputs
+            </button>
+          </div>
+        </div>
+
+        <!-- Shipment Level Metadata (Date, Batch, Supplier, Notes) -->
+        <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Receipt Date *</label>
+              <input type="date" id="inward-page-date" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-semibold outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Default Batch / Lot #</label>
+              <input type="text" id="inward-page-batch-default" placeholder="e.g. LOT-2026-SEP-01" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Supplier / Factory Source</label>
+              <input type="text" id="inward-page-supplier-default" value="Factory Production" placeholder="e.g. Factory Grinding Plant" class="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Shipment Notes / Reference</label>
+              <input type="text" id="inward-page-notes-default" placeholder="e.g. QC passed, van delivery" class="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Bar & Quick Increment Controls -->
+        <div class="px-4 py-2.5 bg-slate-100/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="relative flex-1 min-w-[240px]">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="inward-page-catalog-search" oninput="filterInwardCatalogTable('page')" placeholder="Filter products by SKU or name..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500">
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
+            <span class="text-[11px] font-semibold text-slate-600">Quick Helpers:</span>
+            <button type="button" onclick="bulkIncrementAllInward('page', 10)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-[11px] shadow-2xs transition">+10 to all</button>
+            <button type="button" onclick="bulkIncrementAllInward('page', 50)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-[11px] shadow-2xs transition">+50 to all</button>
+            <button type="button" onclick="bulkIncrementAllInward('page', 100)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-[11px] shadow-2xs transition">+100 to all</button>
+          </div>
+        </div>
+
+        <!-- Scrollable Open List of ALL Products -->
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10 shadow-2xs">
+              <tr>
+                <th class="p-2.5 pl-4">Product / SKU</th>
+                <th class="p-2.5">Pack Unit</th>
+                <th class="p-2.5 text-right">Current Stock</th>
+                <th class="p-2.5 text-center min-w-[210px]">Inward Units (+)</th>
+                <th class="p-2.5 min-w-[150px]">Batch / Lot # (Optional)</th>
+                <th class="p-2.5 text-right w-28">New Balance</th>
+                <th class="p-2.5 text-center pr-4 w-12">Action</th>
+              </tr>
+            </thead>
+            <tbody id="inward-page-products-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically with all products -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer Action Bar -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+          <div class="text-xs text-slate-500">
+            💡 Enter inward units for each arriving product. Only products with <b>Quantity &gt; 0</b> will be credited.
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="clearAllInwardQuantities('page')" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
+              Reset All
+            </button>
+            <button type="button" onclick="saveAllInwardStockAtOnce('page')" id="btn-save-page-bulk-inward" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2">
+              <i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Live Reconciliation Table -->
@@ -617,10 +739,38 @@
 
       <form id="form-customer" onsubmit="handleSaveCustomer(event)" class="space-y-3 text-xs flex-1 overflow-y-auto pr-1">
         <input type="hidden" id="cust-id" value="">
-        <div>
-          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store / Business Name *</label>
-          <input type="text" id="cust-name" required placeholder="e.g. Hotel Grand Royal" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store / Business Name *</label>
+            <input type="text" id="cust-name" required placeholder="e.g. Hotel Grand Royal" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Customer GSTIN / Tax ID</label>
+            <input type="text" id="cust-gstin" placeholder="e.g. 29AABCU9603R1ZM" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono uppercase font-bold">
+          </div>
         </div>
+
+        <!-- Contact Person Section -->
+        <div class="p-2.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-2">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1">
+            <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i> Contact Person Details
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Person Name</label>
+              <input type="text" id="cust-contact-person" placeholder="e.g. Ramesh Kumar" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Designation / Role</label>
+              <input type="text" id="cust-contact-role" placeholder="e.g. Purchase Manager" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Direct Mobile</label>
+              <input type="tel" id="cust-contact-phone" placeholder="e.g. 98450 11223" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Tier *</label>
@@ -632,7 +782,7 @@
             </select>
           </div>
           <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Phone Number *</label>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Store Phone Number *</label>
             <input type="tel" id="cust-phone" required placeholder="10-digit mobile" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
           </div>
         </div>
@@ -801,10 +951,13 @@
       <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div class="relative flex-1 min-w-[220px]">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-          <input type="text" id="inward-catalog-search" oninput="filterInwardCatalogTable()" placeholder="Search products by SKU or name..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500">
+          <input type="text" id="inward-catalog-search" oninput="filterInwardCatalogTable('modal')" placeholder="Search products by SKU or name..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-500">
         </div>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="clearAllInwardQuantities()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] font-semibold text-slate-600 hidden sm:inline">Boosters:</span>
+          <button type="button" onclick="bulkIncrementAllInward('modal', 10)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-[11px] shadow-2xs transition">+10 to all</button>
+          <button type="button" onclick="bulkIncrementAllInward('modal', 50)" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 font-bold text-[11px] shadow-2xs transition">+50 to all</button>
+          <button type="button" onclick="clearAllInwardQuantities('modal')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs border border-slate-200 transition flex items-center gap-1">
             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Clear All
           </button>
         </div>
@@ -814,15 +967,15 @@
       <div class="flex-1 overflow-y-auto p-3 sm:p-4">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10">
+            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10 shadow-2xs">
               <tr>
-                <th class="p-2.5 rounded-l-xl">Product / SKU</th>
+                <th class="p-2.5 rounded-l-xl pl-3">Product / SKU</th>
                 <th class="p-2.5">Pack Size</th>
                 <th class="p-2.5 text-right">Current Live Stock</th>
-                <th class="p-2.5 text-center w-32">Inward Qty (+)</th>
-                <th class="p-2.5 w-36">Lot / Batch # (Optional)</th>
+                <th class="p-2.5 text-center min-w-[210px]">Inward Qty (+)</th>
+                <th class="p-2.5 min-w-[150px]">Lot / Batch # (Optional)</th>
                 <th class="p-2.5 text-right w-28">New Balance</th>
-                <th class="p-2.5 text-center rounded-r-xl w-12">Action</th>
+                <th class="p-2.5 text-center rounded-r-xl pr-3 w-12">Action</th>
               </tr>
             </thead>
             <tbody id="inward-products-tbody" class="divide-y divide-slate-100">
@@ -841,7 +994,7 @@
           <button type="button" onclick="closeInwardModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
             Cancel
           </button>
-          <button type="button" onclick="saveAllInwardStockAtOnce()" id="btn-save-bulk-inward" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+          <button type="button" onclick="saveAllInwardStockAtOnce('modal')" id="btn-save-bulk-inward" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
             <i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once
           </button>
         </div>
@@ -1325,6 +1478,15 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="toggleQuotationManagerEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs flex items-center gap-1 shadow-xs transition" id="btn-toggle-quote-editor" title="Manager Editor: Edit fields & add/remove products">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Quote
+          </button>
+          <button type="button" onclick="openCustomerQuotationHistorySelector()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-xs flex items-center gap-1 transition" title="Past Quotes Archive for this Customer">
+            <i data-lucide="history" class="w-3.5 h-3.5"></i> Quotes
+          </button>
+          <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1 transition" title="Update Official Bank Details & QR Code">
+            <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Bank & QR
+          </button>
           <button type="button" onclick="downloadQuotationPdf()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
           </button>
@@ -1343,8 +1505,124 @@
         </div>
       </div>
 
-      <!-- Scrollable Printable Card Area -->
-      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
+      <!-- Scrollable Printable Card & Editor Area -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex flex-col items-center gap-4">
+        
+        <!-- Manager Quotation Editor Collapsible Panel -->
+        <div id="quotation-manager-editor-panel" class="w-full max-w-2xl bg-white border-2 border-amber-400 rounded-2xl p-4 shadow-lg space-y-3 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-amber-200">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 bg-amber-100 text-amber-900 rounded-lg"><i data-lucide="shield-check" class="w-4 h-4"></i></span>
+              <div>
+                <h4 class="font-black text-xs uppercase tracking-wider text-amber-900">Manager Quotation Editor & Product Selector</h4>
+                <p class="text-[10px] text-slate-500">Edit fields, select products to add/remove, and save to customer history database</p>
+              </div>
+            </div>
+            <button type="button" onclick="toggleQuotationManagerEditor(false)" class="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Quotation Header Fields -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Quotation Ref No</label>
+              <input type="text" id="quote-edit-ref" oninput="handleQuoteFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Quotation Date</label>
+              <input type="text" id="quote-edit-date" oninput="handleQuoteFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Validity Period</label>
+              <input type="text" id="quote-edit-validity" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. 3 Months" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">MOQ Terms</label>
+              <input type="text" id="quote-edit-moq" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. As agreed / product" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Contact Person Name</label>
+              <input type="text" id="quote-edit-contact-person" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. Ramesh Kumar" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Contact Direct Phone</label>
+              <input type="text" id="quote-edit-contact-phone" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. 98450 11223" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Customer Category / Tier</label>
+              <input type="text" id="quote-edit-tier" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. Wholesale / Retail" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Terms & Notes (Bullets separated by new line)</label>
+            <textarea id="quote-edit-terms" oninput="handleQuoteFieldLiveChange()" rows="2" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-tight" placeholder="Payment on delivery of goods..."></textarea>
+          </div>
+
+          <!-- Product Picker: Add / Remove Products to Quote -->
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div class="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Select Product to Add to Quote</span>
+              <span class="text-[10px] text-slate-400 font-normal">Pick from catalog and customize rate & terms</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-end">
+              <div class="sm:col-span-4">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Catalog Product</label>
+                <select id="quote-editor-prod-select" onchange="onQuoteEditorProductSelected()" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Unit Size</label>
+                <input type="text" id="quote-editor-unit-size" placeholder="500g" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Rate / kg (₹)</label>
+                <input type="number" step="0.5" id="quote-editor-rate" placeholder="180" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+              </div>
+              <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Discount / Special Terms</label>
+                <input type="text" id="quote-editor-terms-note" placeholder="e.g. -5% Special Rate" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              </div>
+              <div class="sm:col-span-1">
+                <button type="button" onclick="addProductToStagedQuote()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center" title="Add Product to Quotation">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Staged Items Quick Removal List -->
+          <div>
+            <div class="text-[10px] font-bold uppercase text-slate-500 mb-1 flex items-center justify-between">
+              <span>Items Currently in this Quote (<span id="quote-staged-count">0</span>)</span>
+              <span class="text-[9px] text-slate-400">Click 🗑️ to remove an item from the quote</span>
+            </div>
+            <div id="quote-staged-items-list" class="max-h-36 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl bg-white text-xs">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+            <button type="button" onclick="revertQuotationToCustomerContractRates()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset to Catalog Rates
+            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="toggleQuotationManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition">
+                Close Editor
+              </button>
+              <button type="button" onclick="saveCurrentQuotationToDatabase()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
+                <i data-lucide="save" class="w-3.5 h-3.5"></i> Save Active Quote & Record to History
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- A4 Printable Quotation Card (Official Black & White Format) -->
         <div id="quotation-printable-card" class="bg-white text-black font-sans w-full max-w-2xl p-6 sm:p-8 border-2 border-black printable-section space-y-4 shadow-sm">
           
@@ -1367,7 +1645,7 @@
             <div class="text-right border-l-2 border-black pl-3 space-y-0.5">
               <div><span class="font-bold">DATE:</span> <span id="quote-date" class="font-mono font-bold">-</span></div>
               <div><span class="font-bold">REF NO:</span> <span id="quote-ref-number" class="font-mono font-bold">QTN-1001</span></div>
-              <div class="text-[10px] text-black">VALIDITY: <b>3 Months</b></div>
+              <div class="text-[10px] text-black">VALIDITY: <b id="quote-validity">3 Months</b></div>
             </div>
           </div>
 
@@ -1376,13 +1654,14 @@
             <div>
               <span class="font-black uppercase text-[10px] block">quotation/bill for:</span>
               <h3 class="text-sm font-black uppercase mt-0.5" id="quote-cust-name">-</h3>
+              <p class="text-[11px] font-bold text-black" id="quote-cust-contact">-</p>
               <p class="text-[11px] mt-0.5" id="quote-cust-address">-</p>
               <p class="text-[11px] font-mono mt-0.5" id="quote-cust-phone">-</p>
             </div>
             <div class="sm:text-right space-y-1">
               <div><span class="font-bold uppercase text-[10px]">Customer Category:</span> <span id="quote-cust-tier" class="font-bold block">Retail Partner</span></div>
               <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="quote-cust-route" class="font-bold block">-</span></div>
-              <div class="text-[10px] font-black uppercase border border-black p-1 inline-block mt-1">MOQ: As agreed / product</div>
+              <div class="text-[10px] font-black uppercase border border-black p-1 inline-block mt-1">MOQ: <span id="quote-moq">As agreed / product</span></div>
             </div>
           </div>
 
@@ -1406,11 +1685,14 @@
           <div class="border-2 border-black p-3 text-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
               <div class="text-[10px] font-black uppercase tracking-wider">Terms & Notes:</div>
-              <p class="text-[11px] leading-tight">• Payment terms: Payment on delivery of goods.</p>
-              <p class="text-[11px] leading-tight">• Price valid for 3 months from quotation date.</p>
-              <p class="text-[11px] leading-tight">• For any queries concerning this quotation, please reach out to me at <b>9731988411 / 9972374711</b>.</p>
+              <div id="quote-terms-notes" class="text-[11px] leading-tight space-y-0.5">
+                <p>• Payment terms: Payment on delivery of goods.</p>
+                <p>• Price valid for 3 months from quotation date.</p>
+                <p>• For any queries concerning this quotation, please reach out to me at <b>9731988411 / 9972374711</b>.</p>
+              </div>
               <div class="pt-1 text-[10px] font-mono space-y-0.5">
                 <div>Bank: <b id="quote-bank-name">State Bank of India</b></div>
+                <div>A/C Name: <b id="quote-bank-acc-name">Sri Govinda Food Products</b></div>
                 <div>A/C: <b id="quote-bank-acc-num">38920194820</b> (IFSC: <b id="quote-bank-ifsc">SBIN0001234</b>)</div>
                 <div>UPI: <b id="quote-bank-upi">9731988411@upi</b></div>
               </div>
@@ -1456,6 +1738,12 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="toggleInvoiceManagerEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs flex items-center gap-1 shadow-xs transition" id="btn-toggle-invoice-editor" title="Manager Editor: Edit Bill of Supply fields and items">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Bill
+          </button>
+          <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1 transition" title="Update Official Bank Details & QR Code">
+            <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Bank & QR
+          </button>
           <button type="button" onclick="downloadInvoicePdf()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
           </button>
@@ -1474,8 +1762,149 @@
         </div>
       </div>
 
-      <!-- Scrollable Printable Card Area -->
-      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex justify-center">
+      <!-- Scrollable Printable Card & Editor Area -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/60 flex flex-col items-center gap-4">
+        
+        <!-- Manager Bill of Supply / Tax Invoice Editor Panel -->
+        <div id="invoice-manager-editor-panel" class="w-full max-w-2xl bg-white border-2 border-amber-400 rounded-2xl p-4 shadow-lg space-y-3 hidden">
+          <div class="flex items-center justify-between pb-2 border-b border-amber-200">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 bg-amber-100 text-amber-900 rounded-lg"><i data-lucide="shield-check" class="w-4 h-4"></i></span>
+              <div>
+                <h4 class="font-black text-xs uppercase tracking-wider text-amber-900">Manager Bill of Supply / Invoice Editor</h4>
+                <p class="text-[10px] text-slate-500">Edit invoice number, date, purchaser, items, rates, quantities & discount</p>
+              </div>
+            </div>
+            <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Header & Purchaser Fields -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Bill / Order No</label>
+              <input type="text" id="inv-edit-ref" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Invoice Date</label>
+              <input type="text" id="inv-edit-date" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Payment Mode</label>
+              <select id="inv-edit-pay-mode" onchange="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold">
+                <option value="Cash on Delivery">Cash on Delivery</option>
+                <option value="UPI Transfer">UPI Transfer</option>
+                <option value="Credit / Udhaar">Credit / Udhaar</option>
+                <option value="Cheque">Cheque</option>
+                <option value="NEFT / Bank Transfer">NEFT / Bank Transfer</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Route Beat</label>
+              <input type="text" id="inv-edit-route" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Purchaser / Store Name</label>
+              <input type="text" id="inv-edit-buyer-name" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Purchaser Phone</label>
+              <input type="text" id="inv-edit-buyer-phone" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Purchaser GST No</label>
+              <input type="text" id="inv-edit-buyer-gstin" oninput="handleInvoiceFieldLiveChange()" placeholder="Unregistered / Retail" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono uppercase">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Delivery Address</label>
+              <input type="text" id="inv-edit-buyer-address" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Delivery Notes</label>
+              <input type="text" id="inv-edit-notes" oninput="handleInvoiceFieldLiveChange()" placeholder="Optional delivery instructions" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <!-- Add Product to Bill -->
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div class="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Add Item to Bill of Supply</span>
+              <span class="text-[10px] text-slate-400 font-normal">Add line items or modify quantities & rates below</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-end">
+              <div class="sm:col-span-5">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Product</label>
+                <select id="inv-edit-add-prod-select" onchange="onInvoiceAddProductSelected()" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Qty / Units</label>
+                <input type="number" id="inv-edit-add-qty" min="1" value="1" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+              </div>
+              <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Rate / kg (₹)</label>
+                <input type="number" step="0.5" id="inv-edit-add-rate" placeholder="Rate" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+              </div>
+              <div class="sm:col-span-2">
+                <button type="button" onclick="addItemToStagedInvoice()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Staged Items in Bill Table -->
+          <div>
+            <div class="text-[10px] font-bold uppercase text-slate-500 mb-1">Items in this Bill</div>
+            <div class="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+              <table class="w-full text-xs text-left bg-white">
+                <thead class="bg-slate-100 text-[10px] font-bold uppercase text-slate-600">
+                  <tr>
+                    <th class="p-1.5">Item</th>
+                    <th class="p-1.5 text-center w-20">Qty</th>
+                    <th class="p-1.5 text-right w-24">Rate (₹)</th>
+                    <th class="p-1.5 text-right w-24">Total</th>
+                    <th class="p-1.5 text-center w-12">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="inv-edit-items-tbody" class="divide-y divide-slate-100">
+                  <!-- Dynamically rendered editable rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rebate and Totals Live Bar -->
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-slate-700 text-[11px]">Special Rebate (₹):</label>
+              <input type="number" step="0.5" id="inv-edit-rebate" oninput="handleInvoiceRebateChange()" value="0" class="w-24 p-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold">
+            </div>
+            <div class="font-mono text-xs flex items-center gap-3">
+              <span>Subtotal: <b id="inv-edit-calc-subtotal">₹0</b></span>
+              <span class="text-emerald-700 font-bold">Net Total: <b id="inv-edit-calc-net" class="text-sm">₹0</b></span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition">
+              Cancel
+            </button>
+            <button type="button" onclick="saveInvoiceChanges()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Save & Apply Changes to Bill
+            </button>
+          </div>
+        </div>
+
         <!-- A4 Printable Bill of Supply / Tax Invoice Card (Official Black & White Format) -->
         <div id="invoice-printable-card" class="bg-white text-black font-sans w-full max-w-2xl p-6 sm:p-8 border-2 border-black printable-section space-y-4 shadow-sm">
           
@@ -1608,6 +2037,9 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1 transition" title="Update Official Bank Details & QR Code">
+            <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Bank & QR
+          </button>
           <button type="button" onclick="downloadStatementPdf()" class="px-3 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-xs transition">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF Slip
           </button>
@@ -1758,6 +2190,168 @@
   </div>
 
   <!-- ==============================================================================
+       MODAL: CUSTOMER PROFILE & QUOTATIONS DATABASE (PAST & ACTIVE QUOTES)
+       ============================================================================== -->
+  <div id="modal-customer-profile" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Header -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+            <i data-lucide="contact-2" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white" id="cust-profile-modal-name">Customer Profile</h3>
+            <p class="text-[11px] text-slate-400" id="cust-profile-modal-subtitle">Customer Directory, Contact Person & Quotations Archive</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="createNewQuotationForProfileCustomer()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition" title="Create New Quotation for this Customer">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> New Quotation
+          </button>
+          <button type="button" onclick="openStatementFromProfile()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1 transition" title="View Statement Slip">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
+          </button>
+          <button type="button" onclick="editCustomerFromProfile()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1 transition" title="Edit Customer Details">
+            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Edit Store
+          </button>
+          <button type="button" onclick="closeCustomerProfileModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Body -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/60">
+        
+        <!-- Store & Contact Person Card -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Store Card -->
+          <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-2">
+            <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span class="flex items-center gap-1"><i data-lucide="store" class="w-3.5 h-3.5 text-indigo-600"></i> Business / Store Details</span>
+              <span id="cust-profile-tier-badge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[9px]">-</span>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-base text-slate-900" id="cust-profile-store-name">-</h4>
+              <p class="text-xs text-slate-500 mt-0.5" id="cust-profile-address">-</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs font-mono">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-sans font-bold block">GSTIN / Tax ID</span>
+                <span class="font-bold text-slate-800" id="cust-profile-gstin">Unregistered</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-sans font-bold block">Store Phone</span>
+                <span class="font-bold text-slate-800" id="cust-profile-phone">-</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-sans font-bold block">Route Beat</span>
+                <span class="font-bold text-slate-800" id="cust-profile-route">-</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-sans font-bold block">Outstanding Due</span>
+                <span class="font-black text-rose-600" id="cust-profile-due">₹0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Person Card -->
+          <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-2 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="text-[10px] font-black uppercase tracking-wider text-indigo-800 flex items-center justify-between">
+                <span class="flex items-center gap-1"><i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i> Designated Contact Person</span>
+                <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[9px]">Decision Maker</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base">
+                  <span id="cust-profile-contact-avatar">👤</span>
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-sm text-slate-900" id="cust-profile-contact-name">Not Specified</h4>
+                  <p class="text-xs text-indigo-600 font-semibold" id="cust-profile-contact-role">Purchase / Store Incharge</p>
+                </div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block">Direct Mobile Number</span>
+                  <span class="font-mono font-bold text-slate-800" id="cust-profile-contact-phone">-</span>
+                </div>
+                <div class="flex items-center gap-1" id="cust-profile-contact-actions">
+                  <!-- Phone / WhatsApp buttons -->
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Credit Limit: <b class="font-mono font-bold text-slate-800" id="cust-profile-credit-limit">₹50,000</b></span>
+              <button type="button" onclick="editCustomerFromProfile()" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
+                <i data-lucide="edit-3" class="w-3 h-3"></i> Edit Contact
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Active Quotation Card -->
+        <div class="p-4 bg-white rounded-2xl border-2 border-emerald-500/40 shadow-xs space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800"><i data-lucide="award" class="w-4 h-4"></i></span>
+              <div>
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                  Current Active Quotation
+                  <span class="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[9px]">Active & Agreed</span>
+                </h4>
+                <p class="text-[10px] text-slate-400">Official decided pricing schedule for this customer</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5" id="cust-profile-active-quote-actions">
+              <!-- View, Edit, PDF, WhatsApp buttons -->
+            </div>
+          </div>
+
+          <div id="cust-profile-active-quote-body">
+            <!-- Active quote summary or empty state -->
+          </div>
+        </div>
+
+        <!-- Previous Quotations History Table -->
+        <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 rounded-lg bg-slate-100 text-slate-700"><i data-lucide="history" class="w-4 h-4"></i></span>
+              <div>
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-900">Quotation History Archive</h4>
+                <p class="text-[10px] text-slate-400">Complete historical record of all previous quotes generated for this customer</p>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-slate-500" id="cust-profile-quotes-count">0 quotation(s) recorded</span>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Date & Ref</th>
+                  <th class="p-2.5">Contact Person</th>
+                  <th class="p-2.5 text-center">Items Quoted</th>
+                  <th class="p-2.5 text-center">Validity / MOQ</th>
+                  <th class="p-2.5 text-center">Status</th>
+                  <th class="p-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cust-profile-quotes-tbody" class="divide-y divide-slate-100">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
        MODAL: COMPANY & BANK ACCOUNT SETTINGS
        ============================================================================== -->
   <div id="modal-company-settings" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
@@ -1823,7 +2417,41 @@
         </div>
         <div>
           <label class="block text-slate-600 font-semibold mb-0.5">UPI ID (For dynamic QR Code)</label>
-          <input type="text" id="set-bank-upi" required placeholder="e.g. srigovinda@sbi" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-indigo-700">
+          <input type="text" id="set-bank-upi" oninput="updateBankSettingsQrPreview()" required placeholder="e.g. 9731988411@upi" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-indigo-700">
+        </div>
+
+        <!-- Live QR Code Preview & Custom Merchant QR Section -->
+        <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 space-y-2">
+          <div class="text-[10px] font-black uppercase tracking-wider text-indigo-900 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i data-lucide="qr-code" class="w-3.5 h-3.5 text-indigo-600"></i> Scannable Payment QR Code</span>
+            <span id="set-bank-qr-type-badge" class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold text-[9px]">Vector UPI QR</span>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <!-- QR Visual Box -->
+            <div class="p-1.5 border border-slate-300 bg-white rounded-xl shadow-xs shrink-0">
+              <div id="set-bank-qr-preview" class="w-20 h-20 flex items-center justify-center text-center overflow-hidden">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+
+            <!-- Upload / Toggle Controls -->
+            <div class="text-[11px] space-y-1">
+              <p class="text-slate-600 text-[10px] leading-tight">
+                Scans directly into Google Pay, PhonePe, Paytm, and BHIM across all generated bills, quotations & slips.
+              </p>
+              <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <label class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer inline-flex items-center gap-1 shadow-xs transition">
+                  <i data-lucide="upload" class="w-3 h-3"></i> Upload Standee QR
+                  <input type="file" id="set-bank-qr-file" accept="image/*" onchange="handleCustomQrUpload(event)" class="hidden">
+                </label>
+                <button type="button" id="btn-clear-custom-qr" onclick="clearCustomQrImage()" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-[10px] hidden">
+                  Use Vector UPI
+                </button>
+              </div>
+              <input type="hidden" id="set-custom-qr-data" value="">
+            </div>
+          </div>
         </div>
         <div class="pt-2 flex justify-end gap-2">
           <button type="button" onclick="closeCompanySettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
@@ -1885,6 +2513,37 @@
     let contractPricing = [];
     let cart = {};
     let latestOrder = null;
+
+    // Customer Quotations Database (Local + Supabase Sync)
+    let customerQuotations = [];
+    try {
+      const savedQuotes = localStorage.getItem('sg_customer_quotations');
+      if (savedQuotes) customerQuotations = JSON.parse(savedQuotes);
+    } catch (e) {
+      customerQuotations = [];
+    }
+
+    function saveCustomerQuotations() {
+      try {
+        localStorage.setItem('sg_customer_quotations', JSON.stringify(customerQuotations));
+      } catch (e) {
+        console.warn("Error saving customer quotations locally:", e);
+      }
+    }
+
+    let pendingManagerCallback = null;
+    function requireManagerAuth(callback) {
+      if (isManager) {
+        if (callback) callback();
+        return true;
+      }
+      pendingManagerCallback = callback;
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-error').classList.add('hidden');
+      document.getElementById('modal-pin').classList.remove('hidden');
+      setTimeout(() => document.getElementById('pin-input').focus(), 100);
+      return false;
+    }
 
     const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
@@ -2101,6 +2760,11 @@
         sessionStorage.setItem('sg_is_manager', 'true');
         closePinModal();
         updateManagerUI();
+        if (pendingManagerCallback) {
+          const cb = pendingManagerCallback;
+          pendingManagerCallback = null;
+          cb();
+        }
       } else {
         document.getElementById('pin-error').classList.remove('hidden');
         document.getElementById('pin-input').value = '';
@@ -2897,8 +3561,18 @@
     }
 
     // 9. INWARD INVENTORY & STOCK TALLY (MANAGER ONLY)
+    // 9. INWARD INVENTORY & STOCK TALLY (MANAGER ONLY)
     function renderInwardTables() {
-      // 1. Stock Reconciliation Table
+      // 0. Ensure inward-page-date defaults to today
+      const pageDateInput = document.getElementById('inward-page-date');
+      if (pageDateInput && !pageDateInput.value) {
+        pageDateInput.value = new Date().toISOString().split('T')[0];
+      }
+
+      // 1. Render the in-page Bulk Inward Entry Table (List of ALL Products)
+      renderInwardEntryTable('page');
+
+      // 2. Stock Reconciliation Table
       const tallyTbody = document.getElementById('stock-tally-table-body');
       if (products.length === 0) {
         tallyTbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No products configured yet.</td></tr>`;
@@ -2929,10 +3603,10 @@
         }).join('');
       }
 
-      // 2. Inward Receipts Log
+      // 3. Inward Receipts Log
       const inwardTbody = document.getElementById('inward-table-body');
       if (inwardEntries.length === 0) {
-        inwardTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No inward batch receipts recorded yet. Click <b>Log Inward Stock</b>.</td></tr>`;
+        inwardTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No inward batch receipts recorded yet. Use the <b>Factory Stock Arrival List</b> above to inward stock.</td></tr>`;
       } else {
         inwardTbody.innerHTML = inwardEntries.map(e => `
           <tr class="hover:bg-slate-50 transition">
@@ -2958,8 +3632,18 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function scrollToInwardEntryCard() {
+      const card = document.getElementById('inward-entry-card');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('ring-4', 'ring-indigo-500/40');
+        setTimeout(() => card.classList.remove('ring-4', 'ring-indigo-500/40'), 1500);
+        const firstInput = document.querySelector('#inward-page-products-tbody input[data-inward-sku]');
+        if (firstInput) setTimeout(() => firstInput.focus(), 400);
+      }
+    }
+
     function openInwardModal() {
-      // Set today's date
       const dateInput = document.getElementById('inward-date');
       if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
@@ -2975,7 +3659,7 @@
       const supplierInput = document.getElementById('inward-supplier-default');
       if (supplierInput && !supplierInput.value) supplierInput.value = 'Factory Production';
 
-      renderInwardProductsTable();
+      renderInwardEntryTable('modal');
       document.getElementById('modal-inward').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
@@ -2984,50 +3668,66 @@
       document.getElementById('modal-inward').classList.add('hidden');
     }
 
-    function renderInwardProductsTable() {
-      const tbody = document.getElementById('inward-products-tbody');
+    // Unified Inward Table Renderer for both in-page and modal views
+    function renderInwardEntryTable(prefix = 'page') {
+      const isPage = prefix === 'page';
+      const tbodyId = isPage ? 'inward-page-products-tbody' : 'inward-products-tbody';
+      const tbody = document.getElementById(tbodyId);
+      if (!tbody) return;
+
       if (!products || products.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No products configured in catalog. Add products first to inward stock.</td></tr>`;
-        updateInwardStagingSummary();
+        updateInwardStagingSummary(prefix);
         return;
       }
 
       tbody.innerHTML = products.map(p => {
         const stock = getProductStock(p);
+        const inputId = isPage ? `inward-page-qty-${p.sku}` : `inward-qty-${p.sku}`;
+        const batchId = isPage ? `inward-page-batch-${p.sku}` : `inward-batch-${p.sku}`;
+        const balId = isPage ? `inward-page-balance-after-${p.sku}` : `inward-balance-after-${p.sku}`;
+        const rowClass = isPage ? 'inward-row-page' : 'inward-row-modal';
+
         return `
-          <tr class="hover:bg-slate-50/80 transition inward-row" data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
-            <td class="p-2.5">
-              <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
-              <div class="text-[10px] font-mono text-slate-400 font-semibold">${escapeHtml(p.sku)}</div>
+          <tr class="hover:bg-slate-50/80 transition ${rowClass}" data-search="${escapeHtml((p.name + ' ' + p.sku + ' ' + (p.category || '')).toLowerCase())}">
+            <td class="p-2.5 pl-3 sm:pl-4">
+              <div class="font-bold text-slate-900 leading-tight">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-mono text-slate-400 font-semibold mt-0.5">${escapeHtml(p.sku)}</div>
             </td>
-            <td class="p-2.5">
+            <td class="p-2.5 whitespace-nowrap">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
             </td>
-            <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : 'text-slate-600'}">
+            <td class="p-2.5 text-right font-mono font-bold ${stock.balance <= 0 ? 'text-rose-600' : stock.balance <= 10 ? 'text-amber-600' : 'text-slate-600'}">
               ${stock.balance}
             </td>
             <td class="p-2.5 text-center">
-              <input type="number" min="0" step="any"
-                     id="inward-qty-${escapeHtml(p.sku)}"
-                     data-inward-sku="${escapeHtml(p.sku)}"
-                     data-inward-name="${escapeHtml(p.name)}"
-                     data-inward-unitsize="${escapeHtml(p.unitSize || '')}"
-                     data-current-stock="${stock.balance}"
-                     placeholder="0"
-                     oninput="onInwardQtyChanged(this)"
-                     class="w-24 px-2 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-center text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+              <div class="inline-flex items-center justify-center gap-1.5 flex-nowrap">
+                <input type="number" min="0" step="any"
+                       id="${escapeHtml(inputId)}"
+                       data-inward-sku="${escapeHtml(p.sku)}"
+                       data-inward-name="${escapeHtml(p.name)}"
+                       data-inward-unitsize="${escapeHtml(p.unitSize || '')}"
+                       data-current-stock="${stock.balance}"
+                       placeholder="0"
+                       oninput="onInwardQtyChanged(this, '${prefix}')"
+                       class="w-20 px-2 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-center text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                <div class="inline-flex items-center gap-1">
+                  <button type="button" onclick="quickIncrementInwardQty('${escapeHtml(p.sku)}', 10, '${prefix}')" class="px-1.5 py-1 text-[10px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-100 hover:text-indigo-800 text-slate-600 transition shadow-2xs" title="Add 10 units">+10</button>
+                  <button type="button" onclick="quickIncrementInwardQty('${escapeHtml(p.sku)}', 50, '${prefix}')" class="px-1.5 py-1 text-[10px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-100 hover:text-indigo-800 text-slate-600 transition shadow-2xs" title="Add 50 units">+50</button>
+                </div>
+              </div>
             </td>
             <td class="p-2.5">
               <input type="text"
-                     id="inward-batch-${escapeHtml(p.sku)}"
-                     placeholder="Inherit header batch"
+                     id="${escapeHtml(batchId)}"
+                     placeholder="Inherit shipment lot"
                      class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-mono text-slate-700 outline-none focus:bg-white focus:border-indigo-400">
             </td>
-            <td class="p-2.5 text-right font-mono font-bold text-xs" id="inward-balance-after-${escapeHtml(p.sku)}">
+            <td class="p-2.5 text-right font-mono font-bold text-xs" id="${escapeHtml(balId)}">
               <span class="text-slate-500">${stock.balance}</span>
             </td>
-            <td class="p-2.5 text-center">
-              <button type="button" onclick="clearSingleInwardRow('${escapeHtml(p.sku)}')" title="Reset this product quantity to 0" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
+            <td class="p-2.5 pr-3 sm:pr-4 text-center">
+              <button type="button" onclick="clearSingleInwardRow('${escapeHtml(p.sku)}', '${prefix}')" title="Reset this product quantity to 0" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
               </button>
             </td>
@@ -3035,66 +3735,111 @@
         `;
       }).join('');
 
-      updateInwardStagingSummary();
+      updateInwardStagingSummary(prefix);
       if (window.lucide) lucide.createIcons();
     }
 
-    function onInwardQtyChanged(inputEl) {
+    // Alias for backward compatibility
+    function renderInwardProductsTable() {
+      renderInwardEntryTable('modal');
+    }
+
+    function onInwardQtyChanged(inputEl, prefix = 'page') {
       const sku = inputEl.getAttribute('data-inward-sku');
       const currentStock = parseFloat(inputEl.getAttribute('data-current-stock')) || 0;
       const val = parseFloat(inputEl.value) || 0;
-      const balanceEl = document.getElementById(`inward-balance-after-${sku}`);
+      const isPage = prefix === 'page';
+      const balId = isPage ? `inward-page-balance-after-${sku}` : `inward-balance-after-${sku}`;
+      const balanceEl = document.getElementById(balId);
 
       if (val > 0) {
-        inputEl.classList.add('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900');
+        inputEl.classList.add('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900', 'font-black');
         inputEl.classList.remove('border-slate-300');
         if (balanceEl) {
           const newBal = currentStock + val;
           balanceEl.innerHTML = `<span class="text-emerald-700 font-black">+${val} <span class="text-slate-400 font-normal">→</span> ${newBal}</span>`;
         }
       } else {
-        inputEl.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900');
+        inputEl.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'text-indigo-900', 'font-black');
         inputEl.classList.add('border-slate-300');
         if (balanceEl) {
           balanceEl.innerHTML = `<span class="text-slate-500">${currentStock}</span>`;
         }
       }
-      updateInwardStagingSummary();
+      updateInwardStagingSummary(prefix);
     }
 
-    function clearSingleInwardRow(sku) {
-      const input = document.getElementById(`inward-qty-${sku}`);
+    function quickIncrementInwardQty(sku, amount, prefix = 'page') {
+      const isPage = prefix === 'page';
+      const inputId = isPage ? `inward-page-qty-${sku}` : `inward-qty-${sku}`;
+      const input = document.getElementById(inputId);
+      if (input) {
+        const current = parseFloat(input.value) || 0;
+        input.value = current + amount;
+        onInwardQtyChanged(input, prefix);
+      }
+    }
+
+    function bulkIncrementAllInward(prefix = 'page', amount = 10) {
+      const isPage = prefix === 'page';
+      const containerId = isPage ? 'inward-page-products-tbody' : 'inward-products-tbody';
+      const inputs = document.querySelectorAll(`#${containerId} input[data-inward-sku]`);
+      inputs.forEach(inp => {
+        const row = inp.closest('tr');
+        if (!row || row.style.display !== 'none') {
+          const current = parseFloat(inp.value) || 0;
+          inp.value = current + amount;
+          onInwardQtyChanged(inp, prefix);
+        }
+      });
+    }
+
+    function clearSingleInwardRow(sku, prefix = 'page') {
+      const isPage = prefix === 'page';
+      const inputId = isPage ? `inward-page-qty-${sku}` : `inward-qty-${sku}`;
+      const batchId = isPage ? `inward-page-batch-${sku}` : `inward-batch-${sku}`;
+      const input = document.getElementById(inputId);
       if (input) {
         input.value = '';
-        onInwardQtyChanged(input);
+        onInwardQtyChanged(input, prefix);
       }
-      const batchInput = document.getElementById(`inward-batch-${sku}`);
+      const batchInput = document.getElementById(batchId);
       if (batchInput) batchInput.value = '';
     }
 
-    function clearAllInwardQuantities() {
-      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+    function clearAllInwardQuantities(prefix = 'page') {
+      const isPage = prefix === 'page';
+      const containerId = isPage ? 'inward-page-products-tbody' : 'inward-products-tbody';
+      const inputs = document.querySelectorAll(`#${containerId} input[data-inward-sku]`);
       inputs.forEach(inp => {
         inp.value = '';
-        onInwardQtyChanged(inp);
+        onInwardQtyChanged(inp, prefix);
       });
-      const batchInputs = document.querySelectorAll('#inward-products-tbody input[id^="inward-batch-"]');
+      const batchInputs = document.querySelectorAll(`#${containerId} input[id*="-batch-"]`);
       batchInputs.forEach(b => b.value = '');
     }
 
-    function filterInwardCatalogTable() {
-      const q = (document.getElementById('inward-catalog-search')?.value || '').toLowerCase().trim();
-      const rows = document.querySelectorAll('#inward-products-tbody .inward-row');
+    function filterInwardCatalogTable(prefix = 'page') {
+      const isPage = prefix === 'page';
+      const searchInputId = isPage ? 'inward-page-catalog-search' : 'inward-catalog-search';
+      const rowClass = isPage ? 'inward-row-page' : 'inward-row-modal';
+      const q = (document.getElementById(searchInputId)?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll(`.${rowClass}`);
       rows.forEach(r => {
         const text = r.getAttribute('data-search') || '';
         r.style.display = (!q || text.includes(q)) ? '' : 'none';
       });
     }
 
-    function updateInwardStagingSummary() {
-      const badge = document.getElementById('inward-summary-badge');
-      const saveBtn = document.getElementById('btn-save-bulk-inward');
-      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+    function updateInwardStagingSummary(prefix = 'page') {
+      const isPage = prefix === 'page';
+      const badgeId = isPage ? 'inward-page-summary-badge' : 'inward-summary-badge';
+      const saveBtnId = isPage ? 'btn-save-page-bulk-inward' : 'btn-save-bulk-inward';
+      const containerId = isPage ? 'inward-page-products-tbody' : 'inward-products-tbody';
+
+      const badge = document.getElementById(badgeId);
+      const saveBtn = document.getElementById(saveBtnId);
+      const inputs = document.querySelectorAll(`#${containerId} input[data-inward-sku]`);
       let count = 0;
       let totalUnits = 0;
 
@@ -3108,10 +3853,12 @@
 
       if (badge) {
         if (count > 0) {
-          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-xs';
+          badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs';
           badge.innerText = `${count} product${count > 1 ? 's' : ''} staged • +${totalUnits} units total`;
         } else {
-          badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+          badge.className = isPage 
+            ? 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700'
+            : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
           badge.innerText = '0 products staged (0 units)';
         }
       }
@@ -3119,20 +3866,32 @@
       if (saveBtn) {
         if (count > 0) {
           saveBtn.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i> Credit +${totalUnits} Units (${count} SKUs) to Stock`;
+          saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+          saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
         } else {
           saveBtn.innerHTML = `<i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once`;
+          saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
         }
         if (window.lucide) lucide.createIcons();
       }
     }
 
-    async function saveAllInwardStockAtOnce() {
-      const receiptDate = document.getElementById('inward-date')?.value || new Date().toISOString().split('T')[0];
-      const defaultBatch = (document.getElementById('inward-batch-default')?.value || '').trim();
-      const defaultSupplier = (document.getElementById('inward-supplier-default')?.value || '').trim() || 'Factory Production';
-      const defaultNotes = (document.getElementById('inward-notes-default')?.value || '').trim();
+    async function saveAllInwardStockAtOnce(prefix = 'page') {
+      const isPage = prefix === 'page';
+      const dateId = isPage ? 'inward-page-date' : 'inward-date';
+      const batchId = isPage ? 'inward-page-batch-default' : 'inward-batch-default';
+      const supplierId = isPage ? 'inward-page-supplier-default' : 'inward-supplier-default';
+      const notesId = isPage ? 'inward-page-notes-default' : 'inward-notes-default';
+      const containerId = isPage ? 'inward-page-products-tbody' : 'inward-products-tbody';
+      const saveBtnId = isPage ? 'btn-save-page-bulk-inward' : 'btn-save-bulk-inward';
 
-      const inputs = document.querySelectorAll('#inward-products-tbody input[data-inward-sku]');
+      const receiptDate = document.getElementById(dateId)?.value || new Date().toISOString().split('T')[0];
+      const defaultBatch = (document.getElementById(batchId)?.value || '').trim();
+      const defaultSupplier = (document.getElementById(supplierId)?.value || '').trim() || 'Factory Production';
+      const defaultNotes = (document.getElementById(notesId)?.value || '').trim();
+
+      const inputs = document.querySelectorAll(`#${containerId} input[data-inward-sku]`);
       const newEntries = [];
       let totalUnits = 0;
 
@@ -3142,7 +3901,8 @@
           const sku = inp.getAttribute('data-inward-sku');
           const name = inp.getAttribute('data-inward-name');
           const unitSize = inp.getAttribute('data-inward-unitsize');
-          const specificBatch = (document.getElementById(`inward-batch-${sku}`)?.value || '').trim();
+          const batchInputId = isPage ? `inward-page-batch-${sku}` : `inward-batch-${sku}`;
+          const specificBatch = (document.getElementById(batchInputId)?.value || '').trim();
 
           const record = {
             id: 'inw_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -3162,17 +3922,17 @@
       });
 
       if (newEntries.length === 0) {
-        alert("Please enter an inward quantity (> 0) for at least one product before saving.");
+        alert("Please enter an inward quantity (> 0) for at least one product before crediting stock.");
         return;
       }
 
-      const saveBtn = document.getElementById('btn-save-bulk-inward');
+      const saveBtn = document.getElementById(saveBtnId);
       if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.innerText = 'Crediting Stock...';
+        saveBtn.innerText = 'Crediting Warehouse Stock...';
       }
 
-      // Add to local state
+      // Add to local state immediately
       newEntries.forEach(entry => inwardEntries.unshift(entry));
 
       // Persist to Supabase
@@ -3189,13 +3949,18 @@
         saveBtn.disabled = false;
       }
 
-      closeInwardModal();
+      if (!isPage) {
+        closeInwardModal();
+      } else {
+        clearAllInwardQuantities('page');
+      }
+
       // Instantly credits inward stock across the system!
       renderInwardTables();
       renderDashboard();
       renderOrderCatalog();
 
-      alert(`✅ Successfully credited ${totalUnits} units across ${newEntries.length} product(s) into warehouse stock!`);
+      alert(`✅ Successfully credited +${totalUnits} units across ${newEntries.length} product(s) into warehouse stock!`);
     }
 
     async function deleteInwardConfirm(inwardId) {
@@ -3214,37 +3979,51 @@
       const tbody = document.getElementById('customers-table-body');
       const q = (document.getElementById('customer-search-input')?.value || '').toLowerCase().trim();
 
-      const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.address && c.address.toLowerCase().includes(q)));
+      const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.address && c.address.toLowerCase().includes(q)) || (c.contactPerson && c.contactPerson.toLowerCase().includes(q)));
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(c => {
         const specialCount = contractPricing.filter(cp => String(cp.buyerId) === String(c.id)).length;
+        const activeQuote = customerQuotations.find(q => String(q.customerId) === String(c.id) && q.isCurrentActive);
+
         return `
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3">
             <div class="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
               <span>${escapeHtml(c.name)}</span>
+              ${activeQuote ? `
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200" title="Active Quotation: ${escapeHtml(activeQuote.id)} (${activeQuote.items ? activeQuote.items.length : 0} items)">
+                  <i data-lucide="award" class="w-2.5 h-2.5"></i> ${escapeHtml(activeQuote.id)}
+                </span>` : ''}
               ${specialCount > 0 ? `
                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200" title="${specialCount} custom price override(s)">
-                  <i data-lucide="tag" class="w-2.5 h-2.5"></i> ${specialCount} custom rate${specialCount > 1 ? 's' : ''}
+                  <i data-lucide="tag" class="w-2.5 h-2.5"></i> ${specialCount} rate${specialCount > 1 ? 's' : ''}
                 </span>` : ''}
             </div>
             <div class="text-[10px] text-slate-400">${escapeHtml(c.address || 'Address not listed')}</div>
+          </td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${escapeHtml(c.contactPerson || '-')}</div>
+            ${c.contactRole ? `<span class="inline-block px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[9px] font-semibold">${escapeHtml(c.contactRole)}</span>` : ''}
+            ${c.contactPhone ? `<div class="text-[10px] text-slate-400 font-mono mt-0.5">${escapeHtml(c.contactPhone)}</div>` : ''}
           </td>
           <td class="p-3 font-semibold text-slate-700">${escapeHtml(c.tier || 'Retail')}</td>
           <td class="p-3 font-mono text-slate-600">${escapeHtml((c.homeRoute || '-').split(':')[0])}</td>
           <td class="p-3 font-mono text-slate-600">${escapeHtml(c.phone || '-')}</td>
           <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
+            <button onclick="openCustomerProfileModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View Customer Profile, Contact Person & Quotations Database">
+              <i data-lucide="contact-2" class="w-3.5 h-3.5"></i> Profile & Quotes
+            </button>
             <button onclick="openCustomerStatementModal('${c.id}')" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View & Download Official Statement Slip">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
             </button>
             <button onclick="openCustomerPricingModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition" title="Open Custom Price List & Generate Quotation">
-              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Price List & Quote
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Price List
             </button>
             <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer Details">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
@@ -3275,6 +4054,10 @@
         if (c) {
           document.getElementById('modal-customer-title').innerText = "Edit Customer & Contract Rates";
           document.getElementById('cust-name').value = c.name;
+          document.getElementById('cust-gstin').value = c.gstin || '';
+          document.getElementById('cust-contact-person').value = c.contactPerson || '';
+          document.getElementById('cust-contact-role').value = c.contactRole || '';
+          document.getElementById('cust-contact-phone').value = c.contactPhone || '';
           document.getElementById('cust-tier').value = c.tier || 'Retail';
           document.getElementById('cust-phone').value = c.phone || '';
           document.getElementById('cust-route').value = c.homeRoute || '';
@@ -3284,6 +4067,10 @@
         }
       } else {
         document.getElementById('modal-customer-title').innerText = "Add New Customer";
+        document.getElementById('cust-gstin').value = '';
+        document.getElementById('cust-contact-person').value = '';
+        document.getElementById('cust-contact-role').value = '';
+        document.getElementById('cust-contact-phone').value = '';
       }
 
       renderCustomerPricingInputs(editId);
@@ -3421,10 +4208,18 @@
       const pendingUdhaar = parseFloat(document.getElementById('cust-pending-due').value) || 0;
 
       const custId = editId || ('cust_' + Date.now());
+      const gstin = (document.getElementById('cust-gstin')?.value || '').trim().toUpperCase();
+      const contactPerson = (document.getElementById('cust-contact-person')?.value || '').trim();
+      const contactRole = (document.getElementById('cust-contact-role')?.value || '').trim();
+      const contactPhone = (document.getElementById('cust-contact-phone')?.value || '').trim();
 
       const record = {
         id: custId,
         name,
+        gstin,
+        contactPerson,
+        contactRole,
+        contactPhone,
         tier,
         phone,
         homeRoute,
@@ -3433,8 +4228,21 @@
         pendingUdhaar
       };
 
-      if (editId) customers = customers.map(c => c.id === editId ? record : c);
-      else customers.push(record);
+      if (editId) {
+        customers = customers.map(c => c.id === editId ? record : c);
+        // Also keep customer details updated on any stored quotations for this customer
+        customerQuotations.forEach(q => {
+          if (String(q.customerId) === String(editId)) {
+            q.customerName = name;
+            if (contactPerson) q.contactPerson = contactPerson;
+            if (contactPhone) q.contactPhone = contactPhone;
+            if (contactRole) q.contactRole = contactRole;
+          }
+        });
+        saveCustomerQuotations();
+      } else {
+        customers.push(record);
+      }
 
       // Collect contract pricing overrides from the form
       const pricingInputs = document.querySelectorAll('#cust-pricing-list input[data-prod-id]');
@@ -4221,6 +5029,11 @@
       document.getElementById('set-bank-ifsc').value = s.ifsc;
       document.getElementById('set-bank-upi').value = s.upiId;
 
+      if (document.getElementById('set-custom-qr-data')) {
+        document.getElementById('set-custom-qr-data').value = s.customQrImage || '';
+      }
+      updateBankSettingsQrPreview();
+
       document.getElementById('modal-company-settings').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
@@ -4229,8 +5042,72 @@
       document.getElementById('modal-company-settings').classList.add('hidden');
     }
 
+    function updateBankSettingsQrPreview() {
+      const container = document.getElementById('set-bank-qr-preview');
+      if (!container) return;
+      container.innerHTML = '';
+      const customData = document.getElementById('set-custom-qr-data')?.value;
+      const badge = document.getElementById('set-bank-qr-type-badge');
+      const clearBtn = document.getElementById('btn-clear-custom-qr');
+
+      if (customData) {
+        container.innerHTML = `<img src="${customData}" class="w-full h-full object-contain" alt="Custom QR" />`;
+        if (badge) {
+          badge.innerText = "Custom Standee QR";
+          badge.className = "px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[9px]";
+        }
+        if (clearBtn) clearBtn.classList.remove('hidden');
+      } else {
+        if (badge) {
+          badge.innerText = "Vector UPI QR";
+          badge.className = "px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold text-[9px]";
+        }
+        if (clearBtn) clearBtn.classList.add('hidden');
+        const upi = document.getElementById('set-bank-upi')?.value.trim() || '9731988411@upi';
+        const accName = document.getElementById('set-bank-acc-name')?.value.trim() || "Sri Govinda Food Products";
+        let uri = `upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(accName)}&cu=INR`;
+        try {
+          new QRCode(container, {
+            text: uri,
+            width: 76,
+            height: 76,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) {
+          container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upi)}</span>`;
+        }
+      }
+    }
+
+    function handleCustomQrUpload(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image file size should be less than 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const dataUrl = evt.target.result;
+        document.getElementById('set-custom-qr-data').value = dataUrl;
+        updateBankSettingsQrPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearCustomQrImage() {
+      const hiddenInput = document.getElementById('set-custom-qr-data');
+      if (hiddenInput) hiddenInput.value = '';
+      const fileInput = document.getElementById('set-bank-qr-file');
+      if (fileInput) fileInput.value = '';
+      updateBankSettingsQrPreview();
+    }
+
     function handleSaveCompanySettings(e) {
       e.preventDefault();
+      const customQr = document.getElementById('set-custom-qr-data')?.value || '';
       const settings = {
         companyName: document.getElementById('set-company-name').value.trim() || DEFAULT_COMPANY_SETTINGS.companyName,
         tagline: document.getElementById('set-company-tagline')?.value.trim() || DEFAULT_COMPANY_SETTINGS.tagline,
@@ -4241,11 +5118,24 @@
         accountName: document.getElementById('set-bank-acc-name').value.trim() || DEFAULT_COMPANY_SETTINGS.accountName,
         accountNumber: document.getElementById('set-bank-acc-num').value.trim() || DEFAULT_COMPANY_SETTINGS.accountNumber,
         ifsc: document.getElementById('set-bank-ifsc').value.trim().toUpperCase() || DEFAULT_COMPANY_SETTINGS.ifsc,
-        upiId: document.getElementById('set-bank-upi').value.trim() || DEFAULT_COMPANY_SETTINGS.upiId
+        upiId: document.getElementById('set-bank-upi').value.trim() || DEFAULT_COMPANY_SETTINGS.upiId,
+        customQrImage: customQr
       };
       saveCompanySettings(settings);
       closeCompanySettingsModal();
-      alert("Company & Banking details updated successfully!");
+
+      // Instantly refresh any open modals with new bank details
+      if (document.getElementById('modal-quotation-view') && !document.getElementById('modal-quotation-view').classList.contains('hidden') && currentQuotationCustomerId) {
+        openQuotationModal(currentQuotationCustomerId);
+      }
+      if (document.getElementById('modal-invoice-view') && !document.getElementById('modal-invoice-view').classList.contains('hidden') && currentViewingOrderId) {
+        openInvoiceModal(currentViewingOrderId);
+      }
+      if (document.getElementById('modal-statement-view') && !document.getElementById('modal-statement-view').classList.contains('hidden') && currentStatementCustomerId) {
+        openCustomerStatementModal(currentStatementCustomerId);
+      }
+
+      alert("Official Company, Bank & QR Code details updated successfully!");
     }
 
     // ==============================================================================
@@ -4276,6 +5166,14 @@
       const container = document.getElementById(containerId);
       if (!container) return;
       container.innerHTML = '';
+
+      // Check if custom uploaded QR image is configured in company settings
+      const s = getCompanySettings();
+      if (s && s.customQrImage && containerId !== 'set-bank-qr-preview') {
+        container.innerHTML = `<img src="${s.customQrImage}" class="w-full h-full object-contain" alt="Payment QR" />`;
+        return;
+      }
+
       if (!upiId) {
         container.innerHTML = '<span class="text-[9px] text-slate-400">Set UPI ID in Settings</span>';
         return;
@@ -4619,11 +5517,13 @@
     }
 
     // ==============================================================================
-    // 17. OFFICIAL QUOTATION VIEW & EXPORT LOGIC
+    // 17. OFFICIAL QUOTATION VIEW, MANAGER STUDIO & CUSTOMER DATABASE
     // ==============================================================================
     let currentQuotationCustomerId = null;
+    let currentQuotationData = null;
+    let isQuotationEditorOpen = false;
 
-    function openQuotationModal(custId) {
+    function openQuotationModal(custId, quoteId = null) {
       const targetCustId = custId || currentPricingCustomerId || (customers[0] ? customers[0].id : null);
       if (!targetCustId) {
         alert("Please select a customer to generate a quotation.");
@@ -4635,7 +5535,71 @@
 
       const settings = getCompanySettings();
 
-      // Company branding & GSTIN
+      // Check if a specific quote is requested, or if active quote exists in customerQuotations
+      let existingQuote = null;
+      if (quoteId) {
+        existingQuote = customerQuotations.find(q => q.id === quoteId);
+      } else {
+        existingQuote = customerQuotations.find(q => String(q.customerId) === String(targetCustId) && q.isCurrentActive);
+      }
+
+      const now = new Date();
+      const defaultRef = 'QTN-' + (cust.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'SG')) + '-' + Math.floor(1000 + Math.random() * 9000);
+      const defaultDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      // Staged quotation data object
+      if (existingQuote) {
+        currentQuotationData = JSON.parse(JSON.stringify(existingQuote));
+      } else {
+        const defaultItems = products.map(p => {
+          const agreedRate = getCustomerProductRate(targetCustId, p);
+          const baseRate = Number(p.baseRate || 0);
+          const hasDiscount = (agreedRate < baseRate);
+          const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+          return {
+            productId: p.id,
+            sku: p.sku,
+            name: p.name,
+            unitSize: p.unitSize || '-',
+            rate: agreedRate,
+            baseRate: baseRate,
+            specialTerms: hasDiscount ? `-${discountPct}% (Save ${formatINR(baseRate - agreedRate)})` : 'Standard Rate'
+          };
+        });
+
+        currentQuotationData = {
+          id: defaultRef,
+          customerId: cust.id,
+          customerName: cust.name,
+          contactPerson: cust.contactPerson || '',
+          contactPhone: cust.contactPhone || cust.phone || '',
+          contactRole: cust.contactRole || '',
+          tier: cust.tier || 'Retail',
+          route: (cust.homeRoute || 'General Beat').split(':')[0],
+          date: defaultDate,
+          validity: '3 Months',
+          moq: 'As agreed / product',
+          termsNotes: '• Payment terms: Payment on delivery of goods.\n• Price valid for 3 months from quotation date.\n• For any queries concerning this quotation, please reach out to me at 9731988411 / 9972374711.',
+          items: defaultItems,
+          isCurrentActive: true,
+          created_at: now.toISOString()
+        };
+      }
+
+      renderPrintableQuotationCard();
+      populateQuoteEditorDropdowns();
+      populateQuoteEditorFields();
+
+      document.getElementById('modal-quotation-view').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderPrintableQuotationCard() {
+      if (!currentQuotationData) return;
+      const settings = getCompanySettings();
+      const q = currentQuotationData;
+
+      // Header branding
       document.getElementById('quote-company-name').innerText = settings.companyName;
       if (document.getElementById('quote-company-tagline')) {
         document.getElementById('quote-company-tagline').innerText = settings.tagline || "Purity and Quality, 'Our Speciality'.";
@@ -4645,62 +5609,327 @@
       document.getElementById('quote-company-contact').innerText = `Phone: ${settings.phone}`;
 
       // Ref and dates
-      const now = new Date();
-      const refNum = 'QTN-' + (cust.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'SG')) + '-' + Math.floor(1000 + Math.random() * 9000);
-      document.getElementById('quote-ref-number').innerText = refNum;
-      document.getElementById('quote-date').innerText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-      // Customer info
-      document.getElementById('quote-cust-name').innerText = cust.name;
-      document.getElementById('quote-cust-address').innerText = cust.address || 'Address as per records';
-      document.getElementById('quote-cust-phone').innerText = cust.phone ? `📞 ${cust.phone}` : 'No phone listed';
-      document.getElementById('quote-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
-      document.getElementById('quote-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
-
-      // Quotation items schedule (5 columns matching official B&W grid)
-      const tbody = document.getElementById('quote-items-tbody');
-      if (products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No products configured in catalog.</td></tr>`;
-      } else {
-        tbody.innerHTML = products.map((p, idx) => {
-          const agreedRate = getCustomerProductRate(targetCustId, p);
-          const baseRate = Number(p.baseRate || 0);
-          const hasDiscount = (agreedRate < baseRate);
-          const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
-
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
-              <td class="border-r border-black p-1.5">
-                <span class="font-bold text-black font-sans">${escapeHtml(p.name)}</span>
-                <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(p.sku)}</span>
-              </td>
-              <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(p.unitSize || '-')}</td>
-              <td class="border-r border-black p-1.5 text-right font-mono font-black text-sm">${formatINR(agreedRate)}</td>
-              <td class="p-1.5 text-center font-sans">
-                ${hasDiscount ? `
-                  <span class="inline-block px-1.5 py-0.5 border border-black font-bold text-[10px]">
-                    -${discountPct}% (Save ${formatINR(baseRate - agreedRate)})
-                  </span>
-                ` : `<span class="text-[10px] text-black">Standard Rate</span>`}
-              </td>
-            </tr>
-          `;
-        }).join('');
+      document.getElementById('quote-ref-number').innerText = q.id;
+      document.getElementById('quote-date').innerText = q.date;
+      if (document.getElementById('quote-validity')) {
+        document.getElementById('quote-validity').innerText = q.validity || '3 Months';
       }
 
-      // Bank Details
-      document.getElementById('quote-bank-acc-name').innerText = settings.accountName;
+      // Customer particulars
+      document.getElementById('quote-cust-name').innerText = q.customerName;
+      const custObj = customers.find(c => c.id === q.customerId);
+      const contactEl = document.getElementById('quote-cust-contact');
+      if (contactEl) {
+        contactEl.innerText = q.contactPerson ? `Attn: ${q.contactPerson} ${q.contactRole ? `(${q.contactRole})` : ''}` : '';
+      }
+      document.getElementById('quote-cust-address').innerText = (custObj && custObj.address) ? custObj.address : 'Store Delivery Address';
+      document.getElementById('quote-cust-phone').innerText = q.contactPhone ? `📞 ${q.contactPhone}` : (custObj && custObj.phone ? `📞 ${custObj.phone}` : 'No phone listed');
+      document.getElementById('quote-cust-tier').innerText = `${q.tier || 'Retail'} Partner`;
+      document.getElementById('quote-cust-route').innerText = q.route || 'General Beat';
+      if (document.getElementById('quote-moq')) {
+        document.getElementById('quote-moq').innerText = q.moq || 'As agreed / product';
+      }
+
+      // Items table
+      const tbody = document.getElementById('quote-items-tbody');
+      if (!q.items || q.items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 font-sans">No products added to quotation. Use Edit Quote to add products.</td></tr>`;
+      } else {
+        tbody.innerHTML = q.items.map((it, idx) => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
+            <td class="border-r border-black p-1.5">
+              <span class="font-bold text-black font-sans">${escapeHtml(it.name)}</span>
+              <span class="text-[9px] text-slate-500 font-mono block">${escapeHtml(it.sku || '-')}</span>
+            </td>
+            <td class="border-r border-black p-1.5 text-center font-mono font-bold">${escapeHtml(it.unitSize || '-')}</td>
+            <td class="border-r border-black p-1.5 text-right font-mono font-black text-sm">${formatINR(it.rate)}</td>
+            <td class="p-1.5 text-center font-sans">
+              ${it.specialTerms ? `
+                <span class="inline-block px-1.5 py-0.5 border border-black font-bold text-[10px]">
+                  ${escapeHtml(it.specialTerms)}
+                </span>
+              ` : `<span class="text-[10px] text-black">Standard Rate</span>`}
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // Terms & Banking
+      const termsBox = document.getElementById('quote-terms-notes');
+      if (termsBox) {
+        const lines = (q.termsNotes || '').split('\n').filter(l => l.trim() !== '');
+        termsBox.innerHTML = lines.map(l => `<p>${escapeHtml(l)}</p>`).join('');
+      }
+      if (document.getElementById('quote-bank-acc-name')) {
+        document.getElementById('quote-bank-acc-name').innerText = settings.accountName;
+      }
       document.getElementById('quote-bank-name').innerText = settings.bankName;
       document.getElementById('quote-bank-acc-num').innerText = settings.accountNumber;
       document.getElementById('quote-bank-ifsc').innerText = settings.ifsc;
       document.getElementById('quote-bank-upi').innerText = settings.upiId;
 
-      // Dynamic UPI QR code
-      generateUpiQrCode('quote-upi-qrcode', settings.upiId, settings.companyName, 0, refNum);
+      // Dynamic UPI QR
+      generateUpiQrCode('quote-upi-qrcode', settings.upiId, settings.companyName, 0, q.id);
+    }
 
-      document.getElementById('modal-quotation-view').classList.remove('hidden');
+    function toggleQuotationManagerEditor(forceState = null) {
+      const panel = document.getElementById('quotation-manager-editor-panel');
+      if (!panel) return;
+
+      const shouldOpen = (forceState !== null) ? forceState : panel.classList.contains('hidden');
+      if (shouldOpen) {
+        requireManagerAuth(() => {
+          panel.classList.remove('hidden');
+          isQuotationEditorOpen = true;
+          populateQuoteEditorFields();
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (window.lucide) lucide.createIcons();
+        });
+      } else {
+        panel.classList.add('hidden');
+        isQuotationEditorOpen = false;
+      }
+    }
+
+    function populateQuoteEditorDropdowns() {
+      const select = document.getElementById('quote-editor-prod-select');
+      if (!select) return;
+      if (products.length === 0) {
+        select.innerHTML = `<option value="">-- No Catalog Products --</option>`;
+      } else {
+        select.innerHTML = `<option value="">-- Select Product from Catalog --</option>` + products.map(p => `
+          <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-unitsize="${escapeHtml(p.unitSize)}" data-baserate="${p.baseRate}">
+            ${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})
+          </option>
+        `).join('');
+      }
+    }
+
+    function onQuoteEditorProductSelected() {
+      const select = document.getElementById('quote-editor-prod-select');
+      if (!select || !select.value) return;
+      const prod = products.find(p => String(p.id) === String(select.value));
+      if (!prod) return;
+
+      document.getElementById('quote-editor-unit-size').value = prod.unitSize || '';
+      const custRate = getCustomerProductRate(currentQuotationCustomerId, prod);
+      document.getElementById('quote-editor-rate').value = custRate || prod.baseRate || 0;
+      
+      const baseRate = Number(prod.baseRate || 0);
+      if (custRate < baseRate && baseRate > 0) {
+        const discPct = (((baseRate - custRate) / baseRate) * 100).toFixed(0);
+        document.getElementById('quote-editor-terms-note').value = `-${discPct}% Special Rate`;
+      } else {
+        document.getElementById('quote-editor-terms-note').value = 'Agreed Rate';
+      }
+    }
+
+    function populateQuoteEditorFields() {
+      if (!currentQuotationData) return;
+      const q = currentQuotationData;
+      document.getElementById('quote-edit-ref').value = q.id || '';
+      document.getElementById('quote-edit-date').value = q.date || '';
+      document.getElementById('quote-edit-validity').value = q.validity || '3 Months';
+      document.getElementById('quote-edit-moq').value = q.moq || 'As agreed / product';
+      document.getElementById('quote-edit-contact-person').value = q.contactPerson || '';
+      document.getElementById('quote-edit-contact-phone').value = q.contactPhone || '';
+      document.getElementById('quote-edit-tier').value = q.tier || 'Retail Partner';
+      document.getElementById('quote-edit-terms').value = q.termsNotes || '';
+
+      renderStagedQuoteItemsList();
+    }
+
+    function renderStagedQuoteItemsList() {
+      const container = document.getElementById('quote-staged-items-list');
+      const countEl = document.getElementById('quote-staged-count');
+      if (!container || !currentQuotationData) return;
+
+      const items = currentQuotationData.items || [];
+      if (countEl) countEl.innerText = items.length;
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs">No items currently in quote. Select a product above to add.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map((it, idx) => `
+        <div class="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 transition">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-slate-900">${idx + 1}. ${escapeHtml(it.name)}</span>
+              <span class="text-[10px] font-mono text-slate-500 font-semibold">(${escapeHtml(it.unitSize)})</span>
+              ${it.specialTerms ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">${escapeHtml(it.specialTerms)}</span>` : ''}
+            </div>
+            <div class="text-[11px] font-mono text-emerald-700 font-bold mt-0.5">${formatINR(it.rate)} / kg</div>
+          </div>
+          <button type="button" onclick="removeProductFromQuote(${idx})" class="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="Remove from Quote">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join('');
       if (window.lucide) lucide.createIcons();
+    }
+
+    function addProductToStagedQuote() {
+      const select = document.getElementById('quote-editor-prod-select');
+      if (!select || !select.value) {
+        alert("Please select a product from catalog to add.");
+        return;
+      }
+      const prod = products.find(p => String(p.id) === String(select.value));
+      if (!prod) return;
+
+      const unitSize = document.getElementById('quote-editor-unit-size')?.value.trim() || prod.unitSize || '-';
+      const rate = parseFloat(document.getElementById('quote-editor-rate')?.value) || 0;
+      const termsNote = document.getElementById('quote-editor-terms-note')?.value.trim() || 'Standard Rate';
+
+      if (!currentQuotationData.items) currentQuotationData.items = [];
+
+      // If already present, update rate & terms; otherwise add
+      const existingIdx = currentQuotationData.items.findIndex(i => String(i.productId) === String(prod.id));
+      if (existingIdx >= 0) {
+        currentQuotationData.items[existingIdx].unitSize = unitSize;
+        currentQuotationData.items[existingIdx].rate = rate;
+        currentQuotationData.items[existingIdx].specialTerms = termsNote;
+      } else {
+        currentQuotationData.items.push({
+          productId: prod.id,
+          sku: prod.sku,
+          name: prod.name,
+          unitSize,
+          rate,
+          baseRate: Number(prod.baseRate || 0),
+          specialTerms: termsNote
+        });
+      }
+
+      renderStagedQuoteItemsList();
+      renderPrintableQuotationCard();
+
+      // Reset selection
+      select.value = '';
+      document.getElementById('quote-editor-rate').value = '';
+      document.getElementById('quote-editor-terms-note').value = '';
+    }
+
+    function removeProductFromQuote(idx) {
+      if (!currentQuotationData || !currentQuotationData.items) return;
+      currentQuotationData.items.splice(idx, 1);
+      renderStagedQuoteItemsList();
+      renderPrintableQuotationCard();
+    }
+
+    function handleQuoteFieldLiveChange() {
+      if (!currentQuotationData) return;
+      currentQuotationData.id = document.getElementById('quote-edit-ref')?.value.trim() || currentQuotationData.id;
+      currentQuotationData.date = document.getElementById('quote-edit-date')?.value.trim() || currentQuotationData.date;
+      currentQuotationData.validity = document.getElementById('quote-edit-validity')?.value.trim() || '3 Months';
+      currentQuotationData.moq = document.getElementById('quote-edit-moq')?.value.trim() || 'As agreed / product';
+      currentQuotationData.contactPerson = document.getElementById('quote-edit-contact-person')?.value.trim() || '';
+      currentQuotationData.contactPhone = document.getElementById('quote-edit-contact-phone')?.value.trim() || '';
+      currentQuotationData.tier = document.getElementById('quote-edit-tier')?.value.trim() || currentQuotationData.tier;
+      currentQuotationData.termsNotes = document.getElementById('quote-edit-terms')?.value.trim() || '';
+
+      renderPrintableQuotationCard();
+    }
+
+    function revertQuotationToCustomerContractRates() {
+      if (!confirm("Revert quote items to the catalog rates for this customer?")) return;
+      const targetCustId = currentQuotationCustomerId;
+      currentQuotationData.items = products.map(p => {
+        const agreedRate = getCustomerProductRate(targetCustId, p);
+        const baseRate = Number(p.baseRate || 0);
+        const hasDiscount = (agreedRate < baseRate);
+        const discountPct = baseRate > 0 ? (((baseRate - agreedRate) / baseRate) * 100).toFixed(0) : 0;
+        return {
+          productId: p.id,
+          sku: p.sku,
+          name: p.name,
+          unitSize: p.unitSize || '-',
+          rate: agreedRate,
+          baseRate: baseRate,
+          specialTerms: hasDiscount ? `-${discountPct}% (Save ${formatINR(baseRate - agreedRate)})` : 'Standard Rate'
+        };
+      });
+
+      renderStagedQuoteItemsList();
+      renderPrintableQuotationCard();
+    }
+
+    async function saveCurrentQuotationToDatabase() {
+      if (!currentQuotationData || !currentQuotationCustomerId) return;
+      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      if (!cust) return;
+
+      // Sync customer contact person & phone if manager edited them
+      if (currentQuotationData.contactPerson) cust.contactPerson = currentQuotationData.contactPerson;
+      if (currentQuotationData.contactPhone) cust.contactPhone = currentQuotationData.contactPhone;
+
+      // Deactivate any existing active quote for this customer
+      customerQuotations.forEach(q => {
+        if (String(q.customerId) === String(currentQuotationCustomerId)) {
+          q.isCurrentActive = false;
+        }
+      });
+
+      // Prepare final record
+      const quoteRecord = {
+        ...currentQuotationData,
+        isCurrentActive: true,
+        saved_at: new Date().toISOString()
+      };
+
+      // Replace if same ID, else push new
+      const existingIdx = customerQuotations.findIndex(q => q.id === quoteRecord.id);
+      if (existingIdx >= 0) {
+        customerQuotations[existingIdx] = quoteRecord;
+      } else {
+        customerQuotations.unshift(quoteRecord);
+      }
+
+      saveCustomerQuotations();
+
+      // Automatically sync contractPricing overrides for these quoted items
+      if (Array.isArray(quoteRecord.items)) {
+        const overridesToSave = [];
+        quoteRecord.items.forEach(it => {
+          if (it.rate !== null && it.rate !== undefined && !isNaN(Number(it.rate))) {
+            overridesToSave.push({
+              buyerId: currentQuotationCustomerId,
+              productId: it.productId || it.sku,
+              overrideRate: Number(it.rate)
+            });
+          }
+        });
+
+        contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(currentQuotationCustomerId));
+        overridesToSave.forEach(o => contractPricing.push(o));
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('contract_pricing').delete().eq('buyerId', currentQuotationCustomerId);
+            if (overridesToSave.length > 0) {
+              await supabaseClient.from('contract_pricing').insert(overridesToSave);
+            }
+            await supabaseClient.from('buyers').upsert([cust]);
+            await supabaseClient.from('customer_quotations').upsert([quoteRecord]);
+          } catch (e) {
+            console.warn("Supabase quote sync warning:", e);
+          }
+        }
+      }
+
+      renderCustomersTable();
+      renderOrderCatalog();
+      toggleQuotationManagerEditor(false);
+
+      alert(`✅ Quotation ${quoteRecord.id} saved as Current Active Quote for ${cust.name} and archived in history database!`);
+    }
+
+    function openCustomerQuotationHistorySelector() {
+      if (!currentQuotationCustomerId) return;
+      openCustomerProfileModal(currentQuotationCustomerId);
     }
 
     function closeQuotationModal() {
@@ -4728,14 +5957,18 @@
       const cust = customers.find(c => c.id === currentQuotationCustomerId);
       if (!cust) return;
       const settings = getCompanySettings();
-      const ref = document.getElementById('quote-ref-number')?.innerText || 'QTN-SG';
+      const ref = document.getElementById('quote-ref-number')?.innerText || (currentQuotationData ? currentQuotationData.id : 'QTN-SG');
 
-      const lines = products.map(p => {
-        const rate = getCustomerProductRate(cust.id, p);
-        const base = Number(p.baseRate || 0);
-        const disc = rate < base ? ` (Save ${formatINR(base - rate)})` : '';
-        return `• *${p.name}* (${p.unitSize}): *${formatINR(rate)}*${disc}`;
-      }).join('\n');
+      const itemsToShare = (currentQuotationData && currentQuotationData.items && currentQuotationData.items.length > 0)
+        ? currentQuotationData.items
+        : products.map(p => ({
+            name: p.name,
+            unitSize: p.unitSize,
+            rate: getCustomerProductRate(cust.id, p),
+            specialTerms: ''
+          }));
+
+      const lines = itemsToShare.map(it => `• *${it.name}* (${it.unitSize}): *${formatINR(it.rate)}* ${it.specialTerms ? `(${it.specialTerms})` : ''}`).join('\n');
 
       const text = `*${settings.companyName.toUpperCase()}*\n` +
         `*GSTIN: ${settings.gstin}*\n` +
@@ -4743,12 +5976,13 @@
         `*OFFICIAL PRICE QUOTATION*\n` +
         `Quotation Ref: *${ref}*\n` +
         `Customer: *${cust.name}* [${cust.tier || 'Retail'}]\n` +
+        (cust.contactPerson ? `Contact Person: *${cust.contactPerson}*\n` : '') +
         `Date: ${new Date().toLocaleDateString('en-IN')}\n` +
-        `Valid For: 30 Days\n` +
+        `Validity: 3 Months\n` +
         `--------------------------------\n` +
-        `*AGREED PRODUCT RATES:*\n${lines}\n` +
+        `*DECIDED PRODUCT RATES:*\n${lines}\n` +
         `--------------------------------\n` +
-        `*BANK ACCOUNT DETAILS:*\n` +
+        `*OFFICIAL BANK DETAILS:*\n` +
         `Bank: ${settings.bankName}\n` +
         `A/C Name: ${settings.accountName}\n` +
         `A/C No: ${settings.accountNumber}\n` +
@@ -4757,16 +5991,18 @@
         `--------------------------------\n` +
         `For bookings & dispatch, reply directly to this message.\nThank you!`;
 
-      const cleanPhone = (cust.phone || '').replace(/\D/g, '');
-      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const directPhone = (cust.contactPhone || cust.phone || '').replace(/\D/g, '');
+      const phoneToUse = directPhone.length === 10 ? ('91' + directPhone) : directPhone;
       const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank');
     }
 
     // ==============================================================================
-    // 18. OFFICIAL TAX INVOICE / BILL OF SUPPLY VIEW & EXPORT LOGIC
+    // 18. OFFICIAL TAX INVOICE / BILL OF SUPPLY VIEW & MANAGER EDITOR
     // ==============================================================================
     let currentViewingOrderId = null;
+    let currentInvoiceEditData = null;
+    let isInvoiceEditorOpen = false;
 
     function openInvoiceModal(orderId) {
       const targetId = orderId || (latestOrder ? latestOrder.id : (orders[0] ? orders[0].id : null));
@@ -4778,6 +6014,13 @@
       if (!o) return;
 
       currentViewingOrderId = o.id;
+      renderPrintableInvoiceCard(o);
+      document.getElementById('modal-invoice-view').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderPrintableInvoiceCard(o) {
+      if (!o) return;
       const settings = getCompanySettings();
       const isDelivered = (getOrderStatus(o) === 'Delivered');
 
@@ -4789,7 +6032,7 @@
 
       // Ref and dates
       document.getElementById('invoice-ref-number').innerText = '#' + o.id;
-      document.getElementById('invoice-date').innerText = `${o.date} ${o.time}`;
+      document.getElementById('invoice-date').innerText = `${o.date} ${o.time || ''}`;
 
       const badgeEl = document.getElementById('invoice-fulfillment-badge');
       if (badgeEl) {
@@ -4800,8 +6043,8 @@
 
       // Customer info
       document.getElementById('invoice-cust-name').innerText = o.buyerName;
-      const custObj = customers.find(c => c.id === o.buyerId);
-      document.getElementById('invoice-cust-address').innerText = (custObj && custObj.address) ? custObj.address : 'Store Delivery Address as registered';
+      const custObj = customers.find(c => c.id === o.buyerId || c.name === o.buyerName);
+      document.getElementById('invoice-cust-address').innerText = (custObj && custObj.address) ? custObj.address : (o.buyerAddress || 'Store Delivery Address as registered');
       document.getElementById('invoice-cust-phone').innerText = o.buyerPhone ? `📞 ${o.buyerPhone}` : 'No phone listed';
       
       const custGstinEl = document.getElementById('invoice-cust-gstin');
@@ -4810,7 +6053,7 @@
       document.getElementById('invoice-route').innerText = (o.dispatchRoute || '-').split(':')[0];
       document.getElementById('invoice-pay-mode').innerText = o.paymentMode;
 
-      // Line items (6 columns matching official B&W Bill of Supply layout)
+      // Line items
       const tbody = document.getElementById('invoice-items-tbody');
       if (Array.isArray(o.items) && o.items.length > 0) {
         tbody.innerHTML = o.items.map((it, idx) => `
@@ -4856,9 +6099,282 @@
 
       // Dynamic UPI QR code with exact net payable amount!
       generateUpiQrCode('invoice-upi-qrcode', settings.upiId, settings.companyName, o.netPayable, 'INV-' + o.id);
+    }
 
-      document.getElementById('modal-invoice-view').classList.remove('hidden');
+    function toggleInvoiceManagerEditor(forceState = null) {
+      const panel = document.getElementById('invoice-manager-editor-panel');
+      if (!panel) return;
+
+      const shouldOpen = (forceState !== null) ? forceState : panel.classList.contains('hidden');
+      if (shouldOpen) {
+        requireManagerAuth(() => {
+          const o = orders.find(x => x.id === currentViewingOrderId);
+          if (!o) return;
+          const custObj = customers.find(c => c.id === o.buyerId || c.name === o.buyerName);
+
+          currentInvoiceEditData = {
+            id: o.id,
+            date: o.date,
+            time: o.time || '',
+            paymentMode: o.paymentMode,
+            dispatchRoute: o.dispatchRoute || (custObj && custObj.homeRoute) || '',
+            buyerName: o.buyerName,
+            buyerPhone: o.buyerPhone || (custObj && custObj.phone) || '',
+            buyerAddress: (custObj && custObj.address) || o.buyerAddress || '',
+            buyerGstin: (custObj && custObj.gstin) || '',
+            notes: cleanOrderNotes(o.notes) || '',
+            extraRebate: Number(o.extraRebate || 0),
+            items: (o.items || []).map(i => ({ ...i }))
+          };
+
+          populateInvoiceEditorFields();
+          populateInvoiceEditorDropdowns();
+          panel.classList.remove('hidden');
+          isInvoiceEditorOpen = true;
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (window.lucide) lucide.createIcons();
+        });
+      } else {
+        panel.classList.add('hidden');
+        isInvoiceEditorOpen = false;
+      }
+    }
+
+    function populateInvoiceEditorDropdowns() {
+      const select = document.getElementById('inv-edit-add-prod-select');
+      if (!select) return;
+      if (products.length === 0) {
+        select.innerHTML = `<option value="">-- No Products in Catalog --</option>`;
+      } else {
+        select.innerHTML = `<option value="">-- Select Product to Add --</option>` + products.map(p => `
+          <option value="${p.id}" data-sku="${escapeHtml(p.sku)}" data-unitsize="${escapeHtml(p.unitSize)}" data-baserate="${p.baseRate}">
+            ${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})
+          </option>
+        `).join('');
+      }
+    }
+
+    function onInvoiceAddProductSelected() {
+      const select = document.getElementById('inv-edit-add-prod-select');
+      if (!select || !select.value) return;
+      const prod = products.find(p => String(p.id) === String(select.value));
+      if (!prod) return;
+
+      const o = orders.find(x => x.id === currentViewingOrderId);
+      const buyerId = o ? o.buyerId : null;
+      const rate = getCustomerProductRate(buyerId, prod);
+      document.getElementById('inv-edit-add-rate').value = rate || prod.baseRate || 0;
+      document.getElementById('inv-edit-add-qty').value = 1;
+    }
+
+    function populateInvoiceEditorFields() {
+      if (!currentInvoiceEditData) return;
+      const d = currentInvoiceEditData;
+      document.getElementById('inv-edit-ref').value = d.id;
+      document.getElementById('inv-edit-date').value = d.date;
+      document.getElementById('inv-edit-pay-mode').value = d.paymentMode;
+      document.getElementById('inv-edit-route').value = d.dispatchRoute;
+      document.getElementById('inv-edit-buyer-name').value = d.buyerName;
+      document.getElementById('inv-edit-buyer-phone').value = d.buyerPhone;
+      document.getElementById('inv-edit-buyer-gstin').value = d.buyerGstin;
+      document.getElementById('inv-edit-buyer-address').value = d.buyerAddress;
+      document.getElementById('inv-edit-notes').value = d.notes;
+      document.getElementById('inv-edit-rebate').value = d.extraRebate || 0;
+
+      renderStagedInvoiceItemsTable();
+      recalculateStagedInvoice();
+    }
+
+    function renderStagedInvoiceItemsTable() {
+      const tbody = document.getElementById('inv-edit-items-tbody');
+      if (!tbody || !currentInvoiceEditData) return;
+
+      const items = currentInvoiceEditData.items || [];
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">No items on this bill. Add an item above.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map((it, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-1.5">
+            <span class="font-bold text-slate-800">${escapeHtml(it.name)}</span>
+            <span class="text-[10px] text-slate-400 font-mono block">${escapeHtml(it.sku)} (${escapeHtml(it.unitSize || '-')})</span>
+          </td>
+          <td class="p-1.5 text-center">
+            <input type="number" min="1" value="${it.qty}" onchange="updateInvoiceItemQty(${idx}, this.value)" class="w-16 p-1 bg-white border border-slate-300 rounded text-center font-bold text-xs">
+          </td>
+          <td class="p-1.5 text-right">
+            <input type="number" step="0.5" value="${it.rate}" onchange="updateInvoiceItemRate(${idx}, this.value)" class="w-20 p-1 bg-white border border-slate-300 rounded text-right font-bold text-xs font-mono">
+          </td>
+          <td class="p-1.5 text-right font-mono font-bold text-slate-900">${formatINR(it.total)}</td>
+          <td class="p-1.5 text-center">
+            <button type="button" onclick="removeInvoiceItem(${idx})" class="p-1 rounded bg-rose-50 text-rose-600 hover:bg-rose-100" title="Remove Item">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
       if (window.lucide) lucide.createIcons();
+    }
+
+    function addItemToStagedInvoice() {
+      const select = document.getElementById('inv-edit-add-prod-select');
+      if (!select || !select.value) {
+        alert("Please select a product to add.");
+        return;
+      }
+      const prod = products.find(p => String(p.id) === String(select.value));
+      if (!prod) return;
+
+      const qty = parseInt(document.getElementById('inv-edit-add-qty')?.value) || 1;
+      const rate = parseFloat(document.getElementById('inv-edit-add-rate')?.value) || Number(prod.baseRate || 0);
+      const total = qty * rate;
+
+      if (!currentInvoiceEditData.items) currentInvoiceEditData.items = [];
+      currentInvoiceEditData.items.push({
+        productId: prod.id,
+        sku: prod.sku,
+        name: prod.name,
+        unitSize: prod.unitSize || '-',
+        qty,
+        rate,
+        total
+      });
+
+      renderStagedInvoiceItemsTable();
+      recalculateStagedInvoice();
+
+      // Reset
+      select.value = '';
+      document.getElementById('inv-edit-add-qty').value = 1;
+      document.getElementById('inv-edit-add-rate').value = '';
+    }
+
+    function removeInvoiceItem(idx) {
+      if (!currentInvoiceEditData || !currentInvoiceEditData.items) return;
+      currentInvoiceEditData.items.splice(idx, 1);
+      renderStagedInvoiceItemsTable();
+      recalculateStagedInvoice();
+    }
+
+    function updateInvoiceItemQty(idx, val) {
+      if (!currentInvoiceEditData || !currentInvoiceEditData.items[idx]) return;
+      const qty = Math.max(1, parseInt(val) || 1);
+      const it = currentInvoiceEditData.items[idx];
+      it.qty = qty;
+      it.total = it.qty * Number(it.rate || 0);
+      renderStagedInvoiceItemsTable();
+      recalculateStagedInvoice();
+    }
+
+    function updateInvoiceItemRate(idx, val) {
+      if (!currentInvoiceEditData || !currentInvoiceEditData.items[idx]) return;
+      const rate = Math.max(0, parseFloat(val) || 0);
+      const it = currentInvoiceEditData.items[idx];
+      it.rate = rate;
+      it.total = Number(it.qty || 1) * it.rate;
+      renderStagedInvoiceItemsTable();
+      recalculateStagedInvoice();
+    }
+
+    function handleInvoiceFieldLiveChange() {
+      if (!currentInvoiceEditData) return;
+      currentInvoiceEditData.id = document.getElementById('inv-edit-ref')?.value.trim() || currentInvoiceEditData.id;
+      currentInvoiceEditData.date = document.getElementById('inv-edit-date')?.value.trim() || currentInvoiceEditData.date;
+      currentInvoiceEditData.paymentMode = document.getElementById('inv-edit-pay-mode')?.value || currentInvoiceEditData.paymentMode;
+      currentInvoiceEditData.dispatchRoute = document.getElementById('inv-edit-route')?.value.trim() || currentInvoiceEditData.dispatchRoute;
+      currentInvoiceEditData.buyerName = document.getElementById('inv-edit-buyer-name')?.value.trim() || currentInvoiceEditData.buyerName;
+      currentInvoiceEditData.buyerPhone = document.getElementById('inv-edit-buyer-phone')?.value.trim() || currentInvoiceEditData.buyerPhone;
+      currentInvoiceEditData.buyerGstin = document.getElementById('inv-edit-buyer-gstin')?.value.trim() || currentInvoiceEditData.buyerGstin;
+      currentInvoiceEditData.buyerAddress = document.getElementById('inv-edit-buyer-address')?.value.trim() || currentInvoiceEditData.buyerAddress;
+      currentInvoiceEditData.notes = document.getElementById('inv-edit-notes')?.value.trim() || '';
+
+      recalculateStagedInvoice();
+    }
+
+    function handleInvoiceRebateChange() {
+      if (!currentInvoiceEditData) return;
+      currentInvoiceEditData.extraRebate = Math.max(0, parseFloat(document.getElementById('inv-edit-rebate')?.value) || 0);
+      recalculateStagedInvoice();
+    }
+
+    function recalculateStagedInvoice() {
+      if (!currentInvoiceEditData) return;
+      const d = currentInvoiceEditData;
+      const subtotal = (d.items || []).reduce((s, it) => s + Number(it.total || 0), 0);
+      const totalUnits = (d.items || []).reduce((s, it) => s + Number(it.qty || 0), 0);
+      const net = Math.max(0, subtotal - Number(d.extraRebate || 0));
+
+      d.itemsSubtotal = subtotal;
+      d.totalUnits = totalUnits;
+      d.netPayable = net;
+
+      // Update in-editor stats
+      const subtotalEl = document.getElementById('inv-edit-calc-subtotal');
+      if (subtotalEl) subtotalEl.innerText = formatINR(subtotal);
+      const netEl = document.getElementById('inv-edit-calc-net');
+      if (netEl) netEl.innerText = formatINR(net);
+
+      // Live update the printable card below!
+      renderPrintableInvoiceCard(d);
+    }
+
+    async function saveInvoiceChanges() {
+      if (!currentInvoiceEditData || !currentViewingOrderId) return;
+      const d = currentInvoiceEditData;
+      if (!d.items || d.items.length === 0) {
+        alert("The Bill of Supply must contain at least one line item.");
+        return;
+      }
+
+      const oIdx = orders.findIndex(x => x.id === currentViewingOrderId);
+      if (oIdx < 0) return;
+
+      const oldOrder = orders[oIdx];
+      const updatedOrder = {
+        ...oldOrder,
+        id: d.id,
+        date: d.date,
+        paymentMode: d.paymentMode,
+        dispatchRoute: d.dispatchRoute,
+        buyerName: d.buyerName,
+        buyerPhone: d.buyerPhone,
+        notes: d.notes,
+        extraRebate: d.extraRebate,
+        itemsSubtotal: d.itemsSubtotal,
+        totalUnits: d.totalUnits,
+        netPayable: d.netPayable,
+        items: d.items
+      };
+
+      orders[oIdx] = updatedOrder;
+      currentViewingOrderId = updatedOrder.id;
+
+      // If customer object exists, sync phone and GSTIN
+      const custObj = customers.find(c => c.id === updatedOrder.buyerId);
+      if (custObj) {
+        if (d.buyerPhone) custObj.phone = d.buyerPhone;
+        if (d.buyerGstin) custObj.gstin = d.buyerGstin;
+        if (d.buyerAddress) custObj.address = d.buyerAddress;
+      }
+
+      // Supabase persist
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').upsert([updatedOrder]);
+        } catch (e) {
+          console.warn("Supabase order update warning:", e);
+        }
+      }
+
+      renderPrintableInvoiceCard(updatedOrder);
+      toggleInvoiceManagerEditor(false);
+      renderOrdersHistoryTable();
+      renderCustomersTable();
+      renderDashboard();
+
+      alert(`✅ Bill of Supply #${updatedOrder.id} updated successfully by Manager!`);
     }
 
     function closeInvoiceModal() {
@@ -4887,6 +6403,204 @@
 
     function shareCurrentInvoiceWhatsApp() {
       shareWhatsApp(currentViewingOrderId);
+    }
+
+    // ==============================================================================
+    // CUSTOMER PROFILE & QUOTATIONS DATABASE MODAL
+    // ==============================================================================
+    let currentProfileCustomerId = null;
+
+    function openCustomerProfileModal(custId) {
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) return;
+      currentProfileCustomerId = custId;
+
+      renderCustomerProfileModal();
+      document.getElementById('modal-customer-profile').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCustomerProfileModal() {
+      document.getElementById('modal-customer-profile').classList.add('hidden');
+    }
+
+    function renderCustomerProfileModal() {
+      const cust = customers.find(c => c.id === currentProfileCustomerId);
+      if (!cust) return;
+
+      document.getElementById('cust-profile-modal-name').innerText = cust.name;
+      document.getElementById('cust-profile-store-name').innerText = cust.name;
+      document.getElementById('cust-profile-address').innerText = cust.address || 'Address not registered';
+      document.getElementById('cust-profile-tier-badge').innerText = `${cust.tier || 'Retail'} Partner`;
+      document.getElementById('cust-profile-gstin').innerText = cust.gstin || 'Unregistered / Retail';
+      document.getElementById('cust-profile-phone').innerText = cust.phone || '-';
+      document.getElementById('cust-profile-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+      document.getElementById('cust-profile-due').innerText = formatINR(cust.pendingUdhaar || 0);
+      document.getElementById('cust-profile-credit-limit').innerText = formatINR(cust.creditLimit || 50000);
+
+      // Contact Person details
+      document.getElementById('cust-profile-contact-name').innerText = cust.contactPerson || 'No Contact Person Set';
+      document.getElementById('cust-profile-contact-role').innerText = cust.contactRole || (cust.contactPerson ? 'Designated Incharge' : 'Click Edit to assign contact person');
+      document.getElementById('cust-profile-contact-phone').innerText = cust.contactPhone || cust.phone || '-';
+
+      const contactActions = document.getElementById('cust-profile-contact-actions');
+      const directPhone = (cust.contactPhone || cust.phone || '').replace(/\D/g, '');
+      if (directPhone) {
+        const waNum = directPhone.length === 10 ? ('91' + directPhone) : directPhone;
+        contactActions.innerHTML = `
+          <a href="tel:${directPhone}" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition" title="Call Contact Person">
+            <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
+          </a>
+          <a href="https://wa.me/${waNum}" target="_blank" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition" title="Message on WhatsApp">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          </a>
+        `;
+      } else {
+        contactActions.innerHTML = '';
+      }
+
+      // Current Active Quotation & History
+      const custQuotes = customerQuotations.filter(q => String(q.customerId) === String(cust.id));
+      const activeQuote = custQuotes.find(q => q.isCurrentActive) || custQuotes[0] || null;
+
+      const activeQuoteBody = document.getElementById('cust-profile-active-quote-body');
+      const activeQuoteActions = document.getElementById('cust-profile-active-quote-actions');
+
+      if (activeQuote) {
+        activeQuoteActions.innerHTML = `
+          <button type="button" onclick="openQuotationModal('${cust.id}', '${activeQuote.id}')" class="px-2.5 py-1 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl flex items-center gap-1 transition">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i> View / Print
+          </button>
+          <button type="button" onclick="openQuotationModal('${cust.id}', '${activeQuote.id}'); toggleQuotationManagerEditor(true);" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs rounded-xl flex items-center gap-1 transition">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Quote
+          </button>
+        `;
+
+        const itemsSummary = (activeQuote.items || []).slice(0, 4).map(it => `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">
+            <b>${escapeHtml(it.name)}:</b> <span class="font-mono text-emerald-700 font-bold">${formatINR(it.rate)}</span>
+          </span>
+        `).join('');
+
+        activeQuoteBody.innerHTML = `
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100">
+            <div><span class="text-[10px] text-slate-400 font-sans block">Quotation Ref</span><b>${escapeHtml(activeQuote.id)}</b></div>
+            <div><span class="text-[10px] text-slate-400 font-sans block">Date Issued</span><b>${escapeHtml(activeQuote.date)}</b></div>
+            <div><span class="text-[10px] text-slate-400 font-sans block">Validity</span><b>${escapeHtml(activeQuote.validity || '3 Months')}</b></div>
+            <div><span class="text-[10px] text-slate-400 font-sans block">Products Quoted</span><b>${activeQuote.items ? activeQuote.items.length : 0} items</b></div>
+          </div>
+          <div class="pt-2 flex items-center gap-1.5 flex-wrap">
+            ${itemsSummary}
+            ${activeQuote.items && activeQuote.items.length > 4 ? `<span class="text-[10px] text-slate-400 font-bold">+${activeQuote.items.length - 4} more items</span>` : ''}
+          </div>
+        `;
+      } else {
+        activeQuoteActions.innerHTML = '';
+        activeQuoteBody.innerHTML = `
+          <div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
+            <div>No active quotation created for this customer yet.</div>
+            <button type="button" onclick="createNewQuotationForProfileCustomer()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs inline-flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Create First Quotation for ${escapeHtml(cust.name)}
+            </button>
+          </div>
+        `;
+      }
+
+      // History Table
+      const quotesCountEl = document.getElementById('cust-profile-quotes-count');
+      if (quotesCountEl) quotesCountEl.innerText = `${custQuotes.length} quotation${custQuotes.length !== 1 ? 's' : ''} recorded`;
+
+      const tbody = document.getElementById('cust-profile-quotes-tbody');
+      if (custQuotes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 text-xs">No quotation history recorded yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = custQuotes.map(q => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-2.5 font-mono font-bold text-slate-900">
+              ${escapeHtml(q.id)}<br><span class="text-[10px] text-slate-400 font-normal">${escapeHtml(q.date)}</span>
+            </td>
+            <td class="p-2.5 text-xs text-slate-800">
+              ${escapeHtml(q.contactPerson || cust.contactPerson || '-')}
+            </td>
+            <td class="p-2.5 text-center font-bold font-mono text-xs">
+              ${q.items ? q.items.length : 0} items
+            </td>
+            <td class="p-2.5 text-center text-[10px] text-slate-600">
+              ${escapeHtml(q.validity || '3 Months')}
+            </td>
+            <td class="p-2.5 text-center">
+              ${q.isCurrentActive ? `
+                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[9px]">Active</span>
+              ` : `
+                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-semibold text-[9px]">Archived</span>
+              `}
+            </td>
+            <td class="p-2.5 text-right space-x-1 whitespace-nowrap">
+              <button onclick="openQuotationModal('${cust.id}', '${q.id}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs" title="View Quotation">
+                <i data-lucide="eye" class="w-3.5 h-3.5 inline"></i>
+              </button>
+              ${!q.isCurrentActive ? `
+                <button onclick="setHistoricalQuoteAsActive('${q.id}')" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs" title="Make this the Active Quote">
+                  Make Active
+                </button>
+              ` : ''}
+              ${isManager ? `
+                <button onclick="deleteHistoricalQuote('${q.id}')" class="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200" title="Delete Quote">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function createNewQuotationForProfileCustomer() {
+      if (!currentProfileCustomerId) return;
+      const custId = currentProfileCustomerId;
+      closeCustomerProfileModal();
+      openQuotationModal(custId);
+      toggleQuotationManagerEditor(true);
+    }
+
+    function setHistoricalQuoteAsActive(quoteId) {
+      const q = customerQuotations.find(x => x.id === quoteId);
+      if (!q) return;
+
+      customerQuotations.forEach(item => {
+        if (String(item.customerId) === String(q.customerId)) {
+          item.isCurrentActive = false;
+        }
+      });
+      q.isCurrentActive = true;
+      saveCustomerQuotations();
+      renderCustomerProfileModal();
+      renderCustomersTable();
+      alert(`✅ Quotation ${q.id} restored as the current active quote!`);
+    }
+
+    function deleteHistoricalQuote(quoteId) {
+      if (!confirm("Are you sure you want to delete this historical quotation?")) return;
+      customerQuotations = customerQuotations.filter(q => q.id !== quoteId);
+      saveCustomerQuotations();
+      renderCustomerProfileModal();
+      renderCustomersTable();
+    }
+
+    function editCustomerFromProfile() {
+      if (!currentProfileCustomerId) return;
+      const id = currentProfileCustomerId;
+      closeCustomerProfileModal();
+      openCustomerModal(id);
+    }
+
+    function openStatementFromProfile() {
+      if (!currentProfileCustomerId) return;
+      const id = currentProfileCustomerId;
+      closeCustomerProfileModal();
+      openCustomerStatementModal(id);
     }
 
     // ==============================================================================
