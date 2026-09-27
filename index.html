@@ -1035,11 +1035,12 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Packaging Unit Size *</label>
-            <input type="text" id="prod-unit-size" required placeholder="e.g. 500g pouch, 1kg pack" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+            <input type="text" id="prod-unit-size" oninput="updateProductModalRateKgPreview()" required placeholder="e.g. 500g pouch, 1kg pack" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
           </div>
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Base Rate (₹) *</label>
-            <input type="number" id="prod-rate" required min="0" step="any" placeholder="0.00" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+            <input type="number" id="prod-rate" oninput="updateProductModalRateKgPreview()" required min="0" step="any" placeholder="0.00" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold">
+            <div id="prod-ratekg-preview" class="text-[10px] font-mono text-indigo-600 font-semibold mt-0.5 truncate"></div>
           </div>
         </div>
         <div>
@@ -3119,8 +3120,12 @@
                 ${stockBadgeHtml}
               </div>
               <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
-              <div class="flex items-center gap-1.5 mt-0.5">
+              <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 <span class="font-mono font-black text-sm ${hasCustomRate ? 'text-indigo-600' : 'text-emerald-700'}">${formatINR(activeRate)}</span>
+                ${(() => {
+                  const rKg = calculateRatePerKg(activeRate, p.unitSize);
+                  return rKg ? `<span class="text-[10px] text-slate-500 font-mono font-semibold">(${formatINR(rKg)}/kg)</span>` : '';
+                })()}
                 ${hasCustomRate ? `
                   <span class="text-[10px] line-through text-slate-400 font-mono">${formatINR(p.baseRate)}</span>
                   <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Custom Price</span>
@@ -3706,14 +3711,22 @@
       if (inwardEntries.length === 0) {
         inwardTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No inward batch receipts recorded yet. Use the <b>Factory Stock Arrival List</b> above to inward stock.</td></tr>`;
       } else {
-        inwardTbody.innerHTML = inwardEntries.map(e => `
+        inwardTbody.innerHTML = inwardEntries.map(e => {
+          const matchedProd = products.find(x => x.sku === e.product_sku || x.name === e.product_name);
+          const uSize = e.unit_size || (matchedProd ? matchedProd.unitSize : '');
+          const kgVal = parseUnitSizeToKg(uSize);
+          const totalKg = (kgVal && e.quantity_units) ? (kgVal * e.quantity_units) : null;
+          return `
           <tr class="hover:bg-slate-50 transition">
             <td class="p-2.5 font-mono text-slate-500 whitespace-nowrap">${e.date}</td>
             <td class="p-2.5">
               <div class="font-bold text-slate-900">${escapeHtml(e.product_name || e.product_sku)}</div>
-              <div class="text-[10px] font-mono text-slate-400">${escapeHtml(e.product_sku)}</div>
+              <div class="text-[10px] font-mono text-slate-500">${escapeHtml(e.product_sku)}${uSize ? ` • 📦 ${escapeHtml(uSize)}` : ''}</div>
             </td>
-            <td class="p-2.5 font-mono font-black text-right text-indigo-700">+${e.quantity_units}</td>
+            <td class="p-2.5 font-mono font-black text-right text-indigo-700">
+              +${e.quantity_units}
+              ${totalKg ? `<span class="text-[9px] text-indigo-500 font-normal block">${Number(totalKg.toFixed(2))} kg net</span>` : '<span class="text-[9px] text-slate-400 font-normal block">Units</span>'}
+            </td>
             <td class="p-2.5 font-mono text-slate-600">${escapeHtml(e.batch_number || '-')}</td>
             <td class="p-2.5 text-slate-700">${escapeHtml(e.supplier_or_source || 'In-House')}</td>
             <td class="p-2.5 text-slate-400 text-[11px]">${escapeHtml(e.notes || '-')}</td>
@@ -3725,7 +3738,8 @@
               ` : '-'}
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -4869,8 +4883,14 @@
             <td class="p-3 font-mono font-bold text-slate-600 uppercase">${escapeHtml(p.sku)}</td>
             <td class="p-3 font-bold text-slate-900">${escapeHtml(p.name)}</td>
             <td class="p-3 text-slate-600">${escapeHtml(p.category || 'General')}</td>
-            <td class="p-3 font-mono">${escapeHtml(p.unitSize)}</td>
-            <td class="p-3 font-mono font-black text-right text-emerald-700">${formatINR(p.baseRate)}</td>
+            <td class="p-3 font-mono"><span class="px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-800 text-xs">📦 ${escapeHtml(p.unitSize)}</span></td>
+            <td class="p-3 font-mono text-right">
+              <span class="font-black text-emerald-700">${formatINR(p.baseRate)}</span>
+              ${(() => {
+                const rKg = calculateRatePerKg(p.baseRate, p.unitSize);
+                return rKg ? `<div class="text-[10px] font-normal text-slate-400 font-mono">≈ ${formatINR(rKg)}/kg</div>` : '';
+              })()}
+            </td>
             <td class="p-3 font-mono text-right text-slate-500">${s.initial}</td>
             <td class="p-3 font-mono text-right text-indigo-600 font-bold">+${s.inward}</td>
             <td class="p-3 font-mono text-right text-rose-600 font-bold">-${s.sold + s.samples}</td>
@@ -4888,6 +4908,19 @@
         `;
       }).join('');
       if (window.lucide) lucide.createIcons();
+    }
+
+    function updateProductModalRateKgPreview() {
+      const preview = document.getElementById('prod-ratekg-preview');
+      if (!preview) return;
+      const rate = parseFloat(document.getElementById('prod-rate')?.value);
+      const unitSize = document.getElementById('prod-unit-size')?.value;
+      const rKg = calculateRatePerKg(rate, unitSize);
+      if (rKg) {
+        preview.innerText = `≈ ${formatINR(rKg)} / kg`;
+      } else {
+        preview.innerText = '';
+      }
     }
 
     function openProductModal(prodId = '') {
@@ -4909,6 +4942,7 @@
         document.getElementById('modal-product-title').innerText = "Add New Product";
       }
 
+      updateProductModalRateKgPreview();
       document.getElementById('modal-product').classList.remove('hidden');
     }
 
