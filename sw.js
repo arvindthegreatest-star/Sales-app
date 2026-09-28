@@ -1,5 +1,5 @@
 // Service Worker for Sri Govinda Sales Portal PWA
-const CACHE_NAME = 'sg-sales-cache-v3';
+const CACHE_NAME = 'sg-sales-cache-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

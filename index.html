@@ -92,17 +92,24 @@
         </div>
       </div>
 
-      <!-- User Account Persona Capsule & Switcher -->
+      <!-- User Account Persona Capsule & Dropdown Selector -->
       <div class="flex items-center gap-1.5 flex-shrink-0">
-        <button type="button" onclick="openAccountSwitcherModal()" id="btn-account-switcher" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-xs transition cursor-pointer shadow-xs" title="Switch User Account / Login as Manager">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 transition shadow-xs">
           <div id="header-user-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0"></div>
-          <div class="text-left leading-tight hidden xs:block sm:block">
-            <span id="header-user-name" class="font-bold text-white text-[11px] block truncate max-w-[120px] sm:max-w-[150px]">Ramesh Kumar</span>
-            <span id="header-user-role" class="text-[9px] font-mono text-emerald-400 font-semibold block">Sales Official • Yelahanka</span>
+          <div class="flex flex-col text-left">
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Portal User</span>
+            <select id="header-portal-user-select" onchange="switchPortalUserFromDropdown(this.value)" class="bg-transparent text-white text-xs font-bold outline-none cursor-pointer pr-1 py-0.5" title="Switch Sales Official or Manager">
+              <!-- Dynamically populated by JS -->
+            </select>
           </div>
-          <span class="sm:hidden text-[11px] font-bold text-white" id="header-user-name-mobile">Ramesh</span>
-          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
-        </button>
+          <button type="button" onclick="openAccountSwitcherModal()" id="btn-account-switcher" class="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition cursor-pointer ml-0.5" title="View All User Profiles">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          </button>
+          <!-- Hidden fallback elements for compatibility -->
+          <span id="header-user-name" class="hidden">Sales Official 1</span>
+          <span id="header-user-role" class="hidden">Sales Official</span>
+          <span id="header-user-name-mobile" class="hidden">Official 1</span>
+        </div>
       </div>
 
       <!-- Navigation Tabs & Manager Controls -->
@@ -203,10 +210,10 @@
               <span>● Field Sales Portal</span>
             </div>
             <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>Hello, <span id="rep-dash-name">Ramesh Kumar</span> 👋</span>
+              <span>Hello, <span id="rep-dash-name">Sales Official</span> 👋</span>
             </h1>
             <p class="text-xs text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-              <span>📍 Assigned Beat: <b id="rep-dash-route" class="text-white">Yelahanka Route</b></span>
+              <span>📍 Assigned Beat: <b id="rep-dash-route" class="text-white">Beat 1</b></span>
               <span>•</span>
               <span>📱 Phone: <span id="rep-dash-phone" class="font-mono font-bold text-slate-200">-</span></span>
             </p>
@@ -450,12 +457,16 @@
           </button>
         </div>
 
-        <!-- Active Sales Official Attribution Bar & Quoted Indicator -->
-        <div class="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-2 flex-wrap text-xs">
-          <div class="flex items-center gap-2">
+        <!-- Active Sales Official Attribution Bar & Dropdown -->
+        <div class="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap text-xs">
+          <div class="flex items-center gap-2 flex-wrap">
             <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-            <span>Sales Officer: <b id="order-rep-display-name" class="text-emerald-400 font-sans">Ramesh Kumar</b></span>
-            <span class="text-slate-400 text-[10px]">(<span id="order-rep-display-beat">Yelahanka Route</span>)</span>
+            <span class="text-slate-300 font-semibold">Active Official:</span>
+            <select id="order-portal-user-select" onchange="switchPortalUserFromDropdown(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold outline-none cursor-pointer focus:border-emerald-500" title="Change Official for this Order / Portal">
+              <!-- Dynamically populated by JS -->
+            </select>
+            <span class="text-slate-400 text-[10px]">(<span id="order-rep-display-beat">Beat 1</span>)</span>
+            <span id="order-rep-display-name" class="hidden">Sales Official 1</span>
           </div>
           <div id="order-active-quote-indicator" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             ✨ Customer Quotation Rates Active
@@ -1055,7 +1066,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Person Name</label>
-              <input type="text" id="cust-contact-person" placeholder="e.g. Ramesh Kumar" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+              <input type="text" id="cust-contact-person" placeholder="e.g. Store Owner / Manager" class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
             </div>
             <div>
               <label class="block font-bold text-slate-600 text-[10px] mb-0.5">Designation / Role</label>
@@ -1665,7 +1676,7 @@
           </div>
           <div>
             <h3 class="font-bold text-base text-slate-900">Switch Portal User Account</h3>
-            <p class="text-xs text-slate-400">Select your sales profile or switch to Manager Admin</p>
+            <p class="text-xs text-slate-400">Select your sales profile or switch to Manager</p>
           </div>
         </div>
         <button onclick="closeAccountSwitcherModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
@@ -1729,7 +1740,7 @@
           </div>
           <div class="sm:col-span-2">
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Full Name *</label>
-            <input type="text" id="sp-edit-name" required placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold outline-none focus:border-indigo-500">
+            <input type="text" id="sp-edit-name" required placeholder="e.g. Sales Official Name" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold outline-none focus:border-indigo-500">
           </div>
         </div>
 
@@ -1741,7 +1752,7 @@
           </div>
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Email Address</label>
-            <input type="email" id="sp-edit-email" placeholder="e.g. ramesh@srigovinda.in" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
+            <input type="email" id="sp-edit-email" placeholder="e.g. official@srigovinda.in" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
           </div>
         </div>
 
@@ -2040,7 +2051,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Contact Person Name</label>
-              <input type="text" id="quote-edit-contact-person" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. Ramesh Kumar" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
+              <input type="text" id="quote-edit-contact-person" oninput="handleQuoteFieldLiveChange()" placeholder="e.g. Store Manager / Contact Person" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Contact Direct Phone</label>
@@ -3020,12 +3031,12 @@
 
     let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
 
-    // Sales Personnel Accounts Roster
+    // Sales Personnel Accounts Roster (Neutral until official forms are uploaded)
     const DEFAULT_SALESPEOPLE = [
-      { id: 'SP-101', name: 'Pradhish', slug: 'salesPradhish', phone: '9845011223', email: 'pradhish@srigovinda.in', assignedRoute: 'Yelahanka Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-10', address: 'Yelahanka, Bengaluru', active: true },
-      { id: 'SP-102', name: 'Nagaraju', slug: 'salesNagaraju', phone: '9980123456', email: 'nagaraju@srigovinda.in', assignedRoute: 'Hebbal Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Tata Ace', dailyOrderTarget: 6, joiningDate: '2025-01-15', address: 'Hebbal, Bengaluru', active: true },
-      { id: 'SP-103', name: 'Ramesh Kumar', slug: 'salesRamesh', phone: '9845012345', email: 'ramesh@srigovinda.in', assignedRoute: 'General Beat', monthlyTarget: 150000, commissionPct: 2.5, vehicleType: 'Two-Wheeler', dailyOrderTarget: 5, joiningDate: '2025-02-01', address: 'RT Nagar, Bengaluru', active: true },
-      { id: 'SP-104', name: 'Arvind Swamy', slug: 'salesArvind', phone: '9731988411', email: 'arvind@srigovinda.in', assignedRoute: 'Central Market', monthlyTarget: 200000, commissionPct: 3.0, vehicleType: '3-Wheeler', dailyOrderTarget: 8, joiningDate: '2024-11-10', address: 'Malleswaram, Bengaluru', active: true }
+      { id: 'SP-101', name: 'Sales Official 1', slug: 'salesOfficial1', phone: '', email: '', assignedRoute: 'Beat 1', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-102', name: 'Sales Official 2', slug: 'salesOfficial2', phone: '', email: '', assignedRoute: 'Beat 2', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-103', name: 'Sales Official 3', slug: 'salesOfficial3', phone: '', email: '', assignedRoute: 'Beat 3', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-104', name: 'Sales Official 4', slug: 'salesOfficial4', phone: '', email: '', assignedRoute: 'Beat 4', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true }
     ];
 
     let salespeople = [];
@@ -3034,6 +3045,18 @@
       if (savedSp) salespeople = JSON.parse(savedSp);
       if (!Array.isArray(salespeople) || salespeople.length === 0) {
         salespeople = DEFAULT_SALESPEOPLE;
+      } else {
+        const legacyNames = ['pradhish', 'nagaraju', 'ramesh kumar', 'ramesh', 'arvind swamy', 'arvind', 'kavitha'];
+        let updated = false;
+        salespeople.forEach((sp, idx) => {
+          if (!sp.name || legacyNames.includes(sp.name.trim().toLowerCase())) {
+            sp.name = `Sales Official ${idx + 1}`;
+            sp.slug = `salesOfficial${idx + 1}`;
+            sp.assignedRoute = `Beat ${idx + 1}`;
+            updated = true;
+          }
+        });
+        if (updated) localStorage.setItem('sg_salespeople', JSON.stringify(salespeople));
       }
     } catch (e) {
       salespeople = DEFAULT_SALESPEOPLE;
@@ -3426,6 +3449,7 @@
         activeBtn.classList.add(isManager && isMgrTab ? 'bg-indigo-600' : 'bg-emerald-600', 'text-white');
       }
 
+      if (tabId === 'order') syncPortalUserDropdowns();
       if (tabId === 'dashboard') renderDashboard();
       if (tabId === 'inward') renderInwardTables();
       if (tabId === 'samples') renderSamplesTable();
@@ -3778,7 +3802,7 @@
       const repDisplayName = document.getElementById('order-rep-display-name');
       const repDisplayBeat = document.getElementById('order-rep-display-beat');
       if (repDisplayName) {
-        repDisplayName.innerText = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager Admin' : 'Field Sales');
+        repDisplayName.innerText = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager' : 'Sales Official');
       }
       if (repDisplayBeat) {
         repDisplayBeat.innerText = currentSalesperson ? (currentSalesperson.assignedRoute || 'Field Beat') : 'Central Depot';
@@ -4012,7 +4036,7 @@
       const statusTag = (deliveryStage === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
       const notes = rawNotes ? (rawNotes + ' ' + statusTag) : statusTag;
 
-      const activeRepName = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager Admin' : 'Field Sales');
+      const activeRepName = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager' : 'Sales Official');
       const activeRepId = currentSalesperson ? currentSalesperson.id : null;
 
       const orderRecord = {
@@ -8228,7 +8252,7 @@
       const repParam = params.get('rep') || params.get('salesperson') || params.get('sp');
       const managerParam = params.get('manager');
 
-      // 1. MATCH BY DEDICATED SALES SUBPAGE PATH: http://localhost:3000/salesPradhish, /salesNagaraju, etc.
+      // 1. MATCH BY DEDICATED SALES SUBPAGE PATH: http://localhost:3000/salesOfficial1, etc.
       let matchedRep = null;
       if (path) {
         const cleanPath = path.toLowerCase();
@@ -8243,7 +8267,7 @@
                  (cleanPath.startsWith('sales') && s.name.toLowerCase().includes(cleanPath.replace(/^sales/, '')));
         });
 
-        // Auto-register if new official accessed by direct path e.g. /salesKavitha
+        // Auto-register if new official accessed by direct path e.g. /salesOfficial
         if (!matchedRep && cleanPath.startsWith('sales') && cleanPath.length > 5) {
           const rawName = path.slice(5);
           const capitalized = rawName.charAt(0).toUpperCase() + rawName.slice(1);
@@ -8327,24 +8351,79 @@
 
       if (isManager) {
         if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-indigo-400 ring-2 ring-indigo-400/20 flex-shrink-0";
-        if (nameEl) nameEl.innerText = "Manager HQ";
+        if (nameEl) nameEl.innerText = "Manager";
         if (nameMobEl) nameMobEl.innerText = "Manager";
-        if (roleEl) roleEl.innerText = "Executive Admin • All Routes";
-        if (orderRepNameEl) orderRepNameEl.innerText = "Manager Admin";
-        if (orderRepBeatEl) orderRepBeatEl.innerText = "HQ Central";
+        if (roleEl) roleEl.innerText = "Manager • All Routes";
+        if (orderRepNameEl) orderRepNameEl.innerText = "Manager";
+        if (orderRepBeatEl) orderRepBeatEl.innerText = "All Routes";
         document.title = "Sri Govinda — Manager Cockpit";
       } else if (currentSalesperson) {
         if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0";
-        if (nameEl) nameEl.innerText = currentSalesperson.name;
-        if (nameMobEl) nameMobEl.innerText = currentSalesperson.name.split(' ')[0];
-        if (roleEl) roleEl.innerText = `Sales Officer • ${currentSalesperson.assignedRoute || 'General Beat'}`;
-        if (orderRepNameEl) orderRepNameEl.innerText = currentSalesperson.name;
+        if (nameEl) nameEl.innerText = currentSalesperson.name || "Sales Official";
+        if (nameMobEl) nameMobEl.innerText = currentSalesperson.name || "Official";
+        if (roleEl) roleEl.innerText = `Sales Official • ${currentSalesperson.assignedRoute || 'General Beat'}`;
+        if (orderRepNameEl) orderRepNameEl.innerText = currentSalesperson.name || "Sales Official";
         if (orderRepBeatEl) orderRepBeatEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
-        if (repDashNameEl) repDashNameEl.innerText = currentSalesperson.name;
+        if (repDashNameEl) repDashNameEl.innerText = currentSalesperson.name || "Sales Official";
         if (repDashRouteEl) repDashRouteEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
         if (repDashPhoneEl) repDashPhoneEl.innerText = currentSalesperson.phone || '-';
-        document.title = `Sri Govinda — ${currentSalesperson.name} (Sales Portal)`;
+        document.title = `Sri Govinda — ${currentSalesperson.name || "Sales Official"} (Sales Portal)`;
       }
+      populatePortalUserDropdowns();
+    }
+
+    function populatePortalUserDropdowns() {
+      const headerSelect = document.getElementById('header-portal-user-select');
+      const orderSelect = document.getElementById('order-portal-user-select');
+
+      const optionsHtml = salespeople.map(sp => {
+        return `<option value="${escapeHtml(sp.id)}">👤 ${escapeHtml(sp.name || 'Sales Official')} (${escapeHtml(sp.assignedRoute || 'Beat')})</option>`;
+      }).join('') + `<option value="manager">🔒 Manager Mode</option>`;
+
+      const currentVal = isManager ? 'manager' : (currentSalesperson ? currentSalesperson.id : (salespeople[0] ? salespeople[0].id : ''));
+
+      if (headerSelect) {
+        headerSelect.innerHTML = optionsHtml;
+        if (currentVal) headerSelect.value = currentVal;
+      }
+      if (orderSelect) {
+        orderSelect.innerHTML = optionsHtml;
+        if (currentVal) orderSelect.value = currentVal;
+      }
+    }
+
+    function switchPortalUserFromDropdown(val) {
+      if (val === 'manager') {
+        if (isManager) return;
+        requireManagerAuth(() => {
+          populatePortalUserDropdowns();
+          setTab('dashboard');
+        });
+        setTimeout(() => syncPortalUserDropdowns(), 20);
+        return;
+      }
+
+      const sp = salespeople.find(s => s.id === val);
+      if (!sp) return;
+
+      isManager = false;
+      sessionStorage.setItem('sg_is_manager', 'false');
+      currentSalesperson = sp;
+      localStorage.setItem('sg_current_salesperson_id', sp.id);
+
+      updateManagerUI();
+      updateUserPersonaUI();
+      syncPortalUserDropdowns();
+      setTab('dashboard');
+      showToast(`Active Profile: ${sp.name || 'Sales Official'}`);
+    }
+
+    function syncPortalUserDropdowns() {
+      const currentVal = isManager ? 'manager' : (currentSalesperson ? currentSalesperson.id : '');
+      const headerSelect = document.getElementById('header-portal-user-select');
+      const orderSelect = document.getElementById('order-portal-user-select');
+      if (headerSelect && currentVal) headerSelect.value = currentVal;
+      if (orderSelect && currentVal) orderSelect.value = currentVal;
     }
 
     function openAccountSwitcherModal() {
@@ -8415,7 +8494,10 @@
       localStorage.setItem('sg_current_salesperson_id', sp.id);
       closeAccountSwitcherModal();
       updateManagerUI();
+      updateUserPersonaUI();
+      syncPortalUserDropdowns();
       setTab('dashboard');
+      showToast(`Active Profile: ${sp.name || 'Sales Official'}`);
     }
 
     function switchToManagerFromSwitcher() {
