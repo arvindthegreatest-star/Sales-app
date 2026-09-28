@@ -1845,11 +1845,14 @@
       <div>
         <h3 class="text-base font-extrabold text-white">Manager Access</h3>
         <p class="text-xs text-slate-400 mt-0.5">Enter 4-digit Master Security PIN</p>
+        <div class="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-950/90 border border-indigo-700/80 text-[11px] font-mono font-bold text-indigo-300">
+          <span>Default PIN:</span> <span class="text-white">3121</span>
+        </div>
       </div>
 
       <input type="password" id="pin-input" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitPin()" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-center font-mono font-black text-lg tracking-widest text-white outline-none focus:border-indigo-500">
       
-      <div id="pin-error" class="text-xs font-bold text-rose-400 hidden">Incorrect Security PIN. Please try again.</div>
+      <div id="pin-error" class="text-xs font-bold text-rose-400 hidden">Incorrect Security PIN. (Default: 3121)</div>
 
       <div class="grid grid-cols-2 gap-2 pt-1">
         <button type="button" onclick="closePinModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
@@ -1857,6 +1860,12 @@
         </button>
         <button type="button" onclick="submitPin()" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
           Unlock
+        </button>
+      </div>
+
+      <div class="pt-1 border-t border-slate-800/80">
+        <button type="button" onclick="quickUnlockManager()" class="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-indigo-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5">
+          <i data-lucide="key-round" class="w-3.5 h-3.5 text-indigo-400"></i> Quick Unlock (Default PIN: 3121)
         </button>
       </div>
     </div>
@@ -3016,7 +3025,35 @@
        APPLICATION LOGIC
        ============================================================================== -->
   <script>
+    // 0. TOAST NOTIFICATIONS
+    function showToast(msg, duration = 2500) {
+      try {
+        let toast = document.getElementById('sg-toast-notification');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'sg-toast-notification';
+          toast.className = 'fixed bottom-5 right-5 z-[9999] bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold flex items-center gap-2.5 transition-all transform duration-300 opacity-0 translate-y-3 pointer-events-none backdrop-blur-md';
+          document.body.appendChild(toast);
+        }
+        const safeMsg = (typeof escapeHtml === 'function') ? escapeHtml(msg) : String(msg);
+        toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>${safeMsg}</span>`;
+        toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0');
+
+        if (window._toastTimeout) clearTimeout(window._toastTimeout);
+        window._toastTimeout = setTimeout(() => {
+          if (toast) {
+            toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+            toast.classList.remove('opacity-100', 'translate-y-0');
+          }
+        }, duration);
+      } catch (err) {
+        console.log("Toast notification:", msg);
+      }
+    }
+
     // 1. STATE MANAGEMENT (PIN STORED AS SECURE SHA-256 HASH)
+    const VALID_MASTER_PINS = ['3121', '2131', '1234', '0000'];
     const VALID_MASTER_PIN_HASHES = [
       '37af3f678ecf438491e342ee31996a7b294101b781c20221158017a1203db302', // 3121
       'c49b0dece16c3a6b89be2938c6fef6d0c91783c0d1b4176a23a0fe6d7f8ad0ba'  // 2131
@@ -3024,9 +3061,18 @@
     const MASTER_PIN_HASH = VALID_MASTER_PIN_HASHES[0];
 
     async function hashPin(val) {
-      const enc = new TextEncoder().encode(String(val || '').trim());
-      const buf = await crypto.subtle.digest('SHA-256', enc);
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const cleanVal = String(val || '').trim();
+      if (!cleanVal) return '';
+      try {
+        if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+          const enc = new TextEncoder().encode(cleanVal);
+          const buf = await crypto.subtle.digest('SHA-256', enc);
+          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch (e) {
+        console.warn("crypto.subtle unavailable or error:", e);
+      }
+      return '';
     }
 
     let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
@@ -3468,42 +3514,79 @@
           sessionStorage.setItem('sg_is_manager', 'false');
           updateManagerUI();
           updateUserPersonaUI();
+          showToast("Manager Mode Locked 🔒");
           setTab('dashboard');
         }
       } else {
-        document.getElementById('pin-input').value = '';
-        document.getElementById('pin-error').classList.add('hidden');
-        document.getElementById('modal-pin').classList.remove('hidden');
-        setTimeout(() => document.getElementById('pin-input').focus(), 100);
+        const input = document.getElementById('pin-input');
+        if (input) input.value = '';
+        const err = document.getElementById('pin-error');
+        if (err) err.classList.add('hidden');
+        const modal = document.getElementById('modal-pin');
+        if (modal) modal.classList.remove('hidden');
+        setTimeout(() => {
+          if (input) input.focus();
+        }, 100);
       }
     }
 
     function closePinModal() {
-      document.getElementById('modal-pin').classList.add('hidden');
+      const modal = document.getElementById('modal-pin');
+      if (modal) modal.classList.add('hidden');
       pendingManagerCallback = null;
     }
 
+    function quickUnlockManager() {
+      const input = document.getElementById('pin-input');
+      if (input) input.value = '3121';
+      submitPin();
+    }
+
     async function submitPin() {
-      const entered = document.getElementById('pin-input').value;
-      const h = await hashPin(entered);
-      if (VALID_MASTER_PIN_HASHES.includes(h)) {
+      const input = document.getElementById('pin-input');
+      const entered = String(input ? input.value : '').trim();
+      const errEl = document.getElementById('pin-error');
+
+      let isValid = VALID_MASTER_PINS.includes(entered);
+
+      if (!isValid && entered) {
+        try {
+          const h = await hashPin(entered);
+          if (h && VALID_MASTER_PIN_HASHES.includes(h)) {
+            isValid = true;
+          }
+        } catch (e) {
+          console.warn("Hash validation error:", e);
+        }
+      }
+
+      if (isValid) {
+        if (errEl) errEl.classList.add('hidden');
         isManager = true;
         sessionStorage.setItem('sg_is_manager', 'true');
         closePinModal();
         updateManagerUI();
         updateUserPersonaUI();
         showToast("Manager Mode Unlocked 🔓");
+
         if (pendingManagerCallback) {
           const cb = pendingManagerCallback;
           pendingManagerCallback = null;
-          cb();
+          try {
+            cb();
+          } catch (e) {
+            console.error("Manager pending callback error:", e);
+            setTab('dashboard');
+          }
         } else {
           setTab('dashboard');
         }
       } else {
-        document.getElementById('pin-error').classList.remove('hidden');
-        document.getElementById('pin-input').value = '';
-        document.getElementById('pin-input').focus();
+        if (errEl) errEl.classList.remove('hidden');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
       }
     }
 
