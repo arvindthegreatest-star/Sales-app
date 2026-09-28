@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS orders (
 -- Backward-compatibility column migration if table already exists
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Pending Delivery';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "deliveredAt" TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "repId" TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "repName" TEXT DEFAULT 'Field Sales';
 
 -- Inward Inventory (Stock arrivals from factory/suppliers)
 CREATE TABLE IF NOT EXISTS inventory_inward (
@@ -110,6 +112,31 @@ CREATE TABLE IF NOT EXISTS contract_pricing (
   UNIQUE("buyerId", "productId")
 );
 
+-- Sales Personnel Accounts Roster
+CREATE TABLE IF NOT EXISTS salespeople (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  "assignedRoute" TEXT,
+  "monthlyTarget" NUMERIC DEFAULT 150000,
+  "commissionPct" NUMERIC DEFAULT 2.5,
+  "vehicleType" TEXT DEFAULT 'Two-Wheeler',
+  "dailyOrderTarget" NUMERIC DEFAULT 5,
+  "joiningDate" TEXT,
+  address TEXT,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Backward-compatibility column migrations for salespeople if table already exists
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "commissionPct" NUMERIC DEFAULT 2.5;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "vehicleType" TEXT DEFAULT 'Two-Wheeler';
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "dailyOrderTarget" NUMERIC DEFAULT 5;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "joiningDate" TEXT;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS address TEXT;
+
 -- 2. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buyers ENABLE ROW LEVEL SECURITY;
@@ -118,6 +145,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_inward ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sample_giveaways ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contract_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE salespeople ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public full access routes" ON routes;
 CREATE POLICY "Public full access routes" ON routes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -140,12 +168,15 @@ CREATE POLICY "Public full access sample_giveaways" ON sample_giveaways FOR ALL 
 DROP POLICY IF EXISTS "Public full access contract_pricing" ON contract_pricing;
 CREATE POLICY "Public full access contract_pricing" ON contract_pricing FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public full access salespeople" ON salespeople;
+CREATE POLICY "Public full access salespeople" ON salespeople FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
 -- 3. REALTIME REPLICATION (Instant Updates across all devices)
-ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways, contract_pricing;
+ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople;
 
 -- ==============================================================================
 -- OPTIONAL: RESET DUMMY DATA SCRIPT
 -- If you want to purge test records from Supabase, run this in SQL Editor:
--- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing CASCADE;
+-- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople CASCADE;
 -- ==============================================================================
 

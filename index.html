@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sri Govinda Sales & Inventory</title>
 
+  <!-- PWA Meta Tags & Web App Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SG Sales">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client v2 -->
@@ -72,7 +81,7 @@
         <div>
           <div class="flex items-center gap-1.5">
             <span class="font-extrabold text-sm tracking-tight text-white">Sri Govinda</span>
-            <button type="button" onclick="handleFooterAdminClick()" id="role-badge" class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Click to switch between Sales Rep and Manager mode">
+            <button type="button" onclick="handleFooterAdminClick()" id="role-badge" class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Click to toggle Manager mode">
               Sales Hub 🔒
             </button>
           </div>
@@ -83,15 +92,28 @@
         </div>
       </div>
 
-      <!-- Navigation Tabs & Manager Mode Trigger -->
+      <!-- User Account Persona Capsule & Switcher -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button type="button" onclick="openAccountSwitcherModal()" id="btn-account-switcher" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-xs transition cursor-pointer shadow-xs" title="Switch User Account / Login as Manager">
+          <div id="header-user-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0"></div>
+          <div class="text-left leading-tight hidden xs:block sm:block">
+            <span id="header-user-name" class="font-bold text-white text-[11px] block truncate max-w-[120px] sm:max-w-[150px]">Ramesh Kumar</span>
+            <span id="header-user-role" class="text-[9px] font-mono text-emerald-400 font-semibold block">Sales Official • Yelahanka</span>
+          </div>
+          <span class="sm:hidden text-[11px] font-bold text-white" id="header-user-name-mobile">Ramesh</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs & Manager Controls -->
       <nav class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
         <button onclick="setTab('dashboard')" id="nav-dashboard" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shrink-0">
           <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Dashboard</span>
+          <span id="nav-dashboard-label" class="hidden sm:inline">Dashboard</span>
         </button>
         <button onclick="setTab('order')" id="nav-order" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
-          <span>Order</span>
+          <span id="nav-order-label">One-Step Order</span>
         </button>
         <button onclick="setTab('customers')" id="nav-customers" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
@@ -99,32 +121,39 @@
         </button>
         <button onclick="setTab('orders')" id="nav-orders" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
-          <span>History</span>
+          <span id="nav-orders-label">History</span>
         </button>
         <button onclick="setTab('samples')" id="nav-samples" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="gift" class="w-3.5 h-3.5"></i>
           <span>Samples</span>
         </button>
 
-        <!-- Inward Inventory Tab (Visible with lock indicator when in sales mode) -->
-        <button onclick="handleNavTabClick('inward')" id="nav-inward" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-800/60 shrink-0" title="Inward Stock Receipts & Live Inventory Tally">
+        <!-- Inward Inventory Tab -->
+        <button onclick="handleNavTabClick('inward')" id="nav-inward" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Inward Stock & Warehouse Reconciliation">
           <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span>Inward</span>
           <span id="lock-icon-inward" class="text-[10px]">🔒</span>
         </button>
 
         <!-- Products Master Catalog Tab -->
-        <button onclick="handleNavTabClick('products')" id="nav-products" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-800/60 shrink-0" title="Product Database, Weights & Pricing">
+        <button onclick="handleNavTabClick('products')" id="nav-products" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Master Products, Packaging Units & Base MRP">
           <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span>Products</span>
           <span id="lock-icon-products" class="text-[10px]">🔒</span>
         </button>
 
         <!-- Routes & Beats Tab -->
-        <button onclick="handleNavTabClick('routes')" id="nav-routes" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-800/60 shrink-0" title="Delivery Routes & Beats">
+        <button onclick="handleNavTabClick('routes')" id="nav-routes" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Delivery Routes & Beats">
           <i data-lucide="map" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span>Routes</span>
           <span id="lock-icon-routes" class="text-[10px]">🔒</span>
+        </button>
+
+        <!-- Sales Team Analytics Tab -->
+        <button onclick="handleNavTabClick('sales-team')" id="nav-sales-team" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Sales Personnel Performance & Goals">
+          <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Sales Team</span>
+          <span id="lock-icon-sales-team" class="text-[10px]">🔒</span>
         </button>
 
         <!-- Direct Bank Account & UPI QR Code Management -->
@@ -133,7 +162,7 @@
           <span>Bank & QR</span>
         </button>
 
-        <!-- Header Manager Login / Mode Toggle Button -->
+        <!-- Dedicated Header Manager Login / Mode Toggle Button -->
         <button type="button" onclick="handleFooterAdminClick()" id="btn-header-admin" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/90 shadow-xs cursor-pointer ml-1.5 shrink-0" title="Click to log in as Manager (PIN: 3121)">
           <i data-lucide="lock" id="header-admin-icon" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span id="header-admin-label">Manager Login</span>
@@ -150,144 +179,264 @@
 
     <!-- 1. DASHBOARD VIEW -->
     <section id="view-dashboard" class="space-y-4">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Sales & Inventory Overview</h1>
-          <p class="text-xs text-slate-500">Live progress tracking, stock deductions, and order review</p>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <button onclick="handleNavTabClick('inward')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="View & Log Inward Stock">
-            <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward Stock
-          </button>
-          <button onclick="handleNavTabClick('products')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Master Product Database & Pricing">
-            <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
-          </button>
-          <button onclick="openSampleModal()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
-            <i data-lucide="gift" class="w-3.5 h-3.5"></i> Log Sample
-          </button>
-          <button onclick="setTab('order')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i> New Order
-          </button>
-        </div>
-      </div>
 
-      <!-- Manager Access & Quick Shortcuts Strip -->
-      <div id="dashboard-manager-strip" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/60 text-white rounded-2xl p-3 px-4 flex items-center justify-between gap-3 flex-wrap shadow-xs">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <div class="text-xs font-bold text-white flex items-center gap-2">
-              <span id="dash-manager-title">Manager Access & Controls</span>
-              <span class="text-[9px] bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 px-1.5 py-0.2 rounded font-mono font-bold">Default PIN: 3121</span>
+      <!-- ================= SALES OFFICIAL PERSONAL DASHBOARD (REP MODE) ================= -->
+      <div id="dash-rep-view" class="space-y-4 hidden">
+        <!-- Rep Mode Manager Switcher Banner -->
+        <div class="bg-indigo-950/80 border border-indigo-700/60 rounded-2xl p-3 px-4 flex items-center justify-between gap-3 flex-wrap text-white shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="p-1 rounded-lg bg-indigo-600 text-white shrink-0"><i data-lucide="shield" class="w-4 h-4"></i></span>
+            <div>
+              <span class="text-xs font-bold text-white block">Viewing as Sales Official</span>
+              <span class="text-[11px] text-indigo-200">Need to log Inward Stock or manage Products?</span>
             </div>
-            <p id="dash-manager-desc" class="text-[11px] text-slate-300">
-              Access Inward Stock Entry, Master Products catalog, Custom Customer Pricing, and Route beats.
+          </div>
+          <button type="button" onclick="handleFooterAdminClick()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i> Enable Manager Mode (PIN: 3121)
+          </button>
+        </div>
+
+        <!-- Welcome & Beat Attribution -->
+        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-5 text-white shadow-md border border-slate-700/60 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider mb-1.5">
+              <span>● Field Sales Portal</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>Hello, <span id="rep-dash-name">Ramesh Kumar</span> 👋</span>
+            </h1>
+            <p class="text-xs text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
+              <span>📍 Assigned Beat: <b id="rep-dash-route" class="text-white">Yelahanka Route</b></span>
+              <span>•</span>
+              <span>📱 Phone: <span id="rep-dash-phone" class="font-mono font-bold text-slate-200">-</span></span>
             </p>
           </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="setTab('order')" class="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Take Order Now
+            </button>
+          </div>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" onclick="handleNavTabClick('inward')" class="px-2.5 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-            <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward
-          </button>
-          <button type="button" onclick="handleNavTabClick('products')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-            <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
-          </button>
-          <button type="button" onclick="handleNavTabClick('routes')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-            <i data-lucide="map" class="w-3.5 h-3.5"></i> Routes
-          </button>
-          <button type="button" onclick="handleFooterAdminClick()" id="btn-dash-manager-toggle" class="px-3.5 py-1.5 bg-white text-indigo-950 hover:bg-indigo-50 font-black text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer">
-            <i data-lucide="lock" id="dash-manager-icon" class="w-3.5 h-3.5 text-indigo-600"></i>
-            <span id="dash-manager-btn-text">Unlock Manager Mode</span>
-          </button>
-        </div>
-      </div>
 
-      <!-- Low Stock Alert Banner (conditionally displayed if any low stock) -->
-      <div id="low-stock-alert-banner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-xs text-rose-800 space-y-1">
-        <div class="font-bold flex items-center gap-1.5">
-          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
-          <span>Inventory Attention Required: Low or Out-of-Stock SKUs</span>
-        </div>
-        <div id="low-stock-alert-list" class="text-[11px] text-rose-700 flex flex-wrap gap-2 pt-0.5"></div>
-      </div>
+        <!-- Sales Goals in Contrast (Monthly Target vs Achieved) -->
+        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                <i data-lucide="target" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-sm text-slate-900">Monthly Sales Goal & Performance</h3>
+                <p class="text-[11px] text-slate-500">Live contrast of target vs booked sales for current month</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Achievement Rate</span>
+              <span id="rep-dash-pct" class="font-mono font-black text-base text-indigo-600">0%</span>
+            </div>
+          </div>
 
-      <!-- KPI Metric Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
-        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Sales</span>
-          <div id="kpi-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Orders</span>
-          <div id="kpi-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
-        </div>
-        <div class="bg-amber-50/70 rounded-2xl p-3 border border-amber-200 shadow-xs cursor-pointer hover:bg-amber-100/70 transition" onclick="setTab('orders'); setOrdersStatusFilter('Pending Delivery');" title="Click to view orders out for delivery">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1 flex items-center justify-between">
-            <span>Pending Delivery</span>
-            <i data-lucide="truck" class="w-3 h-3 text-amber-600"></i>
-          </span>
-          <div id="kpi-pending-deliveries" class="font-mono font-black text-lg text-amber-700">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="handleNavTabClick('products')" title="Click to view Master Products">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
-            <span>Units Sold</span>
-            <i data-lucide="tag" class="w-3 h-3 text-slate-400"></i>
-          </span>
-          <div id="kpi-total-units-sold" class="font-mono font-black text-lg text-slate-900">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="setTab('samples')" title="Click to view Samples History">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
-            <span>Samples Given</span>
-            <i data-lucide="gift" class="w-3 h-3 text-amber-500"></i>
-          </span>
-          <div id="kpi-total-samples" class="font-mono font-black text-lg text-amber-600">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3 border border-indigo-100 hover:border-indigo-300 bg-indigo-50/20 hover:bg-indigo-50/50 shadow-xs cursor-pointer transition" onclick="handleNavTabClick('inward')" title="Click to view Inward Stock Receipts & Tally">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1 flex items-center justify-between">
-            <span>Inward Receipts</span>
-            <i data-lucide="arrow-down-to-dot" class="w-3 h-3 text-indigo-600"></i>
-          </span>
-          <div id="kpi-total-inward" class="font-mono font-black text-lg text-indigo-600">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="setTab('customers')" title="Click to view Customers Directory">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
-            <span>Customers</span>
-            <i data-lucide="users" class="w-3 h-3 text-slate-400"></i>
-          </span>
-          <div id="kpi-total-customers" class="font-mono font-black text-lg text-slate-900">0</div>
-        </div>
-      </div>
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-200">
+            <div id="rep-dash-progress-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
 
-      <!-- Quick Dual Stream: Recent Orders & Recent Samples -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Recent Orders Stream -->
+          <!-- Target vs Actual Details -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Assigned Monthly Target</span>
+              <span id="rep-dash-target" class="font-mono font-black text-sm text-slate-900">₹0</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Achieved This Month</span>
+              <span id="rep-dash-achieved" class="font-mono font-black text-sm text-emerald-800">₹0</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block">Gap to Target</span>
+              <span id="rep-dash-remaining" class="font-mono font-black text-sm text-indigo-800">₹0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards for Field Officer -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Today Sales</span>
+            <div id="rep-dash-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Today Orders</span>
+            <div id="rep-dash-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Month Units Sold</span>
+            <div id="rep-dash-month-units" class="font-mono font-black text-lg text-indigo-600">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Pending Deliveries</span>
+            <div id="rep-dash-pending-orders" class="font-mono font-black text-lg text-amber-600">0</div>
+          </div>
+        </div>
+
+        <!-- My Logged Orders Stream -->
         <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Recent Orders
+              <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> My Recently Booked Orders
             </h3>
-            <button onclick="setTab('orders')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">View All →</button>
+            <button onclick="setTab('orders')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">View All Orders →</button>
           </div>
-          <div id="recent-orders-list" class="space-y-2">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-        <!-- Recent Samples Stream -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i> Recent Free Samples
-            </h3>
-            <button onclick="setTab('samples')" class="text-xs font-bold text-amber-600 hover:text-amber-700">View All →</button>
-          </div>
-          <div id="recent-samples-list" class="space-y-2">
+          <div id="rep-recent-orders-list" class="space-y-2">
             <!-- Populated by JS -->
           </div>
         </div>
       </div>
+
+      <!-- ================= MANAGER EXECUTIVE DASHBOARD (MANAGER MODE) ================= -->
+      <div id="dash-manager-view" class="space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Sales & Inventory Overview</h1>
+            <p class="text-xs text-slate-500">Live progress tracking, stock deductions, and executive order review</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="handleNavTabClick('inward')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="View & Log Inward Stock">
+              <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward Stock
+            </button>
+            <button onclick="handleNavTabClick('products')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Master Product Database & Pricing">
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
+            </button>
+            <button onclick="openSampleModal()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+              <i data-lucide="gift" class="w-3.5 h-3.5"></i> Log Sample
+            </button>
+            <button onclick="setTab('order')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> New Order
+            </button>
+          </div>
+        </div>
+
+        <!-- Manager Access & Quick Shortcuts Strip -->
+        <div id="dashboard-manager-strip" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/60 text-white rounded-2xl p-3 px-4 flex items-center justify-between gap-3 flex-wrap shadow-xs">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center gap-2">
+                <span id="dash-manager-title">Manager Access & Controls</span>
+                <span class="text-[9px] bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 px-1.5 py-0.2 rounded font-mono font-bold">Default PIN: 3121</span>
+              </div>
+              <p id="dash-manager-desc" class="text-[11px] text-slate-300">
+                Access Inward Stock Entry, Master Products catalog, Custom Customer Pricing, and Route beats.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="handleNavTabClick('inward')" class="px-2.5 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
+              <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward
+            </button>
+            <button type="button" onclick="handleNavTabClick('products')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
+            </button>
+            <button type="button" onclick="handleNavTabClick('routes')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
+              <i data-lucide="map" class="w-3.5 h-3.5"></i> Routes
+            </button>
+            <button type="button" onclick="handleNavTabClick('sales-team')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
+              <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Sales Team
+            </button>
+            <button type="button" onclick="handleFooterAdminClick()" id="btn-dash-manager-toggle" class="px-3.5 py-1.5 bg-white text-indigo-950 hover:bg-indigo-50 font-black text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer">
+              <i data-lucide="lock" id="dash-manager-icon" class="w-3.5 h-3.5 text-indigo-600"></i>
+              <span id="dash-manager-btn-text">Unlock Manager Mode</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Low Stock Alert Banner (conditionally displayed if any low stock) -->
+        <div id="low-stock-alert-banner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-xs text-rose-800 space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
+            <span>Inventory Attention Required: Low or Out-of-Stock SKUs</span>
+          </div>
+          <div id="low-stock-alert-list" class="text-[11px] text-rose-700 flex flex-wrap gap-2 pt-0.5"></div>
+        </div>
+
+        <!-- KPI Metric Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Sales</span>
+            <div id="kpi-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Orders</span>
+            <div id="kpi-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
+          </div>
+          <div class="bg-amber-50/70 rounded-2xl p-3 border border-amber-200 shadow-xs cursor-pointer hover:bg-amber-100/70 transition" onclick="setTab('orders'); setOrdersStatusFilter('Pending Delivery');" title="Click to view orders out for delivery">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1 flex items-center justify-between">
+              <span>Pending Delivery</span>
+              <i data-lucide="truck" class="w-3 h-3 text-amber-600"></i>
+            </span>
+            <div id="kpi-pending-deliveries" class="font-mono font-black text-lg text-amber-700">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="handleNavTabClick('products')" title="Click to view Master Products">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
+              <span>Units Sold</span>
+              <i data-lucide="tag" class="w-3 h-3 text-slate-400"></i>
+            </span>
+            <div id="kpi-total-units-sold" class="font-mono font-black text-lg text-slate-900">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="setTab('samples')" title="Click to view Samples History">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
+              <span>Samples Given</span>
+              <i data-lucide="gift" class="w-3 h-3 text-amber-500"></i>
+            </span>
+            <div id="kpi-total-samples" class="font-mono font-black text-lg text-amber-600">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-indigo-100 hover:border-indigo-300 bg-indigo-50/20 hover:bg-indigo-50/50 shadow-xs cursor-pointer transition" onclick="handleNavTabClick('inward')" title="Click to view Inward Stock Receipts & Tally">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1 flex items-center justify-between">
+              <span>Inward Receipts</span>
+              <i data-lucide="arrow-down-to-dot" class="w-3 h-3 text-indigo-600"></i>
+            </span>
+            <div id="kpi-total-inward" class="font-mono font-black text-lg text-indigo-600">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="setTab('customers')" title="Click to view Customers Directory">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
+              <span>Customers</span>
+              <i data-lucide="users" class="w-3 h-3 text-slate-400"></i>
+            </span>
+            <div id="kpi-total-customers" class="font-mono font-black text-lg text-slate-900">0</div>
+          </div>
+        </div>
+
+        <!-- Quick Dual Stream: Recent Orders & Recent Samples -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Recent Orders Stream -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Recent Orders
+              </h3>
+              <button onclick="setTab('orders')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">View All →</button>
+            </div>
+            <div id="recent-orders-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Recent Samples Stream -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i> Recent Free Samples
+              </h3>
+              <button onclick="setTab('samples')" class="text-xs font-bold text-amber-600 hover:text-amber-700">View All →</button>
+            </div>
+            <div id="recent-samples-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- 2. NEW ORDER FORM VIEW (CONNECTED WITH LIVE STOCK) -->
@@ -295,11 +444,23 @@
       <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
         <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
           <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
-            <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-600"></i> New Order Booking
+            <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-600"></i> One-Step Order Entry & Bill Generation
           </h2>
-          <button type="button" onclick="openCustomerModal()" class="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
+          <button type="button" onclick="openCustomerModal()" class="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer">
             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add New Customer
           </button>
+        </div>
+
+        <!-- Active Sales Official Attribution Bar & Quoted Indicator -->
+        <div class="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-2 flex-wrap text-xs">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <span>Sales Officer: <b id="order-rep-display-name" class="text-emerald-400 font-sans">Ramesh Kumar</b></span>
+            <span class="text-slate-400 text-[10px]">(<span id="order-rep-display-beat">Yelahanka Route</span>)</span>
+          </div>
+          <div id="order-active-quote-indicator" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            ✨ Customer Quotation Rates Active
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -413,8 +574,17 @@
           <input type="hidden" id="order-fulfillment-stage" value="Pending Delivery">
         </div>
 
-        <button type="button" id="btn-submit-order" onclick="submitOrder()" disabled class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
-          <i data-lucide="file-plus" class="w-4 h-4"></i> <span id="submit-order-btn-text">RECORD ORDER (PENDING DELIVERY)</span>
+        <!-- Direct 1-Step Execution Action Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button type="button" id="btn-submit-order-instant-bill" onclick="submitOrder('Delivered', 'open_bill')" disabled class="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Record order and immediately open printable/downloadable Bill">
+            <i data-lucide="file-check" class="w-4 h-4"></i> ⚡ 1-Step: Book & Open Bill
+          </button>
+          <button type="button" id="btn-submit-order-whatsapp-bill" onclick="submitOrder('Delivered', 'whatsapp_bill')" disabled class="py-3 px-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer" title="Record order and instantly send formatted Bill on WhatsApp">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> 📲 1-Step: Book & WhatsApp Bill
+          </button>
+        </div>
+        <button type="button" id="btn-submit-order" onclick="submitOrder()" disabled class="w-full py-2.5 bg-slate-900 hover:bg-black disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+          <i data-lucide="truck" class="w-4 h-4 text-amber-400"></i> <span id="submit-order-btn-text">🚚 1-Step: Book for Dispatch (Pending Delivery)</span>
         </button>
       </div>
     </section>
@@ -783,6 +953,66 @@
 
       <div id="routes-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- 9. SALES OFFICIALS & PERFORMANCE ANALYTICS VIEW (MANAGER ONLY) -->
+    <section id="view-sales-team" class="hidden space-y-4">
+      <!-- Header -->
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Sales Personnel & Performance Analytics</h2>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager Cockpit</span>
+          </div>
+          <p class="text-xs text-slate-500">Track individual sales officer targets, order metrics, and share personalized PWA links</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openSalespersonEditModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Add Sales Official
+          </button>
+        </div>
+      </div>
+
+      <!-- Timeframe Filter Toolbar -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider text-[10px] mr-1">Timeframe:</span>
+          <button type="button" onclick="setSalesTeamTimeframe('today')" id="btn-st-time-today" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📅 Today</button>
+          <button type="button" onclick="setSalesTeamTimeframe('week')" id="btn-st-time-week" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">🗓️ This Week</button>
+          <button type="button" onclick="setSalesTeamTimeframe('month')" id="btn-st-time-month" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer">📆 This Month</button>
+          <button type="button" onclick="setSalesTeamTimeframe('quarter')" id="btn-st-time-quarter" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📊 This Quarter</button>
+          <button type="button" onclick="setSalesTeamTimeframe('year')" id="btn-st-time-year" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📈 This Year</button>
+          <button type="button" onclick="setSalesTeamTimeframe('all')" id="btn-st-time-all" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">All Time</button>
+        </div>
+        <div class="text-[11px] text-slate-500 font-mono" id="st-timeframe-label">
+          Showing: This Month
+        </div>
+      </div>
+
+      <!-- Team Aggregate KPI Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Active Officers</span>
+          <div id="st-kpi-officers-count" class="font-mono font-black text-xl text-slate-900">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Team Revenue</span>
+          <div id="st-kpi-team-revenue" class="font-mono font-black text-xl text-emerald-600">₹0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Orders Booked</span>
+          <div id="st-kpi-team-orders" class="font-mono font-black text-xl text-slate-900">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Units Dispatched</span>
+          <div id="st-kpi-team-units" class="font-mono font-black text-xl text-indigo-600">0</div>
+        </div>
+      </div>
+
+      <!-- Sales Officials Cards Grid -->
+      <div id="sales-team-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JS -->
       </div>
     </section>
 
@@ -1424,6 +1654,219 @@
         <button onclick="closeOrderSuccessModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
           Done / Next Order
         </button>
+      </div>
+    </div>
+  <!-- MODAL: ACCOUNT PERSONA SWITCHER -->
+  <div id="modal-account-switcher" class="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <i data-lucide="users" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">Switch Portal User Account</h3>
+            <p class="text-xs text-slate-400">Select your sales profile or switch to Manager Admin</p>
+          </div>
+        </div>
+        <button onclick="closeAccountSwitcherModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Primary Manager Mode Switcher Action -->
+      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-900 to-slate-900 text-white border border-indigo-700/80 shadow-md">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shrink-0 shadow-inner">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <span>Switch to Manager Mode</span>
+                <span class="px-1.5 py-0.2 rounded bg-indigo-500 text-indigo-100 text-[9px] font-mono font-bold">PIN: 3121</span>
+              </div>
+              <div class="text-[11px] text-indigo-200 mt-0.5">Unlock Inward Stock, Products Database, Routes & Team Analytics</div>
+            </div>
+          </div>
+          <button type="button" onclick="switchToManagerFromSwitcher()" class="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs transition shadow-xs cursor-pointer shrink-0">
+            Unlock
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Or Switch Active Sales Representative:</span>
+        <div id="account-switcher-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT SALES OFFICIAL -->
+  <div id="modal-salesperson-edit" class="fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900" id="modal-sp-edit-title">Add Sales Official</h3>
+            <p class="text-xs text-slate-400">Configure profile, territory beat, sales targets & commission</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSalespersonEditModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-salesperson-edit" onsubmit="handleSaveSalesperson(event)" class="space-y-3.5 text-xs flex-1 overflow-y-auto pr-1">
+        <!-- Officer ID & Full Name -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Officer Code / ID *</label>
+            <input type="text" id="sp-edit-id" required placeholder="SP-104" oninput="updateModalPwaPreview()" class="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 outline-none focus:border-indigo-500">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Full Name *</label>
+            <input type="text" id="sp-edit-name" required placeholder="e.g. Ramesh Kumar" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Phone & Email -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Mobile Phone (WhatsApp) *</label>
+            <input type="tel" id="sp-edit-phone" required placeholder="e.g. 9845012345" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Email Address</label>
+            <input type="email" id="sp-edit-email" placeholder="e.g. ramesh@srigovinda.in" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Route & Vehicle -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Assigned Distribution Route / Beat *</label>
+            <select id="sp-edit-route-select" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Vehicle / Field Mode</label>
+            <select id="sp-edit-vehicle" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
+              <option value="Two-Wheeler">🛵 Two-Wheeler / Bike</option>
+              <option value="Tata Ace">🚚 Tata Ace / Small Commercial</option>
+              <option value="3-Wheeler">🛺 3-Wheeler Auto Cargo</option>
+              <option value="Walking Beat">🚶 Walking / Transit Beat</option>
+              <option value="Other / Courier">📦 Other / 3rd Party Delivery</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Monthly Target, Commission & Daily Order Target -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Monthly Target (₹) *</label>
+            <input type="number" id="sp-edit-target" min="0" step="5000" placeholder="150000" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Commission (%)</label>
+            <input type="number" id="sp-edit-commission" min="0" max="100" step="0.1" placeholder="2.5" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Daily Orders Goal</label>
+            <input type="number" id="sp-edit-daily-target" min="1" step="1" placeholder="5" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Joining Date & Operational Address -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Date of Joining</label>
+            <input type="date" id="sp-edit-joining-date" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-semibold outline-none focus:border-indigo-500">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Address / Territory Notes</label>
+            <input type="text" id="sp-edit-address" placeholder="e.g. Yelahanka Old Town, Bengaluru" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Active Toggle -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div>
+            <span class="font-bold text-slate-800 text-xs block">Active Sales Officer</span>
+            <span class="text-[11px] text-slate-500 block">Active officers can book orders, access PWA portals, and appear in team leaderboards</span>
+          </div>
+          <input type="checkbox" id="sp-edit-active" checked class="w-5 h-5 accent-emerald-600 cursor-pointer">
+        </div>
+
+        <!-- PWA Assigned Link Live Preview -->
+        <div class="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl space-y-1">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5 text-indigo-600"></i> Assigned PWA Mobile Link
+          </div>
+          <p class="text-[11px] text-indigo-700 font-mono break-all" id="sp-edit-pwa-preview">
+            Loading link...
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100 shrink-0">
+          <button type="button" onclick="closeSalespersonEditModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition cursor-pointer shadow-md">
+            Save Sales Official
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MASTER MANAGER LANDING SECURITY GATE (For http://localhost:3000/ & http://localhost:3001/)
+       Secured with private Master PIN (Not disclosed anywhere)
+       ============================================================================== -->
+  <div id="master-landing-gate" class="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-slate-800 text-center my-auto">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="shield-alert" class="w-7 h-7 text-indigo-400"></i>
+      </div>
+      <div>
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-950/60 text-indigo-300 border border-indigo-800/80 text-[10px] font-black uppercase tracking-wider mb-1.5">
+          <span>● Executive Control</span>
+        </div>
+        <h2 class="text-lg font-black text-white tracking-tight">Sri Govinda Master Hub</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Central Manager Cockpit • Inventory, Reports & Sales Team</p>
+      </div>
+
+      <div class="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 text-left space-y-1 text-xs">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Security Verification</span>
+        <p class="text-[11px] text-slate-300">
+          This master console collates central sales reports, stock inward, outward dispatches, and sales officials analytics.
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-slate-400 font-bold uppercase text-[10px]">Enter 4-Digit Security PIN</label>
+        <input type="password" id="gate-pin-input" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitGatePin()" class="w-full p-3 bg-slate-800/90 border border-slate-700 rounded-xl text-center font-mono font-black text-xl tracking-widest text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        <div id="gate-pin-error" class="text-xs font-bold text-rose-400 hidden">Access Denied: Incorrect Security PIN</div>
+      </div>
+
+      <button type="button" onclick="submitGatePin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+        <i data-lucide="unlock" class="w-4 h-4"></i> Unlock Master Manager Console
+      </button>
+
+      <!-- Sales Officials Shortcut Footer -->
+      <div class="pt-3 border-t border-slate-800/80 text-center">
+        <span class="text-[11px] text-slate-400 block mb-1.5">Are you a field sales official?</span>
+        <div id="gate-reps-shortcuts" class="flex flex-wrap justify-center gap-1.5">
+          <!-- Populated by JS -->
+        </div>
       </div>
     </div>
   </div>
@@ -2610,7 +3053,7 @@
        ============================================================================== -->
   <script>
     // 1. STATE MANAGEMENT (PIN STORED AS SECURE SHA-256 HASH)
-    const MASTER_PIN_HASH = '37af3f678ecf438491e342ee31996a7b294101b781c20221158017a1203db302';
+    const MASTER_PIN_HASH = 'c49b0dece16c3a6b89be2938c6fef6d0c91783c0d1b4176a23a0fe6d7f8ad0ba';
 
     async function hashPin(val) {
       const enc = new TextEncoder().encode(String(val || '').trim());
@@ -2619,6 +3062,36 @@
     }
 
     let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
+
+    // Sales Personnel Accounts Roster
+    const DEFAULT_SALESPEOPLE = [
+      { id: 'SP-101', name: 'Pradhish', slug: 'salesPradhish', phone: '9845011223', email: 'pradhish@srigovinda.in', assignedRoute: 'Yelahanka Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-10', address: 'Yelahanka, Bengaluru', active: true },
+      { id: 'SP-102', name: 'Nagaraju', slug: 'salesNagaraju', phone: '9980123456', email: 'nagaraju@srigovinda.in', assignedRoute: 'Hebbal Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Tata Ace', dailyOrderTarget: 6, joiningDate: '2025-01-15', address: 'Hebbal, Bengaluru', active: true },
+      { id: 'SP-103', name: 'Ramesh Kumar', slug: 'salesRamesh', phone: '9845012345', email: 'ramesh@srigovinda.in', assignedRoute: 'General Beat', monthlyTarget: 150000, commissionPct: 2.5, vehicleType: 'Two-Wheeler', dailyOrderTarget: 5, joiningDate: '2025-02-01', address: 'RT Nagar, Bengaluru', active: true },
+      { id: 'SP-104', name: 'Arvind Swamy', slug: 'salesArvind', phone: '9731988411', email: 'arvind@srigovinda.in', assignedRoute: 'Central Market', monthlyTarget: 200000, commissionPct: 3.0, vehicleType: '3-Wheeler', dailyOrderTarget: 8, joiningDate: '2024-11-10', address: 'Malleswaram, Bengaluru', active: true }
+    ];
+
+    let salespeople = [];
+    try {
+      const savedSp = localStorage.getItem('sg_salespeople');
+      if (savedSp) salespeople = JSON.parse(savedSp);
+      if (!Array.isArray(salespeople) || salespeople.length === 0) {
+        salespeople = DEFAULT_SALESPEOPLE;
+      }
+    } catch (e) {
+      salespeople = DEFAULT_SALESPEOPLE;
+    }
+
+    function saveSalespeopleLocally() {
+      try {
+        localStorage.setItem('sg_salespeople', JSON.stringify(salespeople));
+      } catch (e) {
+        console.warn("Error saving salespeople locally:", e);
+      }
+    }
+
+    let currentSalesperson = null;
+    let currentSalesTeamTimeframe = 'month';
 
     let products = [];
     let customers = [];
@@ -2736,10 +3209,20 @@
       return u;
     }
 
-    // RESOLVE CUSTOMER CONTRACT PRICING (OVERRIDE RATE OR STANDARD BASE RATE)
+    // RESOLVE CUSTOMER CONTRACT PRICING (ACTIVE QUOTATION -> OVERRIDE RATE -> STANDARD BASE RATE)
     function getCustomerProductRate(buyerId, prod) {
       if (!prod) return 0;
       if (buyerId) {
+        // Priority 1: Check active customer quotation
+        const activeQuote = customerQuotations.find(q => String(q.customerId) === String(buyerId) && q.isCurrentActive);
+        if (activeQuote && Array.isArray(activeQuote.items)) {
+          const qItem = activeQuote.items.find(it => String(it.productId) === String(prod.id) || String(it.sku) === String(prod.sku));
+          if (qItem && qItem.rate !== null && qItem.rate !== undefined && !isNaN(Number(qItem.rate))) {
+            return Number(qItem.rate);
+          }
+        }
+
+        // Priority 2: Check contract pricing overrides
         const cp = contractPricing.find(c => String(c.buyerId) === String(buyerId) && (String(c.productId) === String(prod.id) || String(c.productId) === String(prod.sku)));
         if (cp && cp.overrideRate !== null && cp.overrideRate !== undefined && cp.overrideRate !== '' && !isNaN(Number(cp.overrideRate))) {
           return Number(cp.overrideRate);
@@ -2844,6 +3327,15 @@
             const { data } = await supabaseClient.from('contract_pricing').select('*');
             if (data) { contractPricing = data; renderOrderCatalog(); renderCustomersTable(); }
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'salespeople' }, async () => {
+            const { data } = await supabaseClient.from('salespeople').select('*');
+            if (data && data.length > 0) {
+              salespeople = data;
+              saveSalespeopleLocally();
+              updateUserPersonaUI();
+              if (isManager) renderSalesTeamView();
+            }
+          })
           .subscribe();
 
       } catch (e) {
@@ -2907,6 +3399,20 @@
         const { data: dbPricing } = await supabaseClient.from('contract_pricing').select('*');
         if (dbPricing) contractPricing = dbPricing;
 
+        try {
+          const { data: dbSalespeople } = await supabaseClient.from('salespeople').select('*');
+          if (dbSalespeople && dbSalespeople.length > 0) {
+            salespeople = dbSalespeople;
+            saveSalespeopleLocally();
+            initUserSessionFromUrlOrStorage();
+          } else if (salespeople.length > 0) {
+            // Seed defaults to Supabase if table is currently empty
+            supabaseClient.from('salespeople').upsert(salespeople).catch(() => {});
+          }
+        } catch (e) {
+          console.warn("Salespeople table fetch note:", e);
+        }
+
         refreshAllUI();
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
@@ -2923,13 +3429,14 @@
       renderInwardTables();
       renderProductsTable();
       renderRoutesGrid();
+      if (isManager) renderSalesTeamView();
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
     }
 
     // 4. TAB NAVIGATION
     function handleNavTabClick(tabId) {
-      const isMgrTab = ['inward', 'products', 'routes'].includes(tabId);
+      const isMgrTab = ['inward', 'products', 'routes', 'sales-team'].includes(tabId);
       if (isMgrTab && !isManager) {
         requireManagerAuth(() => {
           setTab(tabId);
@@ -2940,6 +3447,14 @@
     }
 
     function setTab(tabId) {
+      const isMgrTab = ['products', 'routes', 'inward', 'sales-team'].includes(tabId);
+      if (!isManager && isMgrTab) {
+        requireManagerAuth(() => {
+          setTab(tabId);
+        });
+        return;
+      }
+
       document.querySelectorAll('section[id^="view-"]').forEach(el => el.classList.add('hidden'));
       const activeSec = document.getElementById(`view-${tabId}`);
       if (activeSec) activeSec.classList.remove('hidden');
@@ -2951,7 +3466,6 @@
       const activeBtn = document.getElementById(`nav-${tabId}`);
       if (activeBtn) {
         activeBtn.classList.remove('text-slate-400');
-        const isMgrTab = ['products', 'routes', 'inward'].includes(tabId);
         activeBtn.classList.add(isManager && isMgrTab ? 'bg-indigo-600' : 'bg-emerald-600', 'text-white');
       }
 
@@ -2960,6 +3474,7 @@
       if (tabId === 'samples') renderSamplesTable();
       if (tabId === 'products') renderProductsTable();
       if (tabId === 'routes') renderRoutesGrid();
+      if (tabId === 'sales-team') renderSalesTeamView();
       if (window.lucide) lucide.createIcons();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2971,6 +3486,7 @@
           isManager = false;
           sessionStorage.setItem('sg_is_manager', 'false');
           updateManagerUI();
+          updateUserPersonaUI();
           setTab('dashboard');
         }
       } else {
@@ -2993,6 +3509,7 @@
         sessionStorage.setItem('sg_is_manager', 'true');
         closePinModal();
         updateManagerUI();
+        updateUserPersonaUI();
         if (pendingManagerCallback) {
           const cb = pendingManagerCallback;
           pendingManagerCallback = null;
@@ -3009,16 +3526,20 @@
       const navInward = document.getElementById('nav-inward');
       const navProd = document.getElementById('nav-products');
       const navRts = document.getElementById('nav-routes');
+      const navSalesTeam = document.getElementById('nav-sales-team');
       const roleBadge = document.getElementById('role-badge');
       const footerLabel = document.getElementById('footer-admin-label');
       const footerBtn = document.getElementById('btn-footer-admin');
       const headerLabel = document.getElementById('header-admin-label');
       const headerBtn = document.getElementById('btn-header-admin');
       const headerIcon = document.getElementById('header-admin-icon');
-      
+      const navDashLabel = document.getElementById('nav-dashboard-label');
+      const navOrdersLabel = document.getElementById('nav-orders-label');
+
       const lockInward = document.getElementById('lock-icon-inward');
       const lockProd = document.getElementById('lock-icon-products');
       const lockRts = document.getElementById('lock-icon-routes');
+      const lockSalesTeam = document.getElementById('lock-icon-sales-team');
 
       const dashTitle = document.getElementById('dash-manager-title');
       const dashDesc = document.getElementById('dash-manager-desc');
@@ -3026,15 +3547,17 @@
       const dashBtnText = document.getElementById('dash-manager-btn-text');
       const dashIcon = document.getElementById('dash-manager-icon');
 
-      if (isManager) {
-        // Keep tabs visible and active
-        if (navInward) { navInward.classList.remove('hidden'); navInward.classList.add('flex'); }
-        if (navProd) { navProd.classList.remove('hidden'); navProd.classList.add('flex'); }
-        if (navRts) { navRts.classList.remove('hidden'); navRts.classList.add('flex'); }
+      // Keep all tabs visible in navigation
+      if (navInward) { navInward.classList.remove('hidden'); navInward.classList.add('flex'); }
+      if (navProd) { navProd.classList.remove('hidden'); navProd.classList.add('flex'); }
+      if (navRts) { navRts.classList.remove('hidden'); navRts.classList.add('flex'); }
+      if (navSalesTeam) { navSalesTeam.classList.remove('hidden'); navSalesTeam.classList.add('flex'); }
 
+      if (isManager) {
         if (lockInward) lockInward.classList.add('hidden');
         if (lockProd) lockProd.classList.add('hidden');
         if (lockRts) lockRts.classList.add('hidden');
+        if (lockSalesTeam) lockSalesTeam.classList.add('hidden');
 
         if (roleBadge) {
           roleBadge.innerText = "Manager Hub 🔓";
@@ -3042,15 +3565,16 @@
         }
         if (footerLabel) footerLabel.innerText = "Manager Active (Lock / Exit)";
         if (footerBtn) footerBtn.className = "font-bold text-xs text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer";
+        if (navDashLabel) navDashLabel.innerText = "Dashboard";
+        if (navOrdersLabel) navOrdersLabel.innerText = "History";
 
-        if (headerLabel) headerLabel.innerText = "Manager Active (Exit)";
+        if (headerLabel) headerLabel.innerText = "Manager Mode (Lock)";
         if (headerBtn) {
           headerBtn.className = "px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-500 shadow-xs cursor-pointer ml-1.5 shrink-0";
-          headerBtn.title = "Manager Mode Active (Click to Lock / Return to Sales Mode)";
+          headerBtn.title = "Manager Mode Active (Click to Lock / Exit)";
         }
         if (headerIcon) headerIcon.setAttribute('data-lucide', 'unlock');
 
-        // Dashboard Manager Strip
         if (dashTitle) dashTitle.innerText = "Manager Mode Active 🔓";
         if (dashDesc) dashDesc.innerText = "Full managerial control: Log Inward Stock, edit Master Products, manage Customer Prices & Routes.";
         if (dashBtn) {
@@ -3059,21 +3583,19 @@
         if (dashBtnText) dashBtnText.innerText = "Lock / Exit Manager Mode";
         if (dashIcon) dashIcon.setAttribute('data-lucide', 'lock');
       } else {
-        // Keep tabs visible with lock indicator so users easily find them
-        if (navInward) { navInward.classList.remove('hidden'); navInward.classList.add('flex'); }
-        if (navProd) { navProd.classList.remove('hidden'); navProd.classList.add('flex'); }
-        if (navRts) { navRts.classList.remove('hidden'); navRts.classList.add('flex'); }
-
         if (lockInward) lockInward.classList.remove('hidden');
         if (lockProd) lockProd.classList.remove('hidden');
         if (lockRts) lockRts.classList.remove('hidden');
+        if (lockSalesTeam) lockSalesTeam.classList.remove('hidden');
 
         if (roleBadge) {
-          roleBadge.innerText = "Sales Hub 🔒";
+          roleBadge.innerText = currentSalesperson ? (currentSalesperson.name.split(' ')[0] + " Portal 🔒") : "Sales Hub 🔒";
           roleBadge.className = "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer transition";
         }
         if (footerLabel) footerLabel.innerText = "Manager Login";
         if (footerBtn) footerBtn.className = "font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer";
+        if (navDashLabel) navDashLabel.innerText = "My Dashboard";
+        if (navOrdersLabel) navOrdersLabel.innerText = "My Orders";
 
         if (headerLabel) headerLabel.innerText = "Manager Login";
         if (headerBtn) {
@@ -3082,7 +3604,6 @@
         }
         if (headerIcon) headerIcon.setAttribute('data-lucide', 'lock');
 
-        // Dashboard Manager Strip
         if (dashTitle) dashTitle.innerText = "Manager Access & Controls";
         if (dashDesc) dashDesc.innerText = "Access Inward Stock Entry, Master Products catalog, Custom Customer Pricing, and Route beats.";
         if (dashBtn) {
@@ -3091,6 +3612,8 @@
         if (dashBtnText) dashBtnText.innerText = "Unlock Manager Mode";
         if (dashIcon) dashIcon.setAttribute('data-lucide', 'lock');
       }
+
+      updateUserPersonaUI();
       renderCustomersTable();
       renderSamplesTable();
       renderOrdersHistoryTable();
@@ -3099,6 +3622,19 @@
 
     // 6. DASHBOARD VIEW LOGIC
     function renderDashboard() {
+      const repView = document.getElementById('dash-rep-view');
+      const mgrView = document.getElementById('dash-manager-view');
+
+      if (!isManager && currentSalesperson) {
+        if (repView) repView.classList.remove('hidden');
+        if (mgrView) mgrView.classList.add('hidden');
+        renderRepPersonalDashboard();
+        return;
+      }
+
+      if (repView) repView.classList.add('hidden');
+      if (mgrView) mgrView.classList.remove('hidden');
+
       const todayStr = new Date().toISOString().split('T')[0];
       const todayOrders = orders.filter(o => o.date === todayStr);
       const todaySales = todayOrders.reduce((s, o) => s + Number(o.netPayable || 0), 0);
@@ -3264,6 +3800,29 @@
         if (snapDue) snapDue.innerText = '₹0';
         if (snapDueBadge) snapDueBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-mono font-black text-sm';
       }
+
+      // Check active quotation for this customer
+      const activeQuote = custId ? customerQuotations.find(q => String(q.customerId) === String(custId) && q.isCurrentActive) : null;
+      const quoteIndicator = document.getElementById('order-active-quote-indicator');
+      if (quoteIndicator) {
+        if (activeQuote) {
+          quoteIndicator.classList.remove('hidden');
+          quoteIndicator.innerText = `✨ Active Quotation Applied (${activeQuote.id || 'Agreed'})`;
+        } else {
+          quoteIndicator.classList.add('hidden');
+        }
+      }
+
+      // Rep attribution banner
+      const repDisplayName = document.getElementById('order-rep-display-name');
+      const repDisplayBeat = document.getElementById('order-rep-display-beat');
+      if (repDisplayName) {
+        repDisplayName.innerText = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager Admin' : 'Field Sales');
+      }
+      if (repDisplayBeat) {
+        repDisplayBeat.innerText = currentSalesperson ? (currentSalesperson.assignedRoute || 'Field Beat') : 'Central Depot';
+      }
+
       renderOrderCatalog();
       calculateOrderTotals();
     }
@@ -3297,6 +3856,16 @@
         const activeRate = getCustomerProductRate(currentCustId, p);
         const hasCustomRate = (activeRate !== Number(p.baseRate));
 
+        // Check if rate is sourced from customer's active quotation
+        const activeQuote = currentCustId ? customerQuotations.find(q => String(q.customerId) === String(currentCustId) && q.isCurrentActive) : null;
+        let isFromQuote = false;
+        if (activeQuote && Array.isArray(activeQuote.items)) {
+          const qItem = activeQuote.items.find(it => String(it.productId) === String(p.id) || String(it.sku) === String(p.sku));
+          if (qItem && qItem.rate !== null && qItem.rate !== undefined && !isNaN(Number(qItem.rate))) {
+            isFromQuote = true;
+          }
+        }
+
         // Stock badge formatting
         let stockBadgeHtml = '';
         if (stock.balance <= 0) {
@@ -3317,15 +3886,18 @@
               </div>
               <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
               <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span class="font-mono font-black text-sm ${hasCustomRate ? 'text-indigo-600' : 'text-emerald-700'}">${formatINR(activeRate)}</span>
+                <span class="font-mono font-black text-sm ${isFromQuote ? 'text-emerald-700' : (hasCustomRate ? 'text-indigo-600' : 'text-slate-900')}">${formatINR(activeRate)}</span>
                 ${(() => {
                   const rKg = calculateRatePerKg(activeRate, p.unitSize);
                   return rKg ? `<span class="text-[10px] text-slate-500 font-mono font-semibold">(${formatINR(rKg)}/kg)</span>` : '';
                 })()}
-                ${hasCustomRate ? `
+                ${isFromQuote ? `
+                  <span class="text-[10px] line-through text-slate-400 font-mono">${formatINR(p.baseRate)}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">✓ Quoted Rate</span>
+                ` : (hasCustomRate ? `
                   <span class="text-[10px] line-through text-slate-400 font-mono">${formatINR(p.baseRate)}</span>
                   <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Custom Price</span>
-                ` : ''}
+                ` : '')}
               </div>
             </div>
 
@@ -3393,7 +3965,12 @@
       if (combinedEl) combinedEl.innerText = formatINR(combinedReceivables);
 
       const submitBtn = document.getElementById('btn-submit-order');
-      if (submitBtn) submitBtn.disabled = (totalUnits === 0);
+      const btnInstant = document.getElementById('btn-submit-order-instant-bill');
+      const btnWhatsApp = document.getElementById('btn-submit-order-whatsapp-bill');
+      const hasUnits = (totalUnits > 0);
+      if (submitBtn) submitBtn.disabled = !hasUnits;
+      if (btnInstant) btnInstant.disabled = !hasUnits;
+      if (btnWhatsApp) btnWhatsApp.disabled = !hasUnits;
     }
 
     function setOrderFulfillmentStage(stage) {
@@ -3436,8 +4013,8 @@
       return rawNotes.replace(/\[STATUS:(?:DELIVERED|PENDING)\]/g, '').trim();
     }
 
-    // ORDER FULFILLMENT & INVENTORY DEDUCTION
-    async function submitOrder(forcedStage) {
+    // ORDER FULFILLMENT & INVENTORY DEDUCTION (1-STEP ORDER & BILL GENERATION)
+    async function submitOrder(forcedStage, directAction) {
       const custId = document.getElementById('order-customer-select').value;
       const cust = customers.find(c => c.id === custId);
       if (!cust) { alert("Please select a customer."); return; }
@@ -3460,7 +4037,7 @@
         }
       });
 
-      if (items.length === 0) { alert("Cart is empty."); return; }
+      if (items.length === 0) { alert("Cart is empty. Please select product quantities."); return; }
 
       const rebate = parseFloat(document.getElementById('order-rebate').value) || 0;
       const netPayable = Math.max(0, itemsSubtotal - rebate);
@@ -3474,9 +4051,13 @@
       const statusTag = (deliveryStage === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
       const notes = rawNotes ? (rawNotes + ' ' + statusTag) : statusTag;
 
+      const activeRepName = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager Admin' : 'Field Sales');
+      const activeRepId = currentSalesperson ? currentSalesperson.id : null;
+
       const orderRecord = {
         id: orderId,
-        repName: 'Field Sales',
+        repName: activeRepName,
+        repId: activeRepId,
         buyerId: cust.id,
         buyerName: cust.name,
         buyerPhone: cust.phone,
@@ -3505,8 +4086,9 @@
           const payload = { ...orderRecord };
           const { error } = await supabaseClient.from('orders').insert([payload]);
           if (error && error.code === 'PGRST204') {
-            // If status column is not present in supabase yet, fall back without status key
+            // If status or repId column is not present in supabase yet, fall back gracefully
             delete payload.status;
+            delete payload.repId;
             await supabaseClient.from('orders').insert([payload]);
           }
           if (payMode === 'Credit / Udhaar') {
@@ -3518,7 +4100,15 @@
       }
 
       latestOrder = orderRecord;
-      showOrderSuccess(orderRecord);
+      if (directAction === 'open_bill') {
+        openInvoiceModal(orderId);
+      } else if (directAction === 'whatsapp_bill') {
+        shareWhatsApp(orderId);
+      } else if (directAction === 'dispatch') {
+        alert(`✅ Order #${orderId} booked for Delivery Dispatch!`);
+      } else {
+        showOrderSuccess(orderRecord);
+      }
 
       // Reset cart
       cart = {};
@@ -4669,7 +5259,25 @@
       const filtered = orders.filter(o => {
         const status = getOrderStatus(o);
         if (currentOrdersStatusFilter !== 'all' && status !== currentOrdersStatusFilter) return false;
-        return !q || o.id.toLowerCase().includes(q) || o.buyerName.toLowerCase().includes(q) || (o.dispatchRoute && o.dispatchRoute.toLowerCase().includes(q));
+
+        // In field sales rep mode, show rep's own orders
+        if (!isManager && currentSalesperson) {
+          const hasAnyRepOrders = orders.some(ord => 
+            (ord.repId && ord.repId === currentSalesperson.id) || 
+            (ord.repName && ord.repName.toLowerCase() === currentSalesperson.name.toLowerCase())
+          );
+          if (hasAnyRepOrders) {
+            const isRepMatch = (o.repId && o.repId === currentSalesperson.id) || 
+                               (o.repName && o.repName.toLowerCase() === currentSalesperson.name.toLowerCase());
+            if (!isRepMatch) return false;
+          } else if (currentSalesperson.assignedRoute && currentSalesperson.assignedRoute !== 'General Beat') {
+            if (o.dispatchRoute && !o.dispatchRoute.toLowerCase().includes(currentSalesperson.assignedRoute.toLowerCase())) {
+              return false;
+            }
+          }
+        }
+
+        return !q || o.id.toLowerCase().includes(q) || o.buyerName.toLowerCase().includes(q) || (o.dispatchRoute && o.dispatchRoute.toLowerCase().includes(q)) || (o.repName && o.repName.toLowerCase().includes(q));
       });
 
       if (filtered.length === 0) {
@@ -4689,6 +5297,7 @@
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3 font-mono font-bold text-slate-800">
             #${o.id}<br><span class="text-[10px] text-slate-400 font-normal">${o.date} ${o.time}</span>
+            ${o.repName ? `<div class="text-[9px] font-sans font-bold text-indigo-600 flex items-center gap-1 mt-0.5"><i data-lucide="user" class="w-2.5 h-2.5"></i> ${escapeHtml(o.repName)}</div>` : ''}
           </td>
           <td class="p-3">
             <div class="font-bold text-slate-900">${escapeHtml(o.buyerName)}</div>
@@ -7632,9 +8241,802 @@
       window.open(url, '_blank');
     }
 
+    // ==============================================================================
+    // 18. SALES PERSONNEL PWA PORTALS & PERFORMANCE COCKPIT
+    // ==============================================================================
+
+    function getSalespersonSlug(sp) {
+      if (!sp) return 'salesRep';
+      if (sp.slug) return sp.slug;
+      const firstName = (sp.name || 'rep').trim().split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '');
+      return 'sales' + (firstName ? (firstName.charAt(0).toUpperCase() + firstName.slice(1)) : (sp.id || 'rep'));
+    }
+
+    function getSalespersonPwaUrl(spId) {
+      const sp = salespeople.find(s => s.id === spId);
+      const slug = sp ? getSalespersonSlug(sp) : ('sales' + spId);
+      const origin = window.location.origin;
+      return `${origin}/${slug}`;
+    }
+
+    function showHomeManagerPinGate() {
+      const gate = document.getElementById('master-landing-gate');
+      const input = document.getElementById('gate-pin-input');
+      const err = document.getElementById('gate-pin-error');
+      if (err) err.classList.add('hidden');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 150);
+      }
+      populateGateRepsShortcuts();
+      if (gate) gate.classList.remove('hidden');
+    }
+
+    function populateGateRepsShortcuts() {
+      const container = document.getElementById('gate-reps-shortcuts');
+      if (!container) return;
+      container.innerHTML = salespeople.map(sp => {
+        const slug = getSalespersonSlug(sp);
+        return `
+          <a href="/${slug}" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold inline-flex items-center gap-1 transition">
+            <i data-lucide="smartphone" class="w-3 h-3 text-emerald-400"></i> ${escapeHtml(sp.name)}
+          </a>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function submitGatePin() {
+      const input = document.getElementById('gate-pin-input');
+      const err = document.getElementById('gate-pin-error');
+      const entered = input ? input.value : '';
+      const h = await hashPin(entered);
+      if (h === MASTER_PIN_HASH) {
+        if (err) err.classList.add('hidden');
+        isManager = true;
+        sessionStorage.setItem('sg_is_manager', 'true');
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateManagerUI();
+        setTab('dashboard');
+      } else {
+        if (err) err.classList.remove('hidden');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function initUserSessionFromUrlOrStorage() {
+      let path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      if (path === 'index.html') path = '';
+
+      const params = new URLSearchParams(window.location.search);
+      const repParam = params.get('rep') || params.get('salesperson') || params.get('sp');
+      const managerParam = params.get('manager');
+
+      // 1. MATCH BY DEDICATED SALES SUBPAGE PATH: http://localhost:3000/salesPradhish, /salesNagaraju, etc.
+      let matchedRep = null;
+      if (path) {
+        const cleanPath = path.toLowerCase();
+        matchedRep = salespeople.find(s => {
+          const sSlug = getSalespersonSlug(s).toLowerCase();
+          const sName = s.name.toLowerCase().replace(/\s+/g, '');
+          const sId = (s.id || '').toLowerCase();
+          return cleanPath === sSlug ||
+                 cleanPath === ('sales' + sName) ||
+                 cleanPath === sName ||
+                 cleanPath === sId ||
+                 (cleanPath.startsWith('sales') && s.name.toLowerCase().includes(cleanPath.replace(/^sales/, '')));
+        });
+
+        // Auto-register if new official accessed by direct path e.g. /salesKavitha
+        if (!matchedRep && cleanPath.startsWith('sales') && cleanPath.length > 5) {
+          const rawName = path.slice(5);
+          const capitalized = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+          let nextNum = 101;
+          salespeople.forEach(s => {
+            const match = (s.id || '').match(/SP-(\d+)/i);
+            if (match) {
+              const num = parseInt(match[1]);
+              if (num >= nextNum) nextNum = num + 1;
+            }
+          });
+          matchedRep = {
+            id: 'SP-' + nextNum,
+            name: capitalized,
+            slug: path,
+            phone: '',
+            assignedRoute: 'General Beat',
+            monthlyTarget: 150000,
+            active: true
+          };
+          salespeople.push(matchedRep);
+          saveSalespeopleLocally();
+        }
+      }
+
+      // 2. MATCH BY QUERY PARAM: ?rep=
+      if (!matchedRep && repParam) {
+        const cleanQuery = repParam.trim().toLowerCase();
+        matchedRep = salespeople.find(s => 
+          (s.id && s.id.toLowerCase() === cleanQuery) || 
+          (s.name && s.name.toLowerCase().includes(cleanQuery)) ||
+          (getSalespersonSlug(s).toLowerCase() === cleanQuery)
+        );
+      }
+
+      // If matched a dedicated sales subpage:
+      if (matchedRep) {
+        currentSalesperson = matchedRep;
+        localStorage.setItem('sg_current_salesperson_id', matchedRep.id);
+        isManager = false;
+        sessionStorage.setItem('sg_is_manager', 'false');
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateUserPersonaUI();
+        setTab('order'); // Open directly into One-Step Order Entry!
+        return;
+      }
+
+      // 3. HOME / MASTER PAGE: http://localhost:3000/ or http://localhost:3001/
+      // Master page collating all reports of sales officials, product entry, inward, outward.
+      // Must secure landing on home page with PIN (2131), and not disclose it!
+      const isAlreadyAuthed = sessionStorage.getItem('sg_is_manager') === 'true';
+      if (isAlreadyAuthed) {
+        isManager = true;
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateUserPersonaUI();
+        setTab('dashboard');
+      } else {
+        isManager = false;
+        updateUserPersonaUI();
+        showHomeManagerPinGate();
+      }
+    }
+
+    function updateUserPersonaUI() {
+      const dotEl = document.getElementById('header-user-status-dot');
+      const nameEl = document.getElementById('header-user-name');
+      const nameMobEl = document.getElementById('header-user-name-mobile');
+      const roleEl = document.getElementById('header-user-role');
+      const orderRepNameEl = document.getElementById('order-rep-display-name');
+      const orderRepBeatEl = document.getElementById('order-rep-display-beat');
+      const repDashNameEl = document.getElementById('rep-dash-name');
+      const repDashRouteEl = document.getElementById('rep-dash-route');
+      const repDashPhoneEl = document.getElementById('rep-dash-phone');
+
+      if (isManager) {
+        if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-indigo-400 ring-2 ring-indigo-400/20 flex-shrink-0";
+        if (nameEl) nameEl.innerText = "Manager HQ";
+        if (nameMobEl) nameMobEl.innerText = "Manager";
+        if (roleEl) roleEl.innerText = "Executive Admin • All Routes";
+        if (orderRepNameEl) orderRepNameEl.innerText = "Manager Admin";
+        if (orderRepBeatEl) orderRepBeatEl.innerText = "HQ Central";
+        document.title = "Sri Govinda — Manager Cockpit";
+      } else if (currentSalesperson) {
+        if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0";
+        if (nameEl) nameEl.innerText = currentSalesperson.name;
+        if (nameMobEl) nameMobEl.innerText = currentSalesperson.name.split(' ')[0];
+        if (roleEl) roleEl.innerText = `Sales Officer • ${currentSalesperson.assignedRoute || 'General Beat'}`;
+        if (orderRepNameEl) orderRepNameEl.innerText = currentSalesperson.name;
+        if (orderRepBeatEl) orderRepBeatEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
+        if (repDashNameEl) repDashNameEl.innerText = currentSalesperson.name;
+        if (repDashRouteEl) repDashRouteEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
+        if (repDashPhoneEl) repDashPhoneEl.innerText = currentSalesperson.phone || '-';
+        document.title = `Sri Govinda — ${currentSalesperson.name} (Sales Portal)`;
+      }
+    }
+
+    function openAccountSwitcherModal() {
+      renderAccountSwitcherList();
+      const m = document.getElementById('modal-account-switcher');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeAccountSwitcherModal() {
+      const m = document.getElementById('modal-account-switcher');
+      if (m) m.classList.add('hidden');
+    }
+
+    function renderAccountSwitcherList() {
+      const container = document.getElementById('account-switcher-list');
+      if (!container) return;
+
+      if (salespeople.length === 0) {
+        container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No sales officers registered yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = salespeople.map(sp => {
+        const isSelected = (!isManager && currentSalesperson && currentSalesperson.id === sp.id);
+        const initials = (sp.name || 'SP').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        return `
+          <div onclick="selectSalespersonAccount('${sp.id}')" class="p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-3 ${
+            isSelected
+              ? 'bg-emerald-50 border-emerald-500 shadow-xs ring-1 ring-emerald-500'
+              : 'bg-white hover:bg-slate-50 border-slate-200'
+          }">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs flex-shrink-0 ${
+                isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+              }">
+                ${initials}
+              </div>
+              <div>
+                <div class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                  <span>${escapeHtml(sp.name)}</span>
+                  ${isSelected ? `<span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">Active</span>` : ''}
+                  ${sp.active === false ? `<span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-rose-100 text-rose-700">Inactive</span>` : ''}
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono mt-0.5">
+                  📍 ${escapeHtml(sp.assignedRoute || 'General Beat')} • 📱 ${escapeHtml(sp.phone || '-')}
+                </div>
+                <div class="text-[10px] text-slate-400">
+                  Target: ${formatINR(sp.monthlyTarget || 0)} / mo
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 text-xs font-bold ${isSelected ? 'text-emerald-600' : 'text-slate-400'}">
+              <span>${isSelected ? 'Current' : 'Switch'}</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function selectSalespersonAccount(spId) {
+      const sp = salespeople.find(s => s.id === spId);
+      if (!sp) return;
+      isManager = false;
+      sessionStorage.setItem('sg_is_manager', 'false');
+      currentSalesperson = sp;
+      localStorage.setItem('sg_current_salesperson_id', sp.id);
+      closeAccountSwitcherModal();
+      updateManagerUI();
+      setTab('dashboard');
+    }
+
+    function switchToManagerFromSwitcher() {
+      closeAccountSwitcherModal();
+      handleFooterAdminClick();
+    }
+
+    function renderRepPersonalDashboard() {
+      if (!currentSalesperson) return;
+
+      const now = new Date();
+      const curMonthStr = now.toISOString().slice(0, 7);
+      const todayStr = now.toISOString().slice(0, 10);
+
+      // Filter rep orders
+      const repOrders = orders.filter(o => 
+        (o.repId && o.repId === currentSalesperson.id) ||
+        (o.repName && o.repName.toLowerCase() === currentSalesperson.name.toLowerCase())
+      );
+
+      const monthOrders = repOrders.filter(o => o.date && o.date.startsWith(curMonthStr));
+      const monthAchieved = monthOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const target = Number(currentSalesperson.monthlyTarget || 150000);
+      const remaining = Math.max(0, target - monthAchieved);
+      const pct = Math.min(100, Math.round((monthAchieved / (target || 1)) * 100));
+
+      const todayOrders = repOrders.filter(o => o.date === todayStr);
+      const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const monthUnits = monthOrders.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
+      const pendingOrders = repOrders.filter(o => getOrderStatus(o) === 'Pending Delivery').length;
+
+      const pctEl = document.getElementById('rep-dash-pct');
+      const barEl = document.getElementById('rep-dash-progress-bar');
+      const targetEl = document.getElementById('rep-dash-target');
+      const achievedEl = document.getElementById('rep-dash-achieved');
+      const remainingEl = document.getElementById('rep-dash-remaining');
+      const todaySalesEl = document.getElementById('rep-dash-today-sales');
+      const todayOrdersEl = document.getElementById('rep-dash-today-orders');
+      const monthUnitsEl = document.getElementById('rep-dash-month-units');
+      const pendingOrdersEl = document.getElementById('rep-dash-pending-orders');
+
+      if (pctEl) pctEl.innerText = `${pct}%`;
+      if (barEl) barEl.style.width = `${pct}%`;
+      if (targetEl) targetEl.innerText = formatINR(target);
+      if (achievedEl) achievedEl.innerText = formatINR(monthAchieved);
+      if (remainingEl) remainingEl.innerText = remaining === 0 ? "Target Achieved! 🎯" : formatINR(remaining);
+      if (todaySalesEl) todaySalesEl.innerText = formatINR(todaySales);
+      if (todayOrdersEl) todayOrdersEl.innerText = todayOrders.length;
+      if (monthUnitsEl) monthUnitsEl.innerText = `${monthUnits} units`;
+      if (pendingOrdersEl) pendingOrdersEl.innerText = pendingOrders;
+
+      const streamContainer = document.getElementById('rep-recent-orders-list');
+      if (streamContainer) {
+        const recent = repOrders.slice(0, 8);
+        if (recent.length === 0) {
+          streamContainer.innerHTML = `
+            <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <p class="text-xs">No orders logged under your account yet.</p>
+              <button type="button" onclick="setTab('order')" class="mt-2.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Take First Order
+              </button>
+            </div>
+          `;
+        } else {
+          streamContainer.innerHTML = recent.map(o => {
+            const isDelivered = (getOrderStatus(o) === 'Delivered');
+            return `
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 hover:bg-slate-100/70 transition">
+                <div>
+                  <div class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                    <span>${escapeHtml(o.buyerName)}</span>
+                    <span class="font-mono text-[10px] text-slate-400">#${o.id}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-500 font-mono mt-0.5">
+                    ${o.date} ${o.time} • ${o.totalUnits} units • ${escapeHtml(o.paymentMode)}
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="text-right">
+                    <div class="font-mono font-bold text-xs text-emerald-600">${formatINR(o.netPayable)}</div>
+                    <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                      isDelivered ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }">
+                      ${isDelivered ? 'Delivered' : 'Pending'}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="shareWhatsApp('${o.id}')" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" title="Send WhatsApp Bill">
+                      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button type="button" onclick="openInvoiceModal('${o.id}')" class="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" title="View Bill">
+                      <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setSalesTeamTimeframe(tf) {
+      currentSalesTeamTimeframe = tf;
+      const timeframes = ['today', 'week', 'month', 'quarter', 'year', 'all'];
+      timeframes.forEach(t => {
+        const btn = document.getElementById(`btn-st-time-${t}`);
+        if (btn) {
+          if (t === tf) {
+            btn.className = "px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer";
+          }
+        }
+      });
+
+      const labelEl = document.getElementById('st-timeframe-label');
+      if (labelEl) {
+        const labels = {
+          today: 'Showing: Today',
+          week: 'Showing: This Week (Last 7 Days)',
+          month: 'Showing: This Month',
+          quarter: 'Showing: This Quarter',
+          year: 'Showing: This Year',
+          all: 'Showing: All Time'
+        };
+        labelEl.innerText = labels[tf] || `Showing: ${tf}`;
+      }
+
+      renderSalesTeamView();
+    }
+
+    function filterOrdersBySalesTeamTimeframe(orderList, tf) {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const curMonthStr = now.toISOString().slice(0, 7);
+      const curYearStr = now.toISOString().slice(0, 4);
+
+      return orderList.filter(o => {
+        if (!o.date) return false;
+        if (tf === 'today') return o.date === todayStr;
+        if (tf === 'week') {
+          const orderDate = new Date(o.date);
+          const diffDays = (now - orderDate) / (1000 * 60 * 60 * 24);
+          return diffDays >= 0 && diffDays <= 7;
+        }
+        if (tf === 'month') return o.date.startsWith(curMonthStr);
+        if (tf === 'quarter') {
+          const curQuarter = Math.floor(now.getMonth() / 3);
+          const orderDate = new Date(o.date);
+          const orderQuarter = Math.floor(orderDate.getMonth() / 3);
+          return orderDate.getFullYear() === now.getFullYear() && orderQuarter === curQuarter;
+        }
+        if (tf === 'year') return o.date.startsWith(curYearStr);
+        return true;
+      });
+    }
+
+    function renderSalesTeamView() {
+      const tf = currentSalesTeamTimeframe;
+      const filteredOrders = filterOrdersBySalesTeamTimeframe(orders, tf);
+
+      const teamRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const teamOrdersCount = filteredOrders.length;
+      const teamUnits = filteredOrders.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
+      const activeOfficers = salespeople.filter(s => s.active !== false).length;
+
+      const countEl = document.getElementById('st-kpi-officers-count');
+      const revEl = document.getElementById('st-kpi-team-revenue');
+      const ordEl = document.getElementById('st-kpi-team-orders');
+      const unitEl = document.getElementById('st-kpi-team-units');
+
+      if (countEl) countEl.innerText = activeOfficers;
+      if (revEl) revEl.innerText = formatINR(teamRevenue);
+      if (ordEl) ordEl.innerText = teamOrdersCount;
+      if (unitEl) unitEl.innerText = teamUnits;
+
+      const cardsContainer = document.getElementById('sales-team-cards-container');
+      if (!cardsContainer) return;
+
+      if (salespeople.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
+            <p class="text-sm font-semibold">No sales officials added yet.</p>
+            <button type="button" onclick="openSalespersonEditModal()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Add First Sales Official
+            </button>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      cardsContainer.innerHTML = salespeople.map(sp => {
+        const repOrdersInTf = filteredOrders.filter(o => 
+          (o.repId && o.repId === sp.id) ||
+          (o.repName && o.repName.toLowerCase() === sp.name.toLowerCase())
+        );
+
+        const revenue = repOrdersInTf.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+        const orderCount = repOrdersInTf.length;
+        const units = repOrdersInTf.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
+
+        const target = Number(sp.monthlyTarget || 150000);
+        let effectiveTarget = target;
+        if (tf === 'today') effectiveTarget = Math.round(target / 25);
+        else if (tf === 'week') effectiveTarget = Math.round(target / 4);
+        else if (tf === 'quarter') effectiveTarget = target * 3;
+        else if (tf === 'year') effectiveTarget = target * 12;
+
+        const pct = Math.min(100, Math.round((revenue / (effectiveTarget || 1)) * 100));
+        const pwaUrl = getSalespersonPwaUrl(sp.id);
+        const initials = (sp.name || 'SP').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+        const vehicleBadge = sp.vehicleType === 'Tata Ace' ? '🚚 Tata Ace'
+          : sp.vehicleType === '3-Wheeler' ? '🛺 3-Wheeler'
+          : sp.vehicleType === 'Walking Beat' ? '🚶 Walking'
+          : '🛵 Two-Wheeler';
+
+        return `
+          <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-indigo-300 transition">
+            <!-- Rep Header -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-black text-sm flex-shrink-0">
+                  ${initials}
+                </div>
+                <div>
+                  <div class="font-bold text-sm text-slate-900 flex items-center gap-1.5 flex-wrap">
+                    <span>${escapeHtml(sp.name)}</span>
+                    ${sp.active !== false 
+                      ? `<span class="w-2 h-2 rounded-full bg-emerald-500" title="Active"></span>` 
+                      : `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-700">Inactive</span>`}
+                  </div>
+                  <div class="text-[11px] font-mono text-slate-500">
+                    📍 ${escapeHtml(sp.assignedRoute || 'General Beat')}
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+                      ${vehicleBadge}
+                    </span>
+                    ${sp.commissionPct ? `<span class="inline-flex items-center text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">${sp.commissionPct}% Comm.</span>` : ''}
+                    <span class="text-[9px] font-mono text-slate-400">ID: ${sp.id}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="openSalespersonEditModal('${sp.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="Edit Official Profile">
+                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="deleteSalespersonConfirm('${sp.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" title="Remove Official">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Performance Progress & Target -->
+            <div class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Progress</span>
+                <span class="font-mono font-black text-indigo-600 text-xs">${pct}%</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px] font-mono pt-0.5">
+                <span class="text-slate-600 font-bold">${formatINR(revenue)}</span>
+                <span class="text-slate-400">Target: ${formatINR(effectiveTarget)}</span>
+              </div>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="text-[9px] font-bold uppercase text-slate-400 block">Orders</span>
+                <span class="font-mono font-black text-slate-800 text-sm">${orderCount}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="text-[9px] font-bold uppercase text-slate-400 block">Units</span>
+                <span class="font-mono font-black text-indigo-600 text-sm">${units}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <span class="text-[9px] font-bold uppercase text-slate-400 block">Avg Order</span>
+                <span class="font-mono font-black text-emerald-600 text-sm">${orderCount > 0 ? formatINR(Math.round(revenue / orderCount)) : '₹0'}</span>
+              </div>
+            </div>
+
+            <!-- Contact & Territory Details -->
+            <div class="text-[10px] text-slate-500 space-y-0.5 px-1 font-mono">
+              <div class="flex items-center justify-between">
+                <span>📱 Phone: <b>${escapeHtml(sp.phone || '-')}</b></span>
+                <span>📅 Joined: ${escapeHtml(sp.joiningDate || '-')}</span>
+              </div>
+              ${sp.email ? `<div class="truncate">✉️ ${escapeHtml(sp.email)}</div>` : ''}
+              ${sp.address ? `<div class="truncate text-slate-400">🏠 ${escapeHtml(sp.address)}</div>` : ''}
+            </div>
+
+            <!-- PWA Sharing & Link Actions -->
+            <div class="pt-2 border-t border-slate-100 space-y-2">
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="shareSalespersonPwaWhatsApp('${sp.id}')" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer" title="Send personalized PWA link to ${escapeHtml(sp.name)} via WhatsApp">
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> 📲 WhatsApp PWA
+                </button>
+                <button type="button" onclick="copySalespersonPwaLink('${sp.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer" title="Copy PWA Link to Clipboard">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="selectSalespersonAccount('${sp.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer" title="Open this Officer's View">
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <div class="text-[9px] text-slate-400 truncate font-mono text-center" title="${pwaUrl}">
+                ${pwaUrl}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateModalPwaPreview() {
+      const idInput = document.getElementById('sp-edit-id');
+      const previewEl = document.getElementById('sp-edit-pwa-preview');
+      if (!idInput || !previewEl) return;
+      const spId = idInput.value.trim() || 'SP-101';
+      previewEl.innerText = getSalespersonPwaUrl(spId);
+    }
+
+    function openSalespersonEditModal(spId) {
+      const modal = document.getElementById('modal-salesperson-edit');
+      const titleEl = document.getElementById('modal-sp-edit-title');
+      const idEl = document.getElementById('sp-edit-id');
+      const nameEl = document.getElementById('sp-edit-name');
+      const phoneEl = document.getElementById('sp-edit-phone');
+      const emailEl = document.getElementById('sp-edit-email');
+      const targetEl = document.getElementById('sp-edit-target');
+      const commissionEl = document.getElementById('sp-edit-commission');
+      const dailyTargetEl = document.getElementById('sp-edit-daily-target');
+      const joiningDateEl = document.getElementById('sp-edit-joining-date');
+      const addressEl = document.getElementById('sp-edit-address');
+      const vehicleEl = document.getElementById('sp-edit-vehicle');
+      const activeEl = document.getElementById('sp-edit-active');
+      const routeSelect = document.getElementById('sp-edit-route-select');
+
+      if (routeSelect) {
+        const routeOptions = [
+          '<option value="General Beat">General Beat (All Areas)</option>',
+          ...routes.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`)
+        ];
+        routeSelect.innerHTML = routeOptions.join('');
+      }
+
+      if (spId) {
+        const sp = salespeople.find(s => s.id === spId);
+        if (!sp) return;
+        if (titleEl) titleEl.innerText = "Edit Sales Official Profile";
+        if (idEl) { idEl.value = sp.id; idEl.readOnly = true; idEl.classList.add('bg-slate-200'); }
+        if (nameEl) nameEl.value = sp.name || '';
+        if (phoneEl) phoneEl.value = sp.phone || '';
+        if (emailEl) emailEl.value = sp.email || '';
+        if (targetEl) targetEl.value = sp.monthlyTarget || 150000;
+        if (commissionEl) commissionEl.value = (sp.commissionPct !== undefined) ? sp.commissionPct : 2.5;
+        if (dailyTargetEl) dailyTargetEl.value = sp.dailyOrderTarget || 5;
+        if (joiningDateEl) joiningDateEl.value = sp.joiningDate || '';
+        if (addressEl) addressEl.value = sp.address || '';
+        if (vehicleEl && sp.vehicleType) vehicleEl.value = sp.vehicleType;
+        if (activeEl) activeEl.checked = (sp.active !== false);
+        if (routeSelect && sp.assignedRoute) routeSelect.value = sp.assignedRoute;
+      } else {
+        if (titleEl) titleEl.innerText = "Add New Sales Official";
+        let nextNum = 101;
+        salespeople.forEach(s => {
+          const match = (s.id || '').match(/SP-(\d+)/i);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num >= nextNum) nextNum = num + 1;
+          }
+        });
+        if (idEl) { idEl.value = 'SP-' + nextNum; idEl.readOnly = false; idEl.classList.remove('bg-slate-200'); }
+        if (nameEl) nameEl.value = '';
+        if (phoneEl) phoneEl.value = '';
+        if (emailEl) emailEl.value = '';
+        if (targetEl) targetEl.value = '150000';
+        if (commissionEl) commissionEl.value = '2.5';
+        if (dailyTargetEl) dailyTargetEl.value = '5';
+        if (joiningDateEl) joiningDateEl.value = new Date().toISOString().split('T')[0];
+        if (addressEl) addressEl.value = '';
+        if (vehicleEl) vehicleEl.value = "Two-Wheeler";
+        if (activeEl) activeEl.checked = true;
+        if (routeSelect) routeSelect.value = "General Beat";
+      }
+
+      updateModalPwaPreview();
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeSalespersonEditModal() {
+      const modal = document.getElementById('modal-salesperson-edit');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleSaveSalesperson(event) {
+      event.preventDefault();
+      const id = document.getElementById('sp-edit-id').value.trim();
+      const name = document.getElementById('sp-edit-name').value.trim();
+      const phone = document.getElementById('sp-edit-phone').value.trim();
+      const email = document.getElementById('sp-edit-email').value.trim();
+      const assignedRoute = document.getElementById('sp-edit-route-select').value;
+      const vehicleType = document.getElementById('sp-edit-vehicle').value;
+      const monthlyTarget = parseFloat(document.getElementById('sp-edit-target').value) || 150000;
+      const commissionPct = parseFloat(document.getElementById('sp-edit-commission').value) || 0;
+      const dailyOrderTarget = parseInt(document.getElementById('sp-edit-daily-target').value) || 5;
+      const joiningDate = document.getElementById('sp-edit-joining-date').value || new Date().toISOString().split('T')[0];
+      const address = document.getElementById('sp-edit-address').value.trim();
+      const active = document.getElementById('sp-edit-active').checked;
+
+      if (!id) { alert("Please provide a Sales Official Code/ID."); return; }
+      if (!name) { alert("Please provide the Sales Official's Full Name."); return; }
+      if (!phone) { alert("Please provide a valid Mobile Phone Number for WhatsApp."); return; }
+
+      const existingIdx = salespeople.findIndex(s => s.id === id);
+      const spRecord = {
+        id,
+        name,
+        phone,
+        email,
+        assignedRoute,
+        vehicleType,
+        monthlyTarget,
+        commissionPct,
+        dailyOrderTarget,
+        joiningDate,
+        address,
+        active
+      };
+
+      if (existingIdx >= 0) {
+        salespeople[existingIdx] = spRecord;
+      } else {
+        salespeople.push(spRecord);
+      }
+
+      saveSalespeopleLocally();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('salespeople').upsert([spRecord]);
+        } catch (e) {
+          console.warn("Supabase salespeople sync warning:", e);
+        }
+      }
+
+      if (currentSalesperson && currentSalesperson.id === id) {
+        currentSalesperson = spRecord;
+      }
+
+      closeSalespersonEditModal();
+      renderSalesTeamView();
+      updateUserPersonaUI();
+    }
+
+    async function deleteSalespersonConfirm(spId) {
+      const sp = salespeople.find(s => s.id === spId);
+      if (!sp) return;
+      if (!confirm(`Are you sure you want to remove sales official "${sp.name}"?`)) return;
+
+      salespeople = salespeople.filter(s => s.id !== spId);
+      saveSalespeopleLocally();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('salespeople').delete().eq('id', spId);
+        } catch (e) {
+          console.warn("Supabase salespeople delete warning:", e);
+        }
+      }
+
+      if (currentSalesperson && currentSalesperson.id === spId) {
+        currentSalesperson = salespeople[0] || null;
+        if (currentSalesperson) localStorage.setItem('sg_current_salesperson_id', currentSalesperson.id);
+      }
+
+      renderSalesTeamView();
+      updateUserPersonaUI();
+    }
+
+    function shareSalespersonPwaWhatsApp(spId) {
+      const sp = salespeople.find(s => s.id === spId);
+      if (!sp) return;
+
+      const pwaUrl = getSalespersonPwaUrl(sp.id);
+      const cleanPhone = (sp.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+
+      const text = 
+        `*SRI GOVINDA FIELD SALES PORTAL*\n\n` +
+        `Hello ${sp.name},\n` +
+        `Here is your dedicated Sri Govinda Sales & Billing Portal link for *${sp.assignedRoute || 'Field Sales'}*:\n\n` +
+        `👉 *${pwaUrl}*\n\n` +
+        `*How to install as an App on your phone (PWA):*\n` +
+        `1. Tap the link above to open in Chrome or Safari\n` +
+        `2. Tap the browser menu (⋮ or Share icon)\n` +
+        `3. Tap *"Add to Home Screen"* or *"Install App"*\n` +
+        `4. The app icon "Sri Govinda Sales" will appear on your phone screen!\n\n` +
+        `You can now book customer orders and generate instant WhatsApp bills right on the field!`;
+
+      const waUrl = phoneToUse 
+        ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}`
+        : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+      window.open(waUrl, '_blank');
+    }
+
+    function copySalespersonPwaLink(spId) {
+      const pwaUrl = getSalespersonPwaUrl(spId);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pwaUrl).then(() => {
+          alert(`✅ PWA Link for ${spId} copied to clipboard!\n\n${pwaUrl}`);
+        }).catch(() => {
+          prompt("Copy PWA Link:", pwaUrl);
+        });
+      } else {
+        prompt("Copy PWA Link:", pwaUrl);
+      }
+    }
+
     // 19. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
-      setTab('dashboard');
+      // Register Service Worker for PWA Offline App Experience
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registered:', reg.scope))
+          .catch(err => console.warn('Service Worker registration skipped:', err));
+      }
+
+      initUserSessionFromUrlOrStorage();
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
       await initSupabase();
