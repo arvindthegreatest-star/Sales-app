@@ -1741,6 +1741,50 @@
     </div>
   </div>
 
+  <!-- ==============================================================================
+       MASTER MANAGER LANDING SECURITY GATE (For http://localhost:3000/ & http://localhost:3001/)
+       Secured with private Master PIN (Not disclosed anywhere)
+       ============================================================================== -->
+  <div id="master-landing-gate" class="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-slate-800 text-center my-auto">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="shield-alert" class="w-7 h-7 text-indigo-400"></i>
+      </div>
+      <div>
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-950/60 text-indigo-300 border border-indigo-800/80 text-[10px] font-black uppercase tracking-wider mb-1.5">
+          <span>● Executive Control</span>
+        </div>
+        <h2 class="text-lg font-black text-white tracking-tight">Sri Govinda Master Hub</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Central Manager Cockpit • Inventory, Reports & Sales Team</p>
+      </div>
+
+      <div class="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 text-left space-y-1 text-xs">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Security Verification</span>
+        <p class="text-[11px] text-slate-300">
+          This master console collates central sales reports, stock inward, outward dispatches, and sales officials analytics.
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-slate-400 font-bold uppercase text-[10px]">Enter 4-Digit Security PIN</label>
+        <input type="password" id="gate-pin-input" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitGatePin()" class="w-full p-3 bg-slate-800/90 border border-slate-700 rounded-xl text-center font-mono font-black text-xl tracking-widest text-white outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        <div id="gate-pin-error" class="text-xs font-bold text-rose-400 hidden">Access Denied: Incorrect Security PIN</div>
+      </div>
+
+      <button type="button" onclick="submitGatePin()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+        <i data-lucide="unlock" class="w-4 h-4"></i> Unlock Master Manager Console
+      </button>
+
+      <!-- Sales Officials Shortcut Footer -->
+      <div class="pt-3 border-t border-slate-800/80 text-center">
+        <span class="text-[11px] text-slate-400 block mb-1.5">Are you a field sales official?</span>
+        <div id="gate-reps-shortcuts" class="flex flex-wrap justify-center gap-1.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: MANAGER PIN LOGIN -->
   <div id="modal-pin" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
     <div class="bg-slate-900 rounded-3xl shadow-2xl max-w-xs w-full p-6 space-y-4 border border-slate-800 text-center">
@@ -2922,7 +2966,7 @@
        ============================================================================== -->
   <script>
     // 1. STATE MANAGEMENT (PIN STORED AS SECURE SHA-256 HASH)
-    const MASTER_PIN_HASH = '37af3f678ecf438491e342ee31996a7b294101b781c20221158017a1203db302';
+    const MASTER_PIN_HASH = 'c49b0dece16c3a6b89be2938c6fef6d0c91783c0d1b4176a23a0fe6d7f8ad0ba';
 
     async function hashPin(val) {
       const enc = new TextEncoder().encode(String(val || '').trim());
@@ -2934,9 +2978,10 @@
 
     // Sales Personnel Accounts Roster
     const DEFAULT_SALESPEOPLE = [
-      { id: 'SP-101', name: 'Ramesh Kumar', phone: '9845012345', email: 'ramesh@srigovinda.in', assignedRoute: 'Yelahanka Route', monthlyTarget: 150000, commissionPct: 2.5, vehicleType: 'Two-Wheeler', dailyOrderTarget: 5, joiningDate: '2025-01-15', address: 'Yelahanka Old Town, Bengaluru', active: true },
-      { id: 'SP-102', name: 'Suresh Gowda', phone: '9980112233', email: 'suresh@srigovinda.in', assignedRoute: 'Hebbal Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Tata Ace', dailyOrderTarget: 6, joiningDate: '2025-02-01', address: 'Hebbal Kempapura, Bengaluru', active: true },
-      { id: 'SP-103', name: 'Arvind Swamy', phone: '9731988411', email: 'arvind@srigovinda.in', assignedRoute: 'General Beat', monthlyTarget: 200000, commissionPct: 3.0, vehicleType: '3-Wheeler', dailyOrderTarget: 8, joiningDate: '2024-11-10', address: 'RT Nagar, Bengaluru', active: true }
+      { id: 'SP-101', name: 'Pradhish', slug: 'salesPradhish', phone: '9845011223', email: 'pradhish@srigovinda.in', assignedRoute: 'Yelahanka Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-10', address: 'Yelahanka, Bengaluru', active: true },
+      { id: 'SP-102', name: 'Nagaraju', slug: 'salesNagaraju', phone: '9980123456', email: 'nagaraju@srigovinda.in', assignedRoute: 'Hebbal Route', monthlyTarget: 180000, commissionPct: 3.0, vehicleType: 'Tata Ace', dailyOrderTarget: 6, joiningDate: '2025-01-15', address: 'Hebbal, Bengaluru', active: true },
+      { id: 'SP-103', name: 'Ramesh Kumar', slug: 'salesRamesh', phone: '9845012345', email: 'ramesh@srigovinda.in', assignedRoute: 'General Beat', monthlyTarget: 150000, commissionPct: 2.5, vehicleType: 'Two-Wheeler', dailyOrderTarget: 5, joiningDate: '2025-02-01', address: 'RT Nagar, Bengaluru', active: true },
+      { id: 'SP-104', name: 'Arvind Swamy', slug: 'salesArvind', phone: '9731988411', email: 'arvind@srigovinda.in', assignedRoute: 'Central Market', monthlyTarget: 200000, commissionPct: 3.0, vehicleType: '3-Wheeler', dailyOrderTarget: 8, joiningDate: '2024-11-10', address: 'Malleswaram, Bengaluru', active: true }
     ];
 
     let salespeople = [];
@@ -8043,38 +8088,156 @@
     // 18. SALES PERSONNEL PWA PORTALS & PERFORMANCE COCKPIT
     // ==============================================================================
 
+    function getSalespersonSlug(sp) {
+      if (!sp) return 'salesRep';
+      if (sp.slug) return sp.slug;
+      const firstName = (sp.name || 'rep').trim().split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '');
+      return 'sales' + (firstName ? (firstName.charAt(0).toUpperCase() + firstName.slice(1)) : (sp.id || 'rep'));
+    }
+
+    function getSalespersonPwaUrl(spId) {
+      const sp = salespeople.find(s => s.id === spId);
+      const slug = sp ? getSalespersonSlug(sp) : ('sales' + spId);
+      const origin = window.location.origin;
+      return `${origin}/${slug}`;
+    }
+
+    function showHomeManagerPinGate() {
+      const gate = document.getElementById('master-landing-gate');
+      const input = document.getElementById('gate-pin-input');
+      const err = document.getElementById('gate-pin-error');
+      if (err) err.classList.add('hidden');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 150);
+      }
+      populateGateRepsShortcuts();
+      if (gate) gate.classList.remove('hidden');
+    }
+
+    function populateGateRepsShortcuts() {
+      const container = document.getElementById('gate-reps-shortcuts');
+      if (!container) return;
+      container.innerHTML = salespeople.map(sp => {
+        const slug = getSalespersonSlug(sp);
+        return `
+          <a href="/${slug}" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold inline-flex items-center gap-1 transition">
+            <i data-lucide="smartphone" class="w-3 h-3 text-emerald-400"></i> ${escapeHtml(sp.name)}
+          </a>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function submitGatePin() {
+      const input = document.getElementById('gate-pin-input');
+      const err = document.getElementById('gate-pin-error');
+      const entered = input ? input.value : '';
+      const h = await hashPin(entered);
+      if (h === MASTER_PIN_HASH) {
+        if (err) err.classList.add('hidden');
+        isManager = true;
+        sessionStorage.setItem('sg_is_manager', 'true');
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateManagerUI();
+        setTab('dashboard');
+      } else {
+        if (err) err.classList.remove('hidden');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
     function initUserSessionFromUrlOrStorage() {
+      let path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      if (path === 'index.html') path = '';
+
       const params = new URLSearchParams(window.location.search);
       const repParam = params.get('rep') || params.get('salesperson') || params.get('sp');
       const managerParam = params.get('manager');
 
-      if (managerParam === '1' || managerParam === 'true') {
-        if (!isManager) {
-          handleFooterAdminClick();
-        }
-      } else if (repParam) {
-        const cleanQuery = repParam.trim().toLowerCase();
-        const foundSp = salespeople.find(s => 
-          (s.id && s.id.toLowerCase() === cleanQuery) || 
-          (s.name && s.name.toLowerCase().includes(cleanQuery))
-        );
-        if (foundSp) {
-          currentSalesperson = foundSp;
-          localStorage.setItem('sg_current_salesperson_id', foundSp.id);
-          isManager = false;
-          sessionStorage.setItem('sg_is_manager', 'false');
-        }
-      } else {
-        const savedRepId = localStorage.getItem('sg_current_salesperson_id');
-        if (savedRepId) {
-          currentSalesperson = salespeople.find(s => s.id === savedRepId) || salespeople[0];
-        } else if (salespeople.length > 0) {
-          currentSalesperson = salespeople[0];
-          localStorage.setItem('sg_current_salesperson_id', currentSalesperson.id);
+      // 1. MATCH BY DEDICATED SALES SUBPAGE PATH: http://localhost:3000/salesPradhish, /salesNagaraju, etc.
+      let matchedRep = null;
+      if (path) {
+        const cleanPath = path.toLowerCase();
+        matchedRep = salespeople.find(s => {
+          const sSlug = getSalespersonSlug(s).toLowerCase();
+          const sName = s.name.toLowerCase().replace(/\s+/g, '');
+          const sId = (s.id || '').toLowerCase();
+          return cleanPath === sSlug ||
+                 cleanPath === ('sales' + sName) ||
+                 cleanPath === sName ||
+                 cleanPath === sId ||
+                 (cleanPath.startsWith('sales') && s.name.toLowerCase().includes(cleanPath.replace(/^sales/, '')));
+        });
+
+        // Auto-register if new official accessed by direct path e.g. /salesKavitha
+        if (!matchedRep && cleanPath.startsWith('sales') && cleanPath.length > 5) {
+          const rawName = path.slice(5);
+          const capitalized = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+          let nextNum = 101;
+          salespeople.forEach(s => {
+            const match = (s.id || '').match(/SP-(\d+)/i);
+            if (match) {
+              const num = parseInt(match[1]);
+              if (num >= nextNum) nextNum = num + 1;
+            }
+          });
+          matchedRep = {
+            id: 'SP-' + nextNum,
+            name: capitalized,
+            slug: path,
+            phone: '',
+            assignedRoute: 'General Beat',
+            monthlyTarget: 150000,
+            active: true
+          };
+          salespeople.push(matchedRep);
+          saveSalespeopleLocally();
         }
       }
 
-      updateUserPersonaUI();
+      // 2. MATCH BY QUERY PARAM: ?rep=
+      if (!matchedRep && repParam) {
+        const cleanQuery = repParam.trim().toLowerCase();
+        matchedRep = salespeople.find(s => 
+          (s.id && s.id.toLowerCase() === cleanQuery) || 
+          (s.name && s.name.toLowerCase().includes(cleanQuery)) ||
+          (getSalespersonSlug(s).toLowerCase() === cleanQuery)
+        );
+      }
+
+      // If matched a dedicated sales subpage:
+      if (matchedRep) {
+        currentSalesperson = matchedRep;
+        localStorage.setItem('sg_current_salesperson_id', matchedRep.id);
+        isManager = false;
+        sessionStorage.setItem('sg_is_manager', 'false');
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateUserPersonaUI();
+        setTab('order'); // Open directly into One-Step Order Entry!
+        return;
+      }
+
+      // 3. HOME / MASTER PAGE: http://localhost:3000/ or http://localhost:3001/
+      // Master page collating all reports of sales officials, product entry, inward, outward.
+      // Must secure landing on home page with PIN (2131), and not disclose it!
+      const isAlreadyAuthed = sessionStorage.getItem('sg_is_manager') === 'true';
+      if (isAlreadyAuthed) {
+        isManager = true;
+        const gate = document.getElementById('master-landing-gate');
+        if (gate) gate.classList.add('hidden');
+        updateUserPersonaUI();
+        setTab('dashboard');
+      } else {
+        isManager = false;
+        updateUserPersonaUI();
+        showHomeManagerPinGate();
+      }
     }
 
     function updateUserPersonaUI() {
@@ -8667,12 +8830,6 @@
       updateUserPersonaUI();
     }
 
-    function getSalespersonPwaUrl(spId) {
-      const origin = window.location.origin;
-      const pathname = window.location.pathname;
-      return `${origin}${pathname}?rep=${encodeURIComponent(spId)}`;
-    }
-
     function shareSalespersonPwaWhatsApp(spId) {
       const sp = salespeople.find(s => s.id === spId);
       if (!sp) return;
@@ -8723,7 +8880,6 @@
       }
 
       initUserSessionFromUrlOrStorage();
-      setTab('dashboard');
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
       await initSupabase();
