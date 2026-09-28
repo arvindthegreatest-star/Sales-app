@@ -23,6 +23,65 @@ function requestHandler(req, res) {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
 
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+    return res.end();
+  }
+
+  // API: Get Company & Bank Settings
+  if (pathname === '/api/company-settings' && req.method === 'GET') {
+    const settingsPath = path.join(ROOT_DIR, 'company_settings.json');
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const data = fs.readFileSync(settingsPath, 'utf8');
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'no-cache'
+        });
+        return res.end(data);
+      } catch (err) {
+        console.error("Error reading company_settings.json:", err);
+      }
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache'
+    });
+    return res.end(JSON.stringify(null));
+  }
+
+  // API: Save Company & Bank Settings
+  if (pathname === '/api/company-settings' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body);
+        const settingsPath = path.join(ROOT_DIR, 'company_settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify(parsed, null, 2), 'utf8');
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(JSON.stringify({ success: true, settings: parsed }));
+      } catch (err) {
+        res.writeHead(400, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   // If root, serve index.html
   if (pathname === '/' || pathname === '') {
     return serveFile(path.join(ROOT_DIR, 'index.html'), res);

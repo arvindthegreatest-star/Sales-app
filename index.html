@@ -1975,13 +1975,18 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition">
-              Cancel
+          <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
+            <button type="button" onclick="openCompanySettingsModal()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+              <i data-lucide="landmark" class="w-3.5 h-3.5 text-indigo-600"></i> Edit Bank & QR Details
             </button>
-            <button type="button" onclick="saveInvoiceChanges()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5">
-              <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Save & Apply Changes to Bill
-            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition cursor-pointer">
+                Cancel
+              </button>
+              <button type="button" onclick="saveInvoiceChanges()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Save & Apply Changes to Bill
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2434,7 +2439,7 @@
   <!-- ==============================================================================
        MODAL: COMPANY & BANK ACCOUNT SETTINGS
        ============================================================================== -->
-  <div id="modal-company-settings" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+  <div id="modal-company-settings" class="fixed inset-0 z-[90] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto" style="z-index: 9999;">
     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
         <div class="flex items-center gap-2">
@@ -2522,7 +2527,7 @@
               </p>
               <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
                 <label class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer inline-flex items-center gap-1 shadow-xs transition">
-                  <i data-lucide="upload" class="w-3 h-3"></i> Upload Standee QR
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload Standee QR
                   <input type="file" id="set-bank-qr-file" accept="image/*" onchange="handleCustomQrUpload(event)" class="hidden">
                 </label>
                 <button type="button" id="btn-clear-custom-qr" onclick="clearCustomQrImage()" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-[10px] hidden">
@@ -2534,8 +2539,8 @@
           </div>
         </div>
         <div class="pt-2 flex justify-end gap-2">
-          <button type="button" onclick="closeCompanySettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Cancel</button>
-          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md">Save Settings</button>
+          <button type="button" onclick="closeCompanySettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md cursor-pointer">Save Settings</button>
         </div>
       </form>
     </div>
@@ -2547,9 +2552,9 @@
   <footer class="mt-auto border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">
     <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="font-bold text-slate-700">Sri Govinda's Food Products</span>
+        <span id="footer-company-name" class="font-bold text-slate-700">Sri Govinda's Food Products</span>
         <span>•</span>
-        <span class="font-mono text-[11px] text-slate-600 font-semibold">GSTIN: 29AFVPD7658B1Z1</span>
+        <span id="footer-company-gstin" class="font-mono text-[11px] text-slate-600 font-semibold">GSTIN: 29AFVPD7658B1Z1</span>
         <span>•</span>
         <span>Sales & Inventory Hub</span>
       </div>
@@ -2872,6 +2877,9 @@
               saveSalespeopleLocally();
             }
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'company_settings' }, async () => {
+            await fetchCompanySettingsFromServer();
+          })
           .subscribe();
 
       } catch (e) {
@@ -2948,6 +2956,8 @@
           console.warn("Salespeople table fetch note:", e);
         }
 
+        await fetchCompanySettingsFromServer();
+        updateCompanyBrandingUI();
         refreshAllUI();
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
@@ -5371,7 +5381,6 @@
         const saved = localStorage.getItem('sg_company_settings');
         if (saved) {
           const parsed = JSON.parse(saved);
-          // If legacy placeholder data exists, update with official company credentials
           if (parsed.address && parsed.address.includes("Food Industrial Area")) {
             delete parsed.address;
           }
@@ -5387,8 +5396,83 @@
       return DEFAULT_COMPANY_SETTINGS;
     }
 
-    function saveCompanySettings(settings) {
+    function updateCompanyBrandingUI() {
+      const s = getCompanySettings();
+      const footerName = document.getElementById('footer-company-name');
+      const footerGstin = document.getElementById('footer-company-gstin');
+      if (footerName) footerName.innerText = s.companyName;
+      if (footerGstin) footerGstin.innerText = `GSTIN: ${s.gstin}`;
+
+      // If invoice modal is open, re-render with updated bank details
+      if (currentViewingOrderId && document.getElementById('modal-invoice-view') && !document.getElementById('modal-invoice-view').classList.contains('hidden')) {
+        const o = orders.find(x => x.id === currentViewingOrderId) || latestOrder;
+        if (o) renderPrintableInvoiceCard(o);
+      }
+      // If statement modal is open, re-render with updated bank details
+      if (currentStatementCustomerId && document.getElementById('modal-statement-view') && !document.getElementById('modal-statement-view').classList.contains('hidden')) {
+        renderPrintableStatementCard(currentStatementCustomerId);
+      }
+      // If quotation modal is open, re-render
+      if (currentQuotationCustomerId && document.getElementById('modal-quotation-view') && !document.getElementById('modal-quotation-view').classList.contains('hidden')) {
+        renderPrintableQuotationCard();
+      }
+    }
+
+    async function saveCompanySettings(settings) {
       localStorage.setItem('sg_company_settings', JSON.stringify(settings));
+      updateCompanyBrandingUI();
+
+      // 1. Sync to server-side company_settings.json file (shared across port 3000 & 3001)
+      try {
+        await fetch('/api/company-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+      } catch (err) {
+        console.warn("Could not save to /api/company-settings:", err);
+      }
+
+      // 2. Sync to Supabase if available
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('company_settings').upsert([{ id: 'default', ...settings }]);
+        } catch (e) {
+          // Non-blocking
+        }
+      }
+    }
+
+    async function fetchCompanySettingsFromServer() {
+      try {
+        const res = await fetch('/api/company-settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            const current = getCompanySettings();
+            const merged = { ...current, ...data };
+            localStorage.setItem('sg_company_settings', JSON.stringify(merged));
+            updateCompanyBrandingUI();
+          }
+        }
+      } catch (err) {
+        console.warn("Server settings fetch note:", err);
+      }
+
+      // Also try fetching from Supabase if table exists
+      if (supabaseClient) {
+        try {
+          const { data } = await supabaseClient.from('company_settings').select('*').limit(1).maybeSingle();
+          if (data) {
+            const current = getCompanySettings();
+            delete data.id;
+            delete data.created_at;
+            const merged = { ...current, ...data };
+            localStorage.setItem('sg_company_settings', JSON.stringify(merged));
+            updateCompanyBrandingUI();
+          }
+        } catch (e) {}
+      }
     }
 
     function openCompanySettingsModal() {
@@ -5411,7 +5495,11 @@
       }
       updateBankSettingsQrPreview();
 
-      document.getElementById('modal-company-settings').classList.remove('hidden');
+      const modal = document.getElementById('modal-company-settings');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.zIndex = '9999';
+      }
       if (window.lucide) lucide.createIcons();
     }
 
@@ -5482,7 +5570,7 @@
       updateBankSettingsQrPreview();
     }
 
-    function handleSaveCompanySettings(e) {
+    async function handleSaveCompanySettings(e) {
       e.preventDefault();
       const customQr = document.getElementById('set-custom-qr-data')?.value || '';
       const settings = {
@@ -5498,21 +5586,10 @@
         upiId: document.getElementById('set-bank-upi').value.trim() || DEFAULT_COMPANY_SETTINGS.upiId,
         customQrImage: customQr
       };
-      saveCompanySettings(settings);
+      await saveCompanySettings(settings);
       closeCompanySettingsModal();
-
-      // Instantly refresh any open modals with new bank details
-      if (document.getElementById('modal-quotation-view') && !document.getElementById('modal-quotation-view').classList.contains('hidden') && currentQuotationCustomerId) {
-        openQuotationModal(currentQuotationCustomerId);
-      }
-      if (document.getElementById('modal-invoice-view') && !document.getElementById('modal-invoice-view').classList.contains('hidden') && currentViewingOrderId) {
-        openInvoiceModal(currentViewingOrderId);
-      }
-      if (document.getElementById('modal-statement-view') && !document.getElementById('modal-statement-view').classList.contains('hidden') && currentStatementCustomerId) {
-        openCustomerStatementModal(currentStatementCustomerId);
-      }
-
-      alert("Official Company, Bank & QR Code details updated successfully!");
+      showToast("✅ Bank & Company Details Updated Successfully!");
+      alert("✅ Official Company, Bank & QR Code details updated successfully!");
     }
 
     // ==============================================================================
@@ -7624,6 +7701,8 @@
       setTab('dashboard');
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
+      await fetchCompanySettingsFromServer();
+      updateCompanyBrandingUI();
       await initSupabase();
     });
   </script>
