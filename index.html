@@ -81,9 +81,9 @@
         <div>
           <div class="flex items-center gap-1.5">
             <span class="font-extrabold text-sm tracking-tight text-white">Sri Govinda</span>
-            <button type="button" onclick="handleFooterAdminClick()" id="role-badge" class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Click to toggle Manager mode">
-              Sales Hub 🔒
-            </button>
+            <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Manager Portal
+            </span>
           </div>
           <div class="text-[10px] text-slate-400 flex items-center gap-1.5">
             <span id="cloud-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -92,35 +92,15 @@
         </div>
       </div>
 
-      <!-- User Account Persona Capsule & Dropdown Selector -->
-      <div class="flex items-center gap-1.5 flex-shrink-0">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 transition shadow-xs">
-          <div id="header-user-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0"></div>
-          <div class="flex flex-col text-left">
-            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Portal User</span>
-            <select id="header-portal-user-select" onchange="switchPortalUserFromDropdown(this.value)" class="bg-transparent text-white text-xs font-bold outline-none cursor-pointer pr-1 py-0.5" title="Switch Sales Official or Manager">
-              <!-- Dynamically populated by JS -->
-            </select>
-          </div>
-          <button type="button" onclick="openAccountSwitcherModal()" id="btn-account-switcher" class="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition cursor-pointer ml-0.5" title="View All User Profiles">
-            <i data-lucide="users" class="w-3.5 h-3.5"></i>
-          </button>
-          <!-- Hidden fallback elements for compatibility -->
-          <span id="header-user-name" class="hidden">Sales Official 1</span>
-          <span id="header-user-role" class="hidden">Sales Official</span>
-          <span id="header-user-name-mobile" class="hidden">Official 1</span>
-        </div>
-      </div>
-
-      <!-- Navigation Tabs & Manager Controls -->
+      <!-- Navigation Tabs (All Pure Managerial Tabs, Always Directly Accessible) -->
       <nav class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-        <button onclick="setTab('dashboard')" id="nav-dashboard" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shrink-0">
+        <button onclick="setTab('dashboard')" id="nav-dashboard" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shrink-0">
           <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-          <span id="nav-dashboard-label" class="hidden sm:inline">Dashboard</span>
+          <span>Dashboard</span>
         </button>
         <button onclick="setTab('order')" id="nav-order" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
-          <span id="nav-order-label">One-Step Order</span>
+          <span>Order</span>
         </button>
         <button onclick="setTab('customers')" id="nav-customers" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
@@ -128,51 +108,27 @@
         </button>
         <button onclick="setTab('orders')" id="nav-orders" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
-          <span id="nav-orders-label">History</span>
+          <span>History</span>
         </button>
         <button onclick="setTab('samples')" id="nav-samples" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="gift" class="w-3.5 h-3.5"></i>
           <span>Samples</span>
         </button>
-
-        <!-- Inward Inventory Tab -->
-        <button onclick="handleNavTabClick('inward')" id="nav-inward" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Inward Stock & Warehouse Reconciliation">
-          <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <button onclick="setTab('inward')" id="nav-inward" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Inward Stock & Warehouse Reconciliation">
+          <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i>
           <span>Inward</span>
-          <span id="lock-icon-inward" class="text-[10px]">🔒</span>
         </button>
-
-        <!-- Products Master Catalog Tab -->
-        <button onclick="handleNavTabClick('products')" id="nav-products" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Master Products, Packaging Units & Base MRP">
-          <i data-lucide="tag" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <button onclick="setTab('products')" id="nav-products" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Master Products, Packaging Units & Base MRP">
+          <i data-lucide="tag" class="w-3.5 h-3.5"></i>
           <span>Products</span>
-          <span id="lock-icon-products" class="text-[10px]">🔒</span>
         </button>
-
-        <!-- Routes & Beats Tab -->
-        <button onclick="handleNavTabClick('routes')" id="nav-routes" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Delivery Routes & Beats">
-          <i data-lucide="map" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <button onclick="setTab('routes')" id="nav-routes" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Delivery Routes & Beats">
+          <i data-lucide="map" class="w-3.5 h-3.5"></i>
           <span>Routes</span>
-          <span id="lock-icon-routes" class="text-[10px]">🔒</span>
         </button>
-
-        <!-- Sales Team Analytics Tab -->
-        <button onclick="handleNavTabClick('sales-team')" id="nav-sales-team" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-800 shrink-0" title="Sales Personnel Performance & Goals">
-          <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-400"></i>
-          <span>Sales Team</span>
-          <span id="lock-icon-sales-team" class="text-[10px]">🔒</span>
-        </button>
-
-        <!-- Direct Bank Account & UPI QR Code Management -->
         <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-emerald-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-emerald-500 shadow-xs cursor-pointer ml-1 shrink-0" title="Manage Official Bank Account & UPI QR Code">
           <i data-lucide="landmark" class="w-3.5 h-3.5 text-emerald-400"></i>
           <span>Bank & QR</span>
-        </button>
-
-        <!-- Dedicated Header Manager Login / Mode Toggle Button -->
-        <button type="button" onclick="handleFooterAdminClick()" id="btn-header-admin" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/90 shadow-xs cursor-pointer ml-1.5 shrink-0" title="Manager Login">
-          <i data-lucide="lock" id="header-admin-icon" class="w-3.5 h-3.5 text-indigo-400"></i>
-          <span id="header-admin-label">Manager Login</span>
         </button>
       </nav>
 
@@ -187,119 +143,7 @@
     <!-- 1. DASHBOARD VIEW -->
     <section id="view-dashboard" class="space-y-4">
 
-      <!-- ================= SALES OFFICIAL PERSONAL DASHBOARD (REP MODE) ================= -->
-      <div id="dash-rep-view" class="space-y-4 hidden">
-        <!-- Rep Mode Manager Switcher Banner -->
-        <div class="bg-indigo-950/80 border border-indigo-700/60 rounded-2xl p-3 px-4 flex items-center justify-between gap-3 flex-wrap text-white shadow-xs">
-          <div class="flex items-center gap-2.5">
-            <span class="p-1 rounded-lg bg-indigo-600 text-white shrink-0"><i data-lucide="shield" class="w-4 h-4"></i></span>
-            <div>
-              <span class="text-xs font-bold text-white block">Viewing as Sales Official</span>
-              <span class="text-[11px] text-indigo-200">Need to log Inward Stock or manage Products?</span>
-            </div>
-          </div>
-          <button type="button" onclick="handleFooterAdminClick()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer">
-            <i data-lucide="lock" class="w-3.5 h-3.5"></i> Enable Manager Mode
-          </button>
-        </div>
-
-        <!-- Welcome & Beat Attribution -->
-        <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-5 text-white shadow-md border border-slate-700/60 flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider mb-1.5">
-              <span>● Field Sales Portal</span>
-            </div>
-            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>Hello, <span id="rep-dash-name">Sales Official</span> 👋</span>
-            </h1>
-            <p class="text-xs text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-              <span>📍 Assigned Beat: <b id="rep-dash-route" class="text-white">Beat 1</b></span>
-              <span>•</span>
-              <span>📱 Phone: <span id="rep-dash-phone" class="font-mono font-bold text-slate-200">-</span></span>
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="setTab('order')" class="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i> Take Order Now
-            </button>
-          </div>
-        </div>
-
-        <!-- Sales Goals in Contrast (Monthly Target vs Achieved) -->
-        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
-                <i data-lucide="target" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <h3 class="font-black text-sm text-slate-900">Monthly Sales Goal & Performance</h3>
-                <p class="text-[11px] text-slate-500">Live contrast of target vs booked sales for current month</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Achievement Rate</span>
-              <span id="rep-dash-pct" class="font-mono font-black text-base text-indigo-600">0%</span>
-            </div>
-          </div>
-
-          <!-- Progress Bar -->
-          <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-200">
-            <div id="rep-dash-progress-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-
-          <!-- Target vs Actual Details -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
-            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Assigned Monthly Target</span>
-              <span id="rep-dash-target" class="font-mono font-black text-sm text-slate-900">₹0</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Achieved This Month</span>
-              <span id="rep-dash-achieved" class="font-mono font-black text-sm text-emerald-800">₹0</span>
-            </div>
-            <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block">Gap to Target</span>
-              <span id="rep-dash-remaining" class="font-mono font-black text-sm text-indigo-800">₹0</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4 Metric Cards for Field Officer -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Today Sales</span>
-            <div id="rep-dash-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
-          </div>
-          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Today Orders</span>
-            <div id="rep-dash-today-orders" class="font-mono font-black text-lg text-slate-900">0</div>
-          </div>
-          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Month Units Sold</span>
-            <div id="rep-dash-month-units" class="font-mono font-black text-lg text-indigo-600">0</div>
-          </div>
-          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Pending Deliveries</span>
-            <div id="rep-dash-pending-orders" class="font-mono font-black text-lg text-amber-600">0</div>
-          </div>
-        </div>
-
-        <!-- My Logged Orders Stream -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> My Recently Booked Orders
-            </h3>
-            <button onclick="setTab('orders')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">View All Orders →</button>
-          </div>
-          <div id="rep-recent-orders-list" class="space-y-2">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= MANAGER EXECUTIVE DASHBOARD (MANAGER MODE) ================= -->
+      <!-- ================= MANAGER EXECUTIVE DASHBOARD ================= -->
       <div id="dash-manager-view" class="space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
@@ -307,10 +151,10 @@
             <p class="text-xs text-slate-500">Live progress tracking, stock deductions, and executive order review</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="handleNavTabClick('inward')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="View & Log Inward Stock">
+            <button onclick="setTab('inward')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="View & Log Inward Stock">
               <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward Stock
             </button>
-            <button onclick="handleNavTabClick('products')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Master Product Database & Pricing">
+            <button onclick="setTab('products')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="Master Product Database & Pricing">
               <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
             </button>
             <button onclick="openSampleModal()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
@@ -318,41 +162,6 @@
             </button>
             <button onclick="setTab('order')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
               <i data-lucide="plus-circle" class="w-4 h-4"></i> New Order
-            </button>
-          </div>
-        </div>
-
-        <!-- Manager Access & Quick Shortcuts Strip -->
-        <div id="dashboard-manager-strip" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-900/60 text-white rounded-2xl p-3 px-4 flex items-center justify-between gap-3 flex-wrap shadow-xs">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
-              <i data-lucide="shield-check" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <div class="text-xs font-bold text-white flex items-center gap-2">
-                <span id="dash-manager-title">Manager Access & Controls</span>
-              </div>
-              <p id="dash-manager-desc" class="text-[11px] text-slate-300">
-                Access Inward Stock Entry, Master Products catalog, Custom Customer Pricing, and Route beats.
-              </p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" onclick="handleNavTabClick('inward')" class="px-2.5 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-              <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward
-            </button>
-            <button type="button" onclick="handleNavTabClick('products')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Products
-            </button>
-            <button type="button" onclick="handleNavTabClick('routes')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-              <i data-lucide="map" class="w-3.5 h-3.5"></i> Routes
-            </button>
-            <button type="button" onclick="handleNavTabClick('sales-team')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1">
-              <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Sales Team
-            </button>
-            <button type="button" onclick="handleFooterAdminClick()" id="btn-dash-manager-toggle" class="px-3.5 py-1.5 bg-white text-indigo-950 hover:bg-indigo-50 font-black text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer">
-              <i data-lucide="lock" id="dash-manager-icon" class="w-3.5 h-3.5 text-indigo-600"></i>
-              <span id="dash-manager-btn-text">Unlock Manager Mode</span>
             </button>
           </div>
         </div>
@@ -457,16 +266,16 @@
           </button>
         </div>
 
-        <!-- Active Sales Official Attribution Bar & Dropdown -->
+        <!-- Manager Order Booking Indicator -->
         <div class="p-2.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap text-xs">
-          <div class="flex items-center gap-2 flex-wrap">
-            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-            <span class="text-slate-300 font-semibold">Active Official:</span>
-            <select id="order-portal-user-select" onchange="switchPortalUserFromDropdown(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold outline-none cursor-pointer focus:border-emerald-500" title="Change Official for this Order / Portal">
-              <!-- Dynamically populated by JS -->
-            </select>
-            <span class="text-slate-400 text-[10px]">(<span id="order-rep-display-beat">Beat 1</span>)</span>
-            <span id="order-rep-display-name" class="hidden">Sales Official 1</span>
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-indigo-600 text-white"><i data-lucide="shield" class="w-3.5 h-3.5"></i></span>
+            <span class="text-slate-200 font-bold">Manager Order Booking</span>
+            <span class="text-slate-400 text-[10px]">• Central Depot</span>
+            <!-- Hidden elements for backward compatibility -->
+            <select id="order-portal-user-select" class="hidden"></select>
+            <span id="order-rep-display-beat" class="hidden">Central Depot</span>
+            <span id="order-rep-display-name" class="hidden">Manager</span>
           </div>
           <div id="order-active-quote-indicator" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             ✨ Customer Quotation Rates Active
@@ -966,65 +775,7 @@
       </div>
     </section>
 
-    <!-- 9. SALES OFFICIALS & PERFORMANCE ANALYTICS VIEW (MANAGER ONLY) -->
-    <section id="view-sales-team" class="hidden space-y-4">
-      <!-- Header -->
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <div class="flex items-center gap-2">
-            <h2 class="text-lg font-bold text-slate-900">Sales Personnel & Performance Analytics</h2>
-            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Manager Cockpit</span>
-          </div>
-          <p class="text-xs text-slate-500">Track individual sales officer targets, order metrics, and share personalized PWA links</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="openSalespersonEditModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer">
-            <i data-lucide="user-plus" class="w-4 h-4"></i> Add Sales Official
-          </button>
-        </div>
-      </div>
 
-      <!-- Timeframe Filter Toolbar -->
-      <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-2 flex-wrap">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider text-[10px] mr-1">Timeframe:</span>
-          <button type="button" onclick="setSalesTeamTimeframe('today')" id="btn-st-time-today" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📅 Today</button>
-          <button type="button" onclick="setSalesTeamTimeframe('week')" id="btn-st-time-week" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">🗓️ This Week</button>
-          <button type="button" onclick="setSalesTeamTimeframe('month')" id="btn-st-time-month" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer">📆 This Month</button>
-          <button type="button" onclick="setSalesTeamTimeframe('quarter')" id="btn-st-time-quarter" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📊 This Quarter</button>
-          <button type="button" onclick="setSalesTeamTimeframe('year')" id="btn-st-time-year" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">📈 This Year</button>
-          <button type="button" onclick="setSalesTeamTimeframe('all')" id="btn-st-time-all" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">All Time</button>
-        </div>
-        <div class="text-[11px] text-slate-500 font-mono" id="st-timeframe-label">
-          Showing: This Month
-        </div>
-      </div>
-
-      <!-- Team Aggregate KPI Summary Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Active Officers</span>
-          <div id="st-kpi-officers-count" class="font-mono font-black text-xl text-slate-900">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Team Revenue</span>
-          <div id="st-kpi-team-revenue" class="font-mono font-black text-xl text-emerald-600">₹0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Orders Booked</span>
-          <div id="st-kpi-team-orders" class="font-mono font-black text-xl text-slate-900">0</div>
-        </div>
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Units Dispatched</span>
-          <div id="st-kpi-team-units" class="font-mono font-black text-xl text-indigo-600">0</div>
-        </div>
-      </div>
-
-      <!-- Sales Officials Cards Grid -->
-      <div id="sales-team-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Rendered by JS -->
-      </div>
-    </section>
 
   </main>
 
@@ -1666,210 +1417,7 @@
         </button>
       </div>
     </div>
-  <!-- MODAL: ACCOUNT PERSONA SWITCHER -->
-  <div id="modal-account-switcher" class="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 hidden overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200 my-auto">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-            <i data-lucide="users" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-base text-slate-900">Switch Portal User Account</h3>
-            <p class="text-xs text-slate-400">Select your sales profile or switch to Manager</p>
-          </div>
-        </div>
-        <button onclick="closeAccountSwitcherModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
 
-      <!-- Primary Manager Mode Switcher Action -->
-      <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-900 to-slate-900 text-white border border-indigo-700/80 shadow-md">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shrink-0 shadow-inner">
-              <i data-lucide="shield-check" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <div class="font-extrabold text-sm text-white flex items-center gap-1.5">
-                <span>Switch to Manager Mode</span>
-              </div>
-              <div class="text-[11px] text-indigo-200 mt-0.5">Unlock Inward Stock, Products Database, Routes & Team Analytics</div>
-            </div>
-          </div>
-          <button type="button" onclick="switchToManagerFromSwitcher()" class="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs transition shadow-xs cursor-pointer shrink-0">
-            Unlock
-          </button>
-        </div>
-      </div>
-
-      <div class="space-y-2 pt-1">
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Or Switch Active Sales Representative:</span>
-        <div id="account-switcher-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: ADD / EDIT SALES OFFICIAL -->
-  <div id="modal-salesperson-edit" class="fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[92vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
-            <i data-lucide="user-plus" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-base text-slate-900" id="modal-sp-edit-title">Add Sales Official</h3>
-            <p class="text-xs text-slate-400">Configure profile, territory beat, sales targets & commission</p>
-          </div>
-        </div>
-        <button type="button" onclick="closeSalespersonEditModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <form id="form-salesperson-edit" onsubmit="handleSaveSalesperson(event)" class="space-y-3.5 text-xs flex-1 overflow-y-auto pr-1">
-        <!-- Officer ID & Full Name -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Officer Code / ID *</label>
-            <input type="text" id="sp-edit-id" required placeholder="SP-104" oninput="updateModalPwaPreview()" class="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-xl font-mono font-bold text-slate-800 outline-none focus:border-indigo-500">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Full Name *</label>
-            <input type="text" id="sp-edit-name" required placeholder="e.g. Sales Official Name" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold outline-none focus:border-indigo-500">
-          </div>
-        </div>
-
-        <!-- Phone & Email -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Mobile Phone (WhatsApp) *</label>
-            <input type="tel" id="sp-edit-phone" required placeholder="e.g. 9845012345" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Email Address</label>
-            <input type="email" id="sp-edit-email" placeholder="e.g. official@srigovinda.in" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
-          </div>
-        </div>
-
-        <!-- Route & Vehicle -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Assigned Distribution Route / Beat *</label>
-            <select id="sp-edit-route-select" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
-              <!-- Populated by JS -->
-            </select>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Vehicle / Field Mode</label>
-            <select id="sp-edit-vehicle" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:border-indigo-500">
-              <option value="Two-Wheeler">🛵 Two-Wheeler / Bike</option>
-              <option value="Tata Ace">🚚 Tata Ace / Small Commercial</option>
-              <option value="3-Wheeler">🛺 3-Wheeler Auto Cargo</option>
-              <option value="Walking Beat">🚶 Walking / Transit Beat</option>
-              <option value="Other / Courier">📦 Other / 3rd Party Delivery</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Monthly Target, Commission & Daily Order Target -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Monthly Target (₹) *</label>
-            <input type="number" id="sp-edit-target" min="0" step="5000" placeholder="150000" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Commission (%)</label>
-            <input type="number" id="sp-edit-commission" min="0" max="100" step="0.1" placeholder="2.5" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Daily Orders Goal</label>
-            <input type="number" id="sp-edit-daily-target" min="1" step="1" placeholder="5" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold outline-none focus:border-indigo-500">
-          </div>
-        </div>
-
-        <!-- Joining Date & Operational Address -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Date of Joining</label>
-            <input type="date" id="sp-edit-joining-date" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono font-semibold outline-none focus:border-indigo-500">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Address / Territory Notes</label>
-            <input type="text" id="sp-edit-address" placeholder="e.g. Yelahanka Old Town, Bengaluru" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-          </div>
-        </div>
-
-        <!-- Active Toggle -->
-        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
-          <div>
-            <span class="font-bold text-slate-800 text-xs block">Active Sales Officer</span>
-            <span class="text-[11px] text-slate-500 block">Active officers can book orders, access PWA portals, and appear in team leaderboards</span>
-          </div>
-          <input type="checkbox" id="sp-edit-active" checked class="w-5 h-5 accent-emerald-600 cursor-pointer">
-        </div>
-
-        <!-- PWA Assigned Link Live Preview -->
-        <div class="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl space-y-1">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
-            <i data-lucide="smartphone" class="w-3.5 h-3.5 text-indigo-600"></i> Assigned PWA Mobile Link
-          </div>
-          <p class="text-[11px] text-indigo-700 font-mono break-all" id="sp-edit-pwa-preview">
-            Loading link...
-          </p>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-2 pt-2 border-t border-slate-100 shrink-0">
-          <button type="button" onclick="closeSalespersonEditModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition cursor-pointer">
-            Cancel
-          </button>
-          <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition cursor-pointer shadow-md">
-            Save Sales Official
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: MANAGER PIN LOGIN -->
-  <div id="modal-pin" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden overflow-y-auto">
-    <div class="bg-slate-900 rounded-3xl shadow-2xl max-w-xs w-full p-6 space-y-4 border border-slate-800 text-center">
-      <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto">
-        <i data-lucide="lock" class="w-6 h-6"></i>
-      </div>
-      <div>
-        <h3 class="text-base font-extrabold text-white">Manager Access</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Enter 4-digit Master Security PIN</p>
-        <div class="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-950/90 border border-indigo-700/80 text-[11px] font-mono font-bold text-indigo-300">
-          <span>Default PIN:</span> <span class="text-white">3121</span>
-        </div>
-      </div>
-
-      <input type="password" id="pin-input" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') submitPin()" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-center font-mono font-black text-lg tracking-widest text-white outline-none focus:border-indigo-500">
-      
-      <div id="pin-error" class="text-xs font-bold text-rose-400 hidden">Incorrect Security PIN. (Default: 3121)</div>
-
-      <div class="grid grid-cols-2 gap-2 pt-1">
-        <button type="button" onclick="closePinModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
-          Cancel
-        </button>
-        <button type="button" onclick="submitPin()" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
-          Unlock
-        </button>
-      </div>
-
-      <div class="pt-1 border-t border-slate-800/80">
-        <button type="button" onclick="quickUnlockManager()" class="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-indigo-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5">
-          <i data-lucide="key-round" class="w-3.5 h-3.5 text-indigo-400"></i> Quick Unlock (Default PIN: 3121)
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ==============================================================================
        MODAL: DEDICATED CUSTOMER PRICE LIST & BULK PRICING (ALL PRODUCTS AS OPEN LIST)
@@ -3006,16 +2554,11 @@
         <span>Sales & Inventory Hub</span>
       </div>
 
-      <!-- Bank Details & Admin Manager Footer Links -->
+      <!-- Bank Details Footer Link -->
       <div class="flex items-center gap-3">
         <button onclick="openCompanySettingsModal()" class="font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer">
           <i data-lucide="landmark" class="w-3.5 h-3.5 text-indigo-600"></i>
           <span>Bank & GST Details</span>
-        </button>
-        <span>•</span>
-        <button id="btn-footer-admin" onclick="handleFooterAdminClick()" class="font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer">
-          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-          <span id="footer-admin-label">Manager Login</span>
         </button>
       </div>
     </div>
@@ -3052,30 +2595,8 @@
       }
     }
 
-    // 1. STATE MANAGEMENT (PIN STORED AS SECURE SHA-256 HASH)
-    const VALID_MASTER_PINS = ['3121', '2131', '1234', '0000'];
-    const VALID_MASTER_PIN_HASHES = [
-      '37af3f678ecf438491e342ee31996a7b294101b781c20221158017a1203db302', // 3121
-      'c49b0dece16c3a6b89be2938c6fef6d0c91783c0d1b4176a23a0fe6d7f8ad0ba'  // 2131
-    ];
-    const MASTER_PIN_HASH = VALID_MASTER_PIN_HASHES[0];
-
-    async function hashPin(val) {
-      const cleanVal = String(val || '').trim();
-      if (!cleanVal) return '';
-      try {
-        if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
-          const enc = new TextEncoder().encode(cleanVal);
-          const buf = await crypto.subtle.digest('SHA-256', enc);
-          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-      } catch (e) {
-        console.warn("crypto.subtle unavailable or error:", e);
-      }
-      return '';
-    }
-
-    let isManager = sessionStorage.getItem('sg_is_manager') === 'true';
+    // 1. STATE MANAGEMENT (PURE MANAGERIAL APP - NO PIN/SECURITY BARRIERS)
+    const isManager = true;
 
     // Sales Personnel Accounts Roster (Neutral until official forms are uploaded)
     const DEFAULT_SALESPEOPLE = [
@@ -3160,18 +2681,9 @@
       }
     }
 
-    let pendingManagerCallback = null;
     function requireManagerAuth(callback) {
-      if (isManager) {
-        if (callback) callback();
-        return true;
-      }
-      pendingManagerCallback = callback;
-      document.getElementById('pin-input').value = '';
-      document.getElementById('pin-error').classList.add('hidden');
-      document.getElementById('modal-pin').classList.remove('hidden');
-      setTimeout(() => document.getElementById('pin-input').focus(), 100);
-      return false;
+      if (callback) callback();
+      return true;
     }
 
     const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -3358,8 +2870,6 @@
             if (data && data.length > 0) {
               salespeople = data;
               saveSalespeopleLocally();
-              updateUserPersonaUI();
-              if (isManager) renderSalesTeamView();
             }
           })
           .subscribe();
@@ -3430,7 +2940,6 @@
           if (dbSalespeople && dbSalespeople.length > 0) {
             salespeople = dbSalespeople;
             saveSalespeopleLocally();
-            initUserSessionFromUrlOrStorage();
           } else if (salespeople.length > 0) {
             // Seed defaults to Supabase if table is currently empty
             supabaseClient.from('salespeople').upsert(salespeople).catch(() => {});
@@ -3455,32 +2964,16 @@
       renderInwardTables();
       renderProductsTable();
       renderRoutesGrid();
-      if (isManager) renderSalesTeamView();
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
     }
 
-    // 4. TAB NAVIGATION
+    // 4. TAB NAVIGATION (DIRECT MANAGERIAL ACCESS - NO LOCKS)
     function handleNavTabClick(tabId) {
-      const isMgrTab = ['inward', 'products', 'routes', 'sales-team'].includes(tabId);
-      if (isMgrTab && !isManager) {
-        requireManagerAuth(() => {
-          setTab(tabId);
-        });
-        return;
-      }
       setTab(tabId);
     }
 
     function setTab(tabId) {
-      const isMgrTab = ['products', 'routes', 'inward', 'sales-team'].includes(tabId);
-      if (!isManager && isMgrTab) {
-        requireManagerAuth(() => {
-          setTab(tabId);
-        });
-        return;
-      }
-
       document.querySelectorAll('section[id^="view-"]').forEach(el => el.classList.add('hidden'));
       const activeSec = document.getElementById(`view-${tabId}`);
       if (activeSec) activeSec.classList.remove('hidden');
@@ -3492,196 +2985,27 @@
       const activeBtn = document.getElementById(`nav-${tabId}`);
       if (activeBtn) {
         activeBtn.classList.remove('text-slate-400');
-        activeBtn.classList.add(isManager && isMgrTab ? 'bg-indigo-600' : 'bg-emerald-600', 'text-white');
+        activeBtn.classList.add('bg-indigo-600', 'text-white');
       }
 
-      if (tabId === 'order') syncPortalUserDropdowns();
       if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'order') {
+        populateDropdowns();
+        renderOrderCatalog();
+        calculateOrderTotals();
+      }
+      if (tabId === 'customers') renderCustomersTable();
+      if (tabId === 'orders') renderOrdersHistoryTable();
       if (tabId === 'inward') renderInwardTables();
       if (tabId === 'samples') renderSamplesTable();
       if (tabId === 'products') renderProductsTable();
       if (tabId === 'routes') renderRoutesGrid();
-      if (tabId === 'sales-team') renderSalesTeamView();
       if (window.lucide) lucide.createIcons();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 5. MANAGER PIN & SECURITY
-    function handleFooterAdminClick() {
-      if (isManager) {
-        if (confirm("Lock Manager controls and return to Sales Rep mode?")) {
-          isManager = false;
-          sessionStorage.setItem('sg_is_manager', 'false');
-          updateManagerUI();
-          updateUserPersonaUI();
-          showToast("Manager Mode Locked 🔒");
-          setTab('dashboard');
-        }
-      } else {
-        const input = document.getElementById('pin-input');
-        if (input) input.value = '';
-        const err = document.getElementById('pin-error');
-        if (err) err.classList.add('hidden');
-        const modal = document.getElementById('modal-pin');
-        if (modal) modal.classList.remove('hidden');
-        setTimeout(() => {
-          if (input) input.focus();
-        }, 100);
-      }
-    }
-
-    function closePinModal() {
-      const modal = document.getElementById('modal-pin');
-      if (modal) modal.classList.add('hidden');
-      pendingManagerCallback = null;
-    }
-
-    function quickUnlockManager() {
-      const input = document.getElementById('pin-input');
-      if (input) input.value = '3121';
-      submitPin();
-    }
-
-    async function submitPin() {
-      const input = document.getElementById('pin-input');
-      const entered = String(input ? input.value : '').trim();
-      const errEl = document.getElementById('pin-error');
-
-      let isValid = VALID_MASTER_PINS.includes(entered);
-
-      if (!isValid && entered) {
-        try {
-          const h = await hashPin(entered);
-          if (h && VALID_MASTER_PIN_HASHES.includes(h)) {
-            isValid = true;
-          }
-        } catch (e) {
-          console.warn("Hash validation error:", e);
-        }
-      }
-
-      if (isValid) {
-        if (errEl) errEl.classList.add('hidden');
-        isManager = true;
-        sessionStorage.setItem('sg_is_manager', 'true');
-        closePinModal();
-        updateManagerUI();
-        updateUserPersonaUI();
-        showToast("Manager Mode Unlocked 🔓");
-
-        if (pendingManagerCallback) {
-          const cb = pendingManagerCallback;
-          pendingManagerCallback = null;
-          try {
-            cb();
-          } catch (e) {
-            console.error("Manager pending callback error:", e);
-            setTab('dashboard');
-          }
-        } else {
-          setTab('dashboard');
-        }
-      } else {
-        if (errEl) errEl.classList.remove('hidden');
-        if (input) {
-          input.value = '';
-          input.focus();
-        }
-      }
-    }
-
+    // 5. MANAGER UI UPDATE
     function updateManagerUI() {
-      const navInward = document.getElementById('nav-inward');
-      const navProd = document.getElementById('nav-products');
-      const navRts = document.getElementById('nav-routes');
-      const navSalesTeam = document.getElementById('nav-sales-team');
-      const roleBadge = document.getElementById('role-badge');
-      const footerLabel = document.getElementById('footer-admin-label');
-      const footerBtn = document.getElementById('btn-footer-admin');
-      const headerLabel = document.getElementById('header-admin-label');
-      const headerBtn = document.getElementById('btn-header-admin');
-      const headerIcon = document.getElementById('header-admin-icon');
-      const navDashLabel = document.getElementById('nav-dashboard-label');
-      const navOrdersLabel = document.getElementById('nav-orders-label');
-
-      const lockInward = document.getElementById('lock-icon-inward');
-      const lockProd = document.getElementById('lock-icon-products');
-      const lockRts = document.getElementById('lock-icon-routes');
-      const lockSalesTeam = document.getElementById('lock-icon-sales-team');
-
-      const dashTitle = document.getElementById('dash-manager-title');
-      const dashDesc = document.getElementById('dash-manager-desc');
-      const dashBtn = document.getElementById('btn-dash-manager-toggle');
-      const dashBtnText = document.getElementById('dash-manager-btn-text');
-      const dashIcon = document.getElementById('dash-manager-icon');
-
-      // Keep all tabs visible in navigation
-      if (navInward) { navInward.classList.remove('hidden'); navInward.classList.add('flex'); }
-      if (navProd) { navProd.classList.remove('hidden'); navProd.classList.add('flex'); }
-      if (navRts) { navRts.classList.remove('hidden'); navRts.classList.add('flex'); }
-      if (navSalesTeam) { navSalesTeam.classList.remove('hidden'); navSalesTeam.classList.add('flex'); }
-
-      if (isManager) {
-        if (lockInward) lockInward.classList.add('hidden');
-        if (lockProd) lockProd.classList.add('hidden');
-        if (lockRts) lockRts.classList.add('hidden');
-        if (lockSalesTeam) lockSalesTeam.classList.add('hidden');
-
-        if (roleBadge) {
-          roleBadge.innerText = "Manager Hub 🔓";
-          roleBadge.className = "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 cursor-pointer transition";
-        }
-        if (footerLabel) footerLabel.innerText = "Manager Active (Lock / Exit)";
-        if (footerBtn) footerBtn.className = "font-bold text-xs text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer";
-        if (navDashLabel) navDashLabel.innerText = "Dashboard";
-        if (navOrdersLabel) navOrdersLabel.innerText = "History";
-
-        if (headerLabel) headerLabel.innerText = "Manager Mode (Lock)";
-        if (headerBtn) {
-          headerBtn.className = "px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-500 shadow-xs cursor-pointer ml-1.5 shrink-0";
-          headerBtn.title = "Manager Mode Active (Click to Lock / Exit)";
-        }
-        if (headerIcon) headerIcon.setAttribute('data-lucide', 'unlock');
-
-        if (dashTitle) dashTitle.innerText = "Manager Mode Active 🔓";
-        if (dashDesc) dashDesc.innerText = "Full managerial control: Log Inward Stock, edit Master Products, manage Customer Prices & Routes.";
-        if (dashBtn) {
-          dashBtn.className = "px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer";
-        }
-        if (dashBtnText) dashBtnText.innerText = "Lock / Exit Manager Mode";
-        if (dashIcon) dashIcon.setAttribute('data-lucide', 'lock');
-      } else {
-        if (lockInward) lockInward.classList.remove('hidden');
-        if (lockProd) lockProd.classList.remove('hidden');
-        if (lockRts) lockRts.classList.remove('hidden');
-        if (lockSalesTeam) lockSalesTeam.classList.remove('hidden');
-
-        if (roleBadge) {
-          roleBadge.innerText = currentSalesperson ? (currentSalesperson.name.split(' ')[0] + " Portal 🔒") : "Sales Hub 🔒";
-          roleBadge.className = "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer transition";
-        }
-        if (footerLabel) footerLabel.innerText = "Manager Login";
-        if (footerBtn) footerBtn.className = "font-bold text-xs text-slate-600 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer";
-        if (navDashLabel) navDashLabel.innerText = "My Dashboard";
-        if (navOrdersLabel) navOrdersLabel.innerText = "My Orders";
-
-        if (headerLabel) headerLabel.innerText = "Manager Login";
-        if (headerBtn) {
-          headerBtn.className = "px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-indigo-300 hover:text-white bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-600/90 shadow-xs cursor-pointer ml-1.5 shrink-0";
-          headerBtn.title = "Manager Login";
-        }
-        if (headerIcon) headerIcon.setAttribute('data-lucide', 'lock');
-
-        if (dashTitle) dashTitle.innerText = "Manager Access & Controls";
-        if (dashDesc) dashDesc.innerText = "Access Inward Stock Entry, Master Products catalog, Custom Customer Pricing, and Route beats.";
-        if (dashBtn) {
-          dashBtn.className = "px-3.5 py-1.5 bg-white text-indigo-950 hover:bg-indigo-50 font-black text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer";
-        }
-        if (dashBtnText) dashBtnText.innerText = "Unlock Manager Mode";
-        if (dashIcon) dashIcon.setAttribute('data-lucide', 'lock');
-      }
-
-      updateUserPersonaUI();
       renderCustomersTable();
       renderSamplesTable();
       renderOrdersHistoryTable();
@@ -3690,17 +3014,7 @@
 
     // 6. DASHBOARD VIEW LOGIC
     function renderDashboard() {
-      const repView = document.getElementById('dash-rep-view');
       const mgrView = document.getElementById('dash-manager-view');
-
-      if (!isManager && currentSalesperson) {
-        if (repView) repView.classList.remove('hidden');
-        if (mgrView) mgrView.classList.add('hidden');
-        renderRepPersonalDashboard();
-        return;
-      }
-
-      if (repView) repView.classList.add('hidden');
       if (mgrView) mgrView.classList.remove('hidden');
 
       const todayStr = new Date().toISOString().split('T')[0];
@@ -3881,15 +3195,11 @@
         }
       }
 
-      // Rep attribution banner
+      // Manager attribution banner
       const repDisplayName = document.getElementById('order-rep-display-name');
       const repDisplayBeat = document.getElementById('order-rep-display-beat');
-      if (repDisplayName) {
-        repDisplayName.innerText = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager' : 'Sales Official');
-      }
-      if (repDisplayBeat) {
-        repDisplayBeat.innerText = currentSalesperson ? (currentSalesperson.assignedRoute || 'Field Beat') : 'Central Depot';
-      }
+      if (repDisplayName) repDisplayName.innerText = 'Manager';
+      if (repDisplayBeat) repDisplayBeat.innerText = 'Central Depot';
 
       renderOrderCatalog();
       calculateOrderTotals();
@@ -4119,8 +3429,8 @@
       const statusTag = (deliveryStage === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
       const notes = rawNotes ? (rawNotes + ' ' + statusTag) : statusTag;
 
-      const activeRepName = currentSalesperson ? currentSalesperson.name : (isManager ? 'Manager' : 'Sales Official');
-      const activeRepId = currentSalesperson ? currentSalesperson.id : null;
+      const activeRepName = 'Manager';
+      const activeRepId = null;
 
       const orderRecord = {
         id: orderId,
@@ -5327,23 +4637,6 @@
       const filtered = orders.filter(o => {
         const status = getOrderStatus(o);
         if (currentOrdersStatusFilter !== 'all' && status !== currentOrdersStatusFilter) return false;
-
-        // In field sales rep mode, show rep's own orders
-        if (!isManager && currentSalesperson) {
-          const hasAnyRepOrders = orders.some(ord => 
-            (ord.repId && ord.repId === currentSalesperson.id) || 
-            (ord.repName && ord.repName.toLowerCase() === currentSalesperson.name.toLowerCase())
-          );
-          if (hasAnyRepOrders) {
-            const isRepMatch = (o.repId && o.repId === currentSalesperson.id) || 
-                               (o.repName && o.repName.toLowerCase() === currentSalesperson.name.toLowerCase());
-            if (!isRepMatch) return false;
-          } else if (currentSalesperson.assignedRoute && currentSalesperson.assignedRoute !== 'General Beat') {
-            if (o.dispatchRoute && !o.dispatchRoute.toLowerCase().includes(currentSalesperson.assignedRoute.toLowerCase())) {
-              return false;
-            }
-          }
-        }
 
         return !q || o.id.toLowerCase().includes(q) || o.buyerName.toLowerCase().includes(q) || (o.dispatchRoute && o.dispatchRoute.toLowerCase().includes(q)) || (o.repName && o.repName.toLowerCase().includes(q));
       });
@@ -8310,804 +7603,14 @@
     }
 
     // ==============================================================================
-    // 18. SALES PERSONNEL PWA PORTALS & PERFORMANCE COCKPIT
+    // 18. INITIALIZATION & STUBS (PURE MANAGERIAL ACCESS)
     // ==============================================================================
-
-    function getSalespersonSlug(sp) {
-      if (!sp) return 'salesRep';
-      if (sp.slug) return sp.slug;
-      const firstName = (sp.name || 'rep').trim().split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '');
-      return 'sales' + (firstName ? (firstName.charAt(0).toUpperCase() + firstName.slice(1)) : (sp.id || 'rep'));
-    }
-
-    function getSalespersonPwaUrl(spId) {
-      const sp = salespeople.find(s => s.id === spId);
-      const slug = sp ? getSalespersonSlug(sp) : ('sales' + spId);
-      const origin = window.location.origin;
-      return `${origin}/${slug}`;
-    }
-
     function initUserSessionFromUrlOrStorage() {
-      let path = window.location.pathname.replace(/^\/+|\/+$/g, '');
-      if (path === 'index.html') path = '';
-
-      const params = new URLSearchParams(window.location.search);
-      const repParam = params.get('rep') || params.get('salesperson') || params.get('sp');
-      const managerParam = params.get('manager');
-
-      // 1. MATCH BY DEDICATED SALES SUBPAGE PATH: http://localhost:3000/salesOfficial1, etc.
-      let matchedRep = null;
-      if (path) {
-        const cleanPath = path.toLowerCase();
-        matchedRep = salespeople.find(s => {
-          const sSlug = getSalespersonSlug(s).toLowerCase();
-          const sName = s.name.toLowerCase().replace(/\s+/g, '');
-          const sId = (s.id || '').toLowerCase();
-          return cleanPath === sSlug ||
-                 cleanPath === ('sales' + sName) ||
-                 cleanPath === sName ||
-                 cleanPath === sId ||
-                 (cleanPath.startsWith('sales') && s.name.toLowerCase().includes(cleanPath.replace(/^sales/, '')));
-        });
-
-        // Auto-register if new official accessed by direct path e.g. /salesOfficial
-        if (!matchedRep && cleanPath.startsWith('sales') && cleanPath.length > 5) {
-          const rawName = path.slice(5);
-          const capitalized = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-          let nextNum = 101;
-          salespeople.forEach(s => {
-            const match = (s.id || '').match(/SP-(\d+)/i);
-            if (match) {
-              const num = parseInt(match[1]);
-              if (num >= nextNum) nextNum = num + 1;
-            }
-          });
-          matchedRep = {
-            id: 'SP-' + nextNum,
-            name: capitalized,
-            slug: path,
-            phone: '',
-            assignedRoute: 'General Beat',
-            monthlyTarget: 150000,
-            active: true
-          };
-          salespeople.push(matchedRep);
-          saveSalespeopleLocally();
-        }
-      }
-
-      // 2. MATCH BY QUERY PARAM: ?rep=
-      if (!matchedRep && repParam) {
-        const cleanQuery = repParam.trim().toLowerCase();
-        matchedRep = salespeople.find(s => 
-          (s.id && s.id.toLowerCase() === cleanQuery) || 
-          (s.name && s.name.toLowerCase().includes(cleanQuery)) ||
-          (getSalespersonSlug(s).toLowerCase() === cleanQuery)
-        );
-      }
-
-      // If matched a dedicated sales subpage:
-      if (matchedRep) {
-        currentSalesperson = matchedRep;
-        localStorage.setItem('sg_current_salesperson_id', matchedRep.id);
-        isManager = false;
-        sessionStorage.setItem('sg_is_manager', 'false');
-        updateUserPersonaUI();
-        setTab('order'); // Open directly into One-Step Order Entry!
-        return;
-      }
-
-      // 3. HOME / MASTER PAGE:
-      const isAlreadyAuthed = sessionStorage.getItem('sg_is_manager') === 'true';
-      if (isAlreadyAuthed) {
-        isManager = true;
-        updateUserPersonaUI();
-        setTab('dashboard');
-      } else {
-        const savedRepId = localStorage.getItem('sg_current_salesperson_id');
-        if (savedRepId) {
-          currentSalesperson = salespeople.find(s => s.id === savedRepId) || salespeople[0];
-        } else if (salespeople.length > 0) {
-          currentSalesperson = salespeople[0];
-          localStorage.setItem('sg_current_salesperson_id', currentSalesperson.id);
-        }
-        isManager = false;
-        updateUserPersonaUI();
-        setTab('dashboard');
-
-        if (managerParam === '1' || managerParam === 'true') {
-          setTimeout(() => handleFooterAdminClick(), 200);
-        }
-      }
-    }
-
-    function updateUserPersonaUI() {
-      const dotEl = document.getElementById('header-user-status-dot');
-      const nameEl = document.getElementById('header-user-name');
-      const nameMobEl = document.getElementById('header-user-name-mobile');
-      const roleEl = document.getElementById('header-user-role');
-      const orderRepNameEl = document.getElementById('order-rep-display-name');
-      const orderRepBeatEl = document.getElementById('order-rep-display-beat');
-      const repDashNameEl = document.getElementById('rep-dash-name');
-      const repDashRouteEl = document.getElementById('rep-dash-route');
-      const repDashPhoneEl = document.getElementById('rep-dash-phone');
-
-      if (isManager) {
-        if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-indigo-400 ring-2 ring-indigo-400/20 flex-shrink-0";
-        if (nameEl) nameEl.innerText = "Manager";
-        if (nameMobEl) nameMobEl.innerText = "Manager";
-        if (roleEl) roleEl.innerText = "Manager • All Routes";
-        if (orderRepNameEl) orderRepNameEl.innerText = "Manager";
-        if (orderRepBeatEl) orderRepBeatEl.innerText = "All Routes";
-        document.title = "Sri Govinda — Manager Cockpit";
-      } else if (currentSalesperson) {
-        if (dotEl) dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-400/20 flex-shrink-0";
-        if (nameEl) nameEl.innerText = currentSalesperson.name || "Sales Official";
-        if (nameMobEl) nameMobEl.innerText = currentSalesperson.name || "Official";
-        if (roleEl) roleEl.innerText = `Sales Official • ${currentSalesperson.assignedRoute || 'General Beat'}`;
-        if (orderRepNameEl) orderRepNameEl.innerText = currentSalesperson.name || "Sales Official";
-        if (orderRepBeatEl) orderRepBeatEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
-        if (repDashNameEl) repDashNameEl.innerText = currentSalesperson.name || "Sales Official";
-        if (repDashRouteEl) repDashRouteEl.innerText = currentSalesperson.assignedRoute || 'General Beat';
-        if (repDashPhoneEl) repDashPhoneEl.innerText = currentSalesperson.phone || '-';
-        document.title = `Sri Govinda — ${currentSalesperson.name || "Sales Official"} (Sales Portal)`;
-      }
-      populatePortalUserDropdowns();
-    }
-
-    function populatePortalUserDropdowns() {
-      const headerSelect = document.getElementById('header-portal-user-select');
-      const orderSelect = document.getElementById('order-portal-user-select');
-
-      const optionsHtml = salespeople.map(sp => {
-        return `<option value="${escapeHtml(sp.id)}">👤 ${escapeHtml(sp.name || 'Sales Official')} (${escapeHtml(sp.assignedRoute || 'Beat')})</option>`;
-      }).join('') + `<option value="manager">🔒 Manager Mode</option>`;
-
-      const currentVal = isManager ? 'manager' : (currentSalesperson ? currentSalesperson.id : (salespeople[0] ? salespeople[0].id : ''));
-
-      if (headerSelect) {
-        headerSelect.innerHTML = optionsHtml;
-        if (currentVal) headerSelect.value = currentVal;
-      }
-      if (orderSelect) {
-        orderSelect.innerHTML = optionsHtml;
-        if (currentVal) orderSelect.value = currentVal;
-      }
-    }
-
-    function switchPortalUserFromDropdown(val) {
-      if (val === 'manager') {
-        if (isManager) return;
-        requireManagerAuth(() => {
-          populatePortalUserDropdowns();
-          setTab('dashboard');
-        });
-        setTimeout(() => syncPortalUserDropdowns(), 20);
-        return;
-      }
-
-      const sp = salespeople.find(s => s.id === val);
-      if (!sp) return;
-
-      isManager = false;
-      sessionStorage.setItem('sg_is_manager', 'false');
-      currentSalesperson = sp;
-      localStorage.setItem('sg_current_salesperson_id', sp.id);
-
-      updateManagerUI();
-      updateUserPersonaUI();
-      syncPortalUserDropdowns();
       setTab('dashboard');
-      showToast(`Active Profile: ${sp.name || 'Sales Official'}`);
     }
-
-    function syncPortalUserDropdowns() {
-      const currentVal = isManager ? 'manager' : (currentSalesperson ? currentSalesperson.id : '');
-      const headerSelect = document.getElementById('header-portal-user-select');
-      const orderSelect = document.getElementById('order-portal-user-select');
-      if (headerSelect && currentVal) headerSelect.value = currentVal;
-      if (orderSelect && currentVal) orderSelect.value = currentVal;
-    }
-
-    function openAccountSwitcherModal() {
-      renderAccountSwitcherList();
-      const m = document.getElementById('modal-account-switcher');
-      if (m) m.classList.remove('hidden');
-    }
-
-    function closeAccountSwitcherModal() {
-      const m = document.getElementById('modal-account-switcher');
-      if (m) m.classList.add('hidden');
-    }
-
-    function renderAccountSwitcherList() {
-      const container = document.getElementById('account-switcher-list');
-      if (!container) return;
-
-      if (salespeople.length === 0) {
-        container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No sales officers registered yet.</div>`;
-        return;
-      }
-
-      container.innerHTML = salespeople.map(sp => {
-        const isSelected = (!isManager && currentSalesperson && currentSalesperson.id === sp.id);
-        const initials = (sp.name || 'SP').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        return `
-          <div onclick="selectSalespersonAccount('${sp.id}')" class="p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-3 ${
-            isSelected
-              ? 'bg-emerald-50 border-emerald-500 shadow-xs ring-1 ring-emerald-500'
-              : 'bg-white hover:bg-slate-50 border-slate-200'
-          }">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs flex-shrink-0 ${
-                isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
-              }">
-                ${initials}
-              </div>
-              <div>
-                <div class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                  <span>${escapeHtml(sp.name)}</span>
-                  ${isSelected ? `<span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">Active</span>` : ''}
-                  ${sp.active === false ? `<span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-rose-100 text-rose-700">Inactive</span>` : ''}
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono mt-0.5">
-                  📍 ${escapeHtml(sp.assignedRoute || 'General Beat')} • 📱 ${escapeHtml(sp.phone || '-')}
-                </div>
-                <div class="text-[10px] text-slate-400">
-                  Target: ${formatINR(sp.monthlyTarget || 0)} / mo
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 text-xs font-bold ${isSelected ? 'text-emerald-600' : 'text-slate-400'}">
-              <span>${isSelected ? 'Current' : 'Switch'}</span>
-              <i data-lucide="chevron-right" class="w-4 h-4"></i>
-            </div>
-          </div>
-        `;
-      }).join('');
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function selectSalespersonAccount(spId) {
-      const sp = salespeople.find(s => s.id === spId);
-      if (!sp) return;
-      isManager = false;
-      sessionStorage.setItem('sg_is_manager', 'false');
-      currentSalesperson = sp;
-      localStorage.setItem('sg_current_salesperson_id', sp.id);
-      closeAccountSwitcherModal();
-      updateManagerUI();
-      updateUserPersonaUI();
-      syncPortalUserDropdowns();
-      setTab('dashboard');
-      showToast(`Active Profile: ${sp.name || 'Sales Official'}`);
-    }
-
-    function switchToManagerFromSwitcher() {
-      closeAccountSwitcherModal();
-      handleFooterAdminClick();
-    }
-
-    function renderRepPersonalDashboard() {
-      if (!currentSalesperson) return;
-
-      const now = new Date();
-      const curMonthStr = now.toISOString().slice(0, 7);
-      const todayStr = now.toISOString().slice(0, 10);
-
-      // Filter rep orders
-      const repOrders = orders.filter(o => 
-        (o.repId && o.repId === currentSalesperson.id) ||
-        (o.repName && o.repName.toLowerCase() === currentSalesperson.name.toLowerCase())
-      );
-
-      const monthOrders = repOrders.filter(o => o.date && o.date.startsWith(curMonthStr));
-      const monthAchieved = monthOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
-      const target = Number(currentSalesperson.monthlyTarget || 150000);
-      const remaining = Math.max(0, target - monthAchieved);
-      const pct = Math.min(100, Math.round((monthAchieved / (target || 1)) * 100));
-
-      const todayOrders = repOrders.filter(o => o.date === todayStr);
-      const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
-      const monthUnits = monthOrders.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
-      const pendingOrders = repOrders.filter(o => getOrderStatus(o) === 'Pending Delivery').length;
-
-      const pctEl = document.getElementById('rep-dash-pct');
-      const barEl = document.getElementById('rep-dash-progress-bar');
-      const targetEl = document.getElementById('rep-dash-target');
-      const achievedEl = document.getElementById('rep-dash-achieved');
-      const remainingEl = document.getElementById('rep-dash-remaining');
-      const todaySalesEl = document.getElementById('rep-dash-today-sales');
-      const todayOrdersEl = document.getElementById('rep-dash-today-orders');
-      const monthUnitsEl = document.getElementById('rep-dash-month-units');
-      const pendingOrdersEl = document.getElementById('rep-dash-pending-orders');
-
-      if (pctEl) pctEl.innerText = `${pct}%`;
-      if (barEl) barEl.style.width = `${pct}%`;
-      if (targetEl) targetEl.innerText = formatINR(target);
-      if (achievedEl) achievedEl.innerText = formatINR(monthAchieved);
-      if (remainingEl) remainingEl.innerText = remaining === 0 ? "Target Achieved! 🎯" : formatINR(remaining);
-      if (todaySalesEl) todaySalesEl.innerText = formatINR(todaySales);
-      if (todayOrdersEl) todayOrdersEl.innerText = todayOrders.length;
-      if (monthUnitsEl) monthUnitsEl.innerText = `${monthUnits} units`;
-      if (pendingOrdersEl) pendingOrdersEl.innerText = pendingOrders;
-
-      const streamContainer = document.getElementById('rep-recent-orders-list');
-      if (streamContainer) {
-        const recent = repOrders.slice(0, 8);
-        if (recent.length === 0) {
-          streamContainer.innerHTML = `
-            <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <p class="text-xs">No orders logged under your account yet.</p>
-              <button type="button" onclick="setTab('order')" class="mt-2.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Take First Order
-              </button>
-            </div>
-          `;
-        } else {
-          streamContainer.innerHTML = recent.map(o => {
-            const isDelivered = (getOrderStatus(o) === 'Delivered');
-            return `
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 hover:bg-slate-100/70 transition">
-                <div>
-                  <div class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                    <span>${escapeHtml(o.buyerName)}</span>
-                    <span class="font-mono text-[10px] text-slate-400">#${o.id}</span>
-                  </div>
-                  <div class="text-[10px] text-slate-500 font-mono mt-0.5">
-                    ${o.date} ${o.time} • ${o.totalUnits} units • ${escapeHtml(o.paymentMode)}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="text-right">
-                    <div class="font-mono font-bold text-xs text-emerald-600">${formatINR(o.netPayable)}</div>
-                    <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
-                      isDelivered ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }">
-                      ${isDelivered ? 'Delivered' : 'Pending'}
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <button type="button" onclick="shareWhatsApp('${o.id}')" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" title="Send WhatsApp Bill">
-                      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button type="button" onclick="openInvoiceModal('${o.id}')" class="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" title="View Bill">
-                      <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function setSalesTeamTimeframe(tf) {
-      currentSalesTeamTimeframe = tf;
-      const timeframes = ['today', 'week', 'month', 'quarter', 'year', 'all'];
-      timeframes.forEach(t => {
-        const btn = document.getElementById(`btn-st-time-${t}`);
-        if (btn) {
-          if (t === tf) {
-            btn.className = "px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer";
-          } else {
-            btn.className = "px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer";
-          }
-        }
-      });
-
-      const labelEl = document.getElementById('st-timeframe-label');
-      if (labelEl) {
-        const labels = {
-          today: 'Showing: Today',
-          week: 'Showing: This Week (Last 7 Days)',
-          month: 'Showing: This Month',
-          quarter: 'Showing: This Quarter',
-          year: 'Showing: This Year',
-          all: 'Showing: All Time'
-        };
-        labelEl.innerText = labels[tf] || `Showing: ${tf}`;
-      }
-
-      renderSalesTeamView();
-    }
-
-    function filterOrdersBySalesTeamTimeframe(orderList, tf) {
-      const now = new Date();
-      const todayStr = now.toISOString().slice(0, 10);
-      const curMonthStr = now.toISOString().slice(0, 7);
-      const curYearStr = now.toISOString().slice(0, 4);
-
-      return orderList.filter(o => {
-        if (!o.date) return false;
-        if (tf === 'today') return o.date === todayStr;
-        if (tf === 'week') {
-          const orderDate = new Date(o.date);
-          const diffDays = (now - orderDate) / (1000 * 60 * 60 * 24);
-          return diffDays >= 0 && diffDays <= 7;
-        }
-        if (tf === 'month') return o.date.startsWith(curMonthStr);
-        if (tf === 'quarter') {
-          const curQuarter = Math.floor(now.getMonth() / 3);
-          const orderDate = new Date(o.date);
-          const orderQuarter = Math.floor(orderDate.getMonth() / 3);
-          return orderDate.getFullYear() === now.getFullYear() && orderQuarter === curQuarter;
-        }
-        if (tf === 'year') return o.date.startsWith(curYearStr);
-        return true;
-      });
-    }
-
-    function renderSalesTeamView() {
-      const tf = currentSalesTeamTimeframe;
-      const filteredOrders = filterOrdersBySalesTeamTimeframe(orders, tf);
-
-      const teamRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
-      const teamOrdersCount = filteredOrders.length;
-      const teamUnits = filteredOrders.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
-      const activeOfficers = salespeople.filter(s => s.active !== false).length;
-
-      const countEl = document.getElementById('st-kpi-officers-count');
-      const revEl = document.getElementById('st-kpi-team-revenue');
-      const ordEl = document.getElementById('st-kpi-team-orders');
-      const unitEl = document.getElementById('st-kpi-team-units');
-
-      if (countEl) countEl.innerText = activeOfficers;
-      if (revEl) revEl.innerText = formatINR(teamRevenue);
-      if (ordEl) ordEl.innerText = teamOrdersCount;
-      if (unitEl) unitEl.innerText = teamUnits;
-
-      const cardsContainer = document.getElementById('sales-team-cards-container');
-      if (!cardsContainer) return;
-
-      if (salespeople.length === 0) {
-        cardsContainer.innerHTML = `
-          <div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
-            <p class="text-sm font-semibold">No sales officials added yet.</p>
-            <button type="button" onclick="openSalespersonEditModal()" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
-              <i data-lucide="user-plus" class="w-4 h-4"></i> Add First Sales Official
-            </button>
-          </div>
-        `;
-        if (window.lucide) lucide.createIcons();
-        return;
-      }
-
-      cardsContainer.innerHTML = salespeople.map(sp => {
-        const repOrdersInTf = filteredOrders.filter(o => 
-          (o.repId && o.repId === sp.id) ||
-          (o.repName && o.repName.toLowerCase() === sp.name.toLowerCase())
-        );
-
-        const revenue = repOrdersInTf.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
-        const orderCount = repOrdersInTf.length;
-        const units = repOrdersInTf.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
-
-        const target = Number(sp.monthlyTarget || 150000);
-        let effectiveTarget = target;
-        if (tf === 'today') effectiveTarget = Math.round(target / 25);
-        else if (tf === 'week') effectiveTarget = Math.round(target / 4);
-        else if (tf === 'quarter') effectiveTarget = target * 3;
-        else if (tf === 'year') effectiveTarget = target * 12;
-
-        const pct = Math.min(100, Math.round((revenue / (effectiveTarget || 1)) * 100));
-        const pwaUrl = getSalespersonPwaUrl(sp.id);
-        const initials = (sp.name || 'SP').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
-        const vehicleBadge = sp.vehicleType === 'Tata Ace' ? '🚚 Tata Ace'
-          : sp.vehicleType === '3-Wheeler' ? '🛺 3-Wheeler'
-          : sp.vehicleType === 'Walking Beat' ? '🚶 Walking'
-          : '🛵 Two-Wheeler';
-
-        return `
-          <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-indigo-300 transition">
-            <!-- Rep Header -->
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-black text-sm flex-shrink-0">
-                  ${initials}
-                </div>
-                <div>
-                  <div class="font-bold text-sm text-slate-900 flex items-center gap-1.5 flex-wrap">
-                    <span>${escapeHtml(sp.name)}</span>
-                    ${sp.active !== false 
-                      ? `<span class="w-2 h-2 rounded-full bg-emerald-500" title="Active"></span>` 
-                      : `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-700">Inactive</span>`}
-                  </div>
-                  <div class="text-[11px] font-mono text-slate-500">
-                    📍 ${escapeHtml(sp.assignedRoute || 'General Beat')}
-                  </div>
-                  <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                    <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
-                      ${vehicleBadge}
-                    </span>
-                    ${sp.commissionPct ? `<span class="inline-flex items-center text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">${sp.commissionPct}% Comm.</span>` : ''}
-                    <span class="text-[9px] font-mono text-slate-400">ID: ${sp.id}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center gap-1">
-                <button type="button" onclick="openSalespersonEditModal('${sp.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer" title="Edit Official Profile">
-                  <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                </button>
-                <button type="button" onclick="deleteSalespersonConfirm('${sp.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" title="Remove Official">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Performance Progress & Target -->
-            <div class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Progress</span>
-                <span class="font-mono font-black text-indigo-600 text-xs">${pct}%</span>
-              </div>
-              <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
-              </div>
-              <div class="flex items-center justify-between text-[11px] font-mono pt-0.5">
-                <span class="text-slate-600 font-bold">${formatINR(revenue)}</span>
-                <span class="text-slate-400">Target: ${formatINR(effectiveTarget)}</span>
-              </div>
-            </div>
-
-            <!-- Key Metrics Grid -->
-            <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <span class="text-[9px] font-bold uppercase text-slate-400 block">Orders</span>
-                <span class="font-mono font-black text-slate-800 text-sm">${orderCount}</span>
-              </div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <span class="text-[9px] font-bold uppercase text-slate-400 block">Units</span>
-                <span class="font-mono font-black text-indigo-600 text-sm">${units}</span>
-              </div>
-              <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <span class="text-[9px] font-bold uppercase text-slate-400 block">Avg Order</span>
-                <span class="font-mono font-black text-emerald-600 text-sm">${orderCount > 0 ? formatINR(Math.round(revenue / orderCount)) : '₹0'}</span>
-              </div>
-            </div>
-
-            <!-- Contact & Territory Details -->
-            <div class="text-[10px] text-slate-500 space-y-0.5 px-1 font-mono">
-              <div class="flex items-center justify-between">
-                <span>📱 Phone: <b>${escapeHtml(sp.phone || '-')}</b></span>
-                <span>📅 Joined: ${escapeHtml(sp.joiningDate || '-')}</span>
-              </div>
-              ${sp.email ? `<div class="truncate">✉️ ${escapeHtml(sp.email)}</div>` : ''}
-              ${sp.address ? `<div class="truncate text-slate-400">🏠 ${escapeHtml(sp.address)}</div>` : ''}
-            </div>
-
-            <!-- PWA Sharing & Link Actions -->
-            <div class="pt-2 border-t border-slate-100 space-y-2">
-              <div class="flex items-center gap-1.5">
-                <button type="button" onclick="shareSalespersonPwaWhatsApp('${sp.id}')" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer" title="Send personalized PWA link to ${escapeHtml(sp.name)} via WhatsApp">
-                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> 📲 WhatsApp PWA
-                </button>
-                <button type="button" onclick="copySalespersonPwaLink('${sp.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer" title="Copy PWA Link to Clipboard">
-                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                </button>
-                <button type="button" onclick="selectSalespersonAccount('${sp.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer" title="Open this Officer's View">
-                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-              <div class="text-[9px] text-slate-400 truncate font-mono text-center" title="${pwaUrl}">
-                ${pwaUrl}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function updateModalPwaPreview() {
-      const idInput = document.getElementById('sp-edit-id');
-      const previewEl = document.getElementById('sp-edit-pwa-preview');
-      if (!idInput || !previewEl) return;
-      const spId = idInput.value.trim() || 'SP-101';
-      previewEl.innerText = getSalespersonPwaUrl(spId);
-    }
-
-    function openSalespersonEditModal(spId) {
-      const modal = document.getElementById('modal-salesperson-edit');
-      const titleEl = document.getElementById('modal-sp-edit-title');
-      const idEl = document.getElementById('sp-edit-id');
-      const nameEl = document.getElementById('sp-edit-name');
-      const phoneEl = document.getElementById('sp-edit-phone');
-      const emailEl = document.getElementById('sp-edit-email');
-      const targetEl = document.getElementById('sp-edit-target');
-      const commissionEl = document.getElementById('sp-edit-commission');
-      const dailyTargetEl = document.getElementById('sp-edit-daily-target');
-      const joiningDateEl = document.getElementById('sp-edit-joining-date');
-      const addressEl = document.getElementById('sp-edit-address');
-      const vehicleEl = document.getElementById('sp-edit-vehicle');
-      const activeEl = document.getElementById('sp-edit-active');
-      const routeSelect = document.getElementById('sp-edit-route-select');
-
-      if (routeSelect) {
-        const routeOptions = [
-          '<option value="General Beat">General Beat (All Areas)</option>',
-          ...routes.map(r => `<option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>`)
-        ];
-        routeSelect.innerHTML = routeOptions.join('');
-      }
-
-      if (spId) {
-        const sp = salespeople.find(s => s.id === spId);
-        if (!sp) return;
-        if (titleEl) titleEl.innerText = "Edit Sales Official Profile";
-        if (idEl) { idEl.value = sp.id; idEl.readOnly = true; idEl.classList.add('bg-slate-200'); }
-        if (nameEl) nameEl.value = sp.name || '';
-        if (phoneEl) phoneEl.value = sp.phone || '';
-        if (emailEl) emailEl.value = sp.email || '';
-        if (targetEl) targetEl.value = sp.monthlyTarget || 150000;
-        if (commissionEl) commissionEl.value = (sp.commissionPct !== undefined) ? sp.commissionPct : 2.5;
-        if (dailyTargetEl) dailyTargetEl.value = sp.dailyOrderTarget || 5;
-        if (joiningDateEl) joiningDateEl.value = sp.joiningDate || '';
-        if (addressEl) addressEl.value = sp.address || '';
-        if (vehicleEl && sp.vehicleType) vehicleEl.value = sp.vehicleType;
-        if (activeEl) activeEl.checked = (sp.active !== false);
-        if (routeSelect && sp.assignedRoute) routeSelect.value = sp.assignedRoute;
-      } else {
-        if (titleEl) titleEl.innerText = "Add New Sales Official";
-        let nextNum = 101;
-        salespeople.forEach(s => {
-          const match = (s.id || '').match(/SP-(\d+)/i);
-          if (match) {
-            const num = parseInt(match[1]);
-            if (num >= nextNum) nextNum = num + 1;
-          }
-        });
-        if (idEl) { idEl.value = 'SP-' + nextNum; idEl.readOnly = false; idEl.classList.remove('bg-slate-200'); }
-        if (nameEl) nameEl.value = '';
-        if (phoneEl) phoneEl.value = '';
-        if (emailEl) emailEl.value = '';
-        if (targetEl) targetEl.value = '150000';
-        if (commissionEl) commissionEl.value = '2.5';
-        if (dailyTargetEl) dailyTargetEl.value = '5';
-        if (joiningDateEl) joiningDateEl.value = new Date().toISOString().split('T')[0];
-        if (addressEl) addressEl.value = '';
-        if (vehicleEl) vehicleEl.value = "Two-Wheeler";
-        if (activeEl) activeEl.checked = true;
-        if (routeSelect) routeSelect.value = "General Beat";
-      }
-
-      updateModalPwaPreview();
-      if (modal) modal.classList.remove('hidden');
-    }
-
-    function closeSalespersonEditModal() {
-      const modal = document.getElementById('modal-salesperson-edit');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    async function handleSaveSalesperson(event) {
-      event.preventDefault();
-      const id = document.getElementById('sp-edit-id').value.trim();
-      const name = document.getElementById('sp-edit-name').value.trim();
-      const phone = document.getElementById('sp-edit-phone').value.trim();
-      const email = document.getElementById('sp-edit-email').value.trim();
-      const assignedRoute = document.getElementById('sp-edit-route-select').value;
-      const vehicleType = document.getElementById('sp-edit-vehicle').value;
-      const monthlyTarget = parseFloat(document.getElementById('sp-edit-target').value) || 150000;
-      const commissionPct = parseFloat(document.getElementById('sp-edit-commission').value) || 0;
-      const dailyOrderTarget = parseInt(document.getElementById('sp-edit-daily-target').value) || 5;
-      const joiningDate = document.getElementById('sp-edit-joining-date').value || new Date().toISOString().split('T')[0];
-      const address = document.getElementById('sp-edit-address').value.trim();
-      const active = document.getElementById('sp-edit-active').checked;
-
-      if (!id) { alert("Please provide a Sales Official Code/ID."); return; }
-      if (!name) { alert("Please provide the Sales Official's Full Name."); return; }
-      if (!phone) { alert("Please provide a valid Mobile Phone Number for WhatsApp."); return; }
-
-      const existingIdx = salespeople.findIndex(s => s.id === id);
-      const spRecord = {
-        id,
-        name,
-        phone,
-        email,
-        assignedRoute,
-        vehicleType,
-        monthlyTarget,
-        commissionPct,
-        dailyOrderTarget,
-        joiningDate,
-        address,
-        active
-      };
-
-      if (existingIdx >= 0) {
-        salespeople[existingIdx] = spRecord;
-      } else {
-        salespeople.push(spRecord);
-      }
-
-      saveSalespeopleLocally();
-
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('salespeople').upsert([spRecord]);
-        } catch (e) {
-          console.warn("Supabase salespeople sync warning:", e);
-        }
-      }
-
-      if (currentSalesperson && currentSalesperson.id === id) {
-        currentSalesperson = spRecord;
-      }
-
-      closeSalespersonEditModal();
-      renderSalesTeamView();
-      updateUserPersonaUI();
-    }
-
-    async function deleteSalespersonConfirm(spId) {
-      const sp = salespeople.find(s => s.id === spId);
-      if (!sp) return;
-      if (!confirm(`Are you sure you want to remove sales official "${sp.name}"?`)) return;
-
-      salespeople = salespeople.filter(s => s.id !== spId);
-      saveSalespeopleLocally();
-
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('salespeople').delete().eq('id', spId);
-        } catch (e) {
-          console.warn("Supabase salespeople delete warning:", e);
-        }
-      }
-
-      if (currentSalesperson && currentSalesperson.id === spId) {
-        currentSalesperson = salespeople[0] || null;
-        if (currentSalesperson) localStorage.setItem('sg_current_salesperson_id', currentSalesperson.id);
-      }
-
-      renderSalesTeamView();
-      updateUserPersonaUI();
-    }
-
-    function shareSalespersonPwaWhatsApp(spId) {
-      const sp = salespeople.find(s => s.id === spId);
-      if (!sp) return;
-
-      const pwaUrl = getSalespersonPwaUrl(sp.id);
-      const cleanPhone = (sp.phone || '').replace(/\D/g, '');
-      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
-
-      const text = 
-        `*SRI GOVINDA FIELD SALES PORTAL*\n\n` +
-        `Hello ${sp.name},\n` +
-        `Here is your dedicated Sri Govinda Sales & Billing Portal link for *${sp.assignedRoute || 'Field Sales'}*:\n\n` +
-        `👉 *${pwaUrl}*\n\n` +
-        `*How to install as an App on your phone (PWA):*\n` +
-        `1. Tap the link above to open in Chrome or Safari\n` +
-        `2. Tap the browser menu (⋮ or Share icon)\n` +
-        `3. Tap *"Add to Home Screen"* or *"Install App"*\n` +
-        `4. The app icon "Sri Govinda Sales" will appear on your phone screen!\n\n` +
-        `You can now book customer orders and generate instant WhatsApp bills right on the field!`;
-
-      const waUrl = phoneToUse 
-        ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}`
-        : `https://wa.me/?text=${encodeURIComponent(text)}`;
-
-      window.open(waUrl, '_blank');
-    }
-
-    function copySalespersonPwaLink(spId) {
-      const pwaUrl = getSalespersonPwaUrl(spId);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(pwaUrl).then(() => {
-          alert(`✅ PWA Link for ${spId} copied to clipboard!\n\n${pwaUrl}`);
-        }).catch(() => {
-          prompt("Copy PWA Link:", pwaUrl);
-        });
-      } else {
-        prompt("Copy PWA Link:", pwaUrl);
-      }
-    }
+    function updateUserPersonaUI() {}
+    function populatePortalUserDropdowns() {}
+    function syncPortalUserDropdowns() {}
 
     // 19. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
@@ -9118,7 +7621,7 @@
           .catch(err => console.warn('Service Worker registration skipped:', err));
       }
 
-      initUserSessionFromUrlOrStorage();
+      setTab('dashboard');
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
       await initSupabase();
