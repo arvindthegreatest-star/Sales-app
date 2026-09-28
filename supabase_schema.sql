@@ -117,11 +117,25 @@ CREATE TABLE IF NOT EXISTS salespeople (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   phone TEXT,
+  email TEXT,
   "assignedRoute" TEXT,
   "monthlyTarget" NUMERIC DEFAULT 150000,
+  "commissionPct" NUMERIC DEFAULT 2.5,
+  "vehicleType" TEXT DEFAULT 'Two-Wheeler',
+  "dailyOrderTarget" NUMERIC DEFAULT 5,
+  "joiningDate" TEXT,
+  address TEXT,
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Backward-compatibility column migrations for salespeople if table already exists
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "commissionPct" NUMERIC DEFAULT 2.5;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "vehicleType" TEXT DEFAULT 'Two-Wheeler';
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "dailyOrderTarget" NUMERIC DEFAULT 5;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "joiningDate" TEXT;
+ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS address TEXT;
 
 -- 2. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
