@@ -1821,9 +1821,6 @@
           <button type="button" onclick="toggleInvoiceManagerEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs flex items-center gap-1 shadow-xs transition" id="btn-toggle-invoice-editor" title="Manager Editor: Edit Bill of Supply fields and items">
             <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Bill
           </button>
-          <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1 transition" title="Update Official Bank Details & QR Code">
-            <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Bank & QR
-          </button>
           <button type="button" onclick="downloadInvoicePdf()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
           </button>
@@ -1975,18 +1972,13 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
-            <button type="button" onclick="openCompanySettingsModal()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="landmark" class="w-3.5 h-3.5 text-indigo-600"></i> Edit Bank & QR Details
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 flex-wrap">
+            <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition cursor-pointer">
+              Cancel
             </button>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="toggleInvoiceManagerEditor(false)" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition cursor-pointer">
-                Cancel
-              </button>
-              <button type="button" onclick="saveInvoiceChanges()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
-                <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Save & Apply Changes to Bill
-              </button>
-            </div>
+            <button type="button" onclick="saveInvoiceChanges()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Save & Apply Changes to Bill
+            </button>
           </div>
         </div>
 
@@ -2026,7 +2018,6 @@
             <div class="space-y-1 sm:text-right">
               <div><span class="font-bold uppercase text-[10px]">GST No:</span> <span id="invoice-cust-gstin" class="font-mono font-bold block">Unregistered / Retail</span></div>
               <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="invoice-route" class="font-bold block">-</span></div>
-              <div><span class="font-bold uppercase text-[10px]">Payment Mode:</span> <b id="invoice-pay-mode" class="font-mono font-black block">-</b></div>
             </div>
           </div>
 
@@ -2047,30 +2038,20 @@
             </tbody>
           </table>
 
-          <!-- Below Table: Terms, Banking, UPI QR, and Signature Box -->
+          <!-- Below Table: Terms & Signature Box -->
           <div class="border-2 border-black p-3 text-xs text-black grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Left: Payment Terms & Bank Details -->
-            <div class="space-y-2 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0">
+            <!-- Left: Terms & Conditions -->
+            <div class="space-y-2 border-b sm:border-b-0 sm:border-r border-black sm:pr-3 pb-3 sm:pb-0 flex flex-col justify-between">
               <div>
-                <div class="text-[10px] font-black uppercase tracking-wider">Payment Terms:</div>
-                <div class="font-bold text-xs">In favour of Sri Govinda Food Products</div>
-              </div>
-              <div class="space-y-0.5 text-[11px] font-mono">
-                <div>Bank: <b id="invoice-bank-name">State Bank of India</b></div>
-                <div>A/C Name: <b id="invoice-bank-acc-name">Sri Govinda Food Products</b></div>
-                <div>A/C No: <b id="invoice-bank-acc-num">38920194820</b></div>
-                <div>IFSC: <b id="invoice-bank-ifsc">SBIN0001234</b></div>
-                <div>UPI ID: <b id="invoice-bank-upi">9731988411@upi</b></div>
-              </div>
-              <div class="flex items-center gap-3 pt-1">
-                <div class="p-1 border border-black bg-white inline-block">
-                  <div id="invoice-upi-qrcode" class="w-[84px] h-[84px] flex items-center justify-center"></div>
-                </div>
-                <div class="text-[9px] font-bold text-black uppercase leading-tight space-y-1">
-                  <div>• Scan & Pay via UPI</div>
+                <div class="text-[10px] font-black uppercase tracking-wider mb-1.5">Terms & Conditions:</div>
+                <div class="text-[10px] font-bold text-black uppercase leading-relaxed space-y-1">
                   <div>• Dispute if any, subject to Bangalore Jurisdiction</div>
                   <div>• Goods once sold will not be taken back / or exchange</div>
+                  <div>• Composition taxable person, not eligible to collect tax on supplies</div>
                 </div>
+              </div>
+              <div class="text-[9px] text-slate-500 font-mono pt-2">
+                E. & O.E.
               </div>
             </div>
 
@@ -3584,7 +3565,6 @@
         `Total Units: *${o.totalUnits}*\n` +
         (o.extraRebate > 0 ? `Special Rebate: -${formatINR(o.extraRebate)}\n` : '') +
         `*NET AMOUNT: ${formatINR(o.netPayable)}*\n` +
-        `Payment Mode: *${o.paymentMode}*\n` +
         (userNotes ? `Notes: _${userNotes}_\n` : '') +
         `--------------------------------\n` +
         `Thank you for your business! Sri Govinda Food Products`;
@@ -6909,8 +6889,8 @@
       const custGstinEl = document.getElementById('invoice-cust-gstin');
       if (custGstinEl) custGstinEl.innerText = (custObj && custObj.gstin) ? custObj.gstin : 'Unregistered / Retail';
 
-      document.getElementById('invoice-route').innerText = (o.dispatchRoute || '-').split(':')[0];
-      document.getElementById('invoice-pay-mode').innerText = o.paymentMode;
+      const routeEl = document.getElementById('invoice-route');
+      if (routeEl) routeEl.innerText = (o.dispatchRoute || '-').split(':')[0];
 
       // Line items
       const tbody = document.getElementById('invoice-items-tbody');
@@ -6965,16 +6945,6 @@
       if (notesEl) {
         notesEl.innerText = cleanNotes ? `Delivery Notes: ${cleanNotes}` : '';
       }
-
-      // Bank Details
-      document.getElementById('invoice-bank-acc-name').innerText = settings.accountName;
-      document.getElementById('invoice-bank-name').innerText = settings.bankName;
-      document.getElementById('invoice-bank-acc-num').innerText = settings.accountNumber;
-      document.getElementById('invoice-bank-ifsc').innerText = settings.ifsc;
-      document.getElementById('invoice-bank-upi').innerText = settings.upiId;
-
-      // Dynamic UPI QR code with exact net payable amount!
-      generateUpiQrCode('invoice-upi-qrcode', settings.upiId, settings.companyName, o.netPayable, 'INV-' + o.id);
     }
 
     function toggleInvoiceManagerEditor(forceState = null) {
