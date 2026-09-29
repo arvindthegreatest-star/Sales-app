@@ -106,6 +106,11 @@
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
           <span>Customers</span>
         </button>
+        <button onclick="setTab('outstanding')" id="nav-outstanding" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Debtors Outstanding, Over-Limit & 2-Month Aged Bills">
+          <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-400"></i>
+          <span>Outstanding</span>
+          <span id="nav-outstanding-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white">0</span>
+        </button>
         <button onclick="setTab('orders')" id="nav-orders" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
           <span>History</span>
@@ -458,6 +463,197 @@
               </tr>
             </thead>
             <tbody id="customers-table-body" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================================
+         3B. OUTSTANDING, OVER-LIMIT & AGING DEBTORS HUB
+         ============================================================================== -->
+    <section id="view-outstanding" class="hidden space-y-4">
+      <!-- Section Header -->
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Debtors Outstanding & Aging Hub</h2>
+            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1">
+              <i data-lucide="shield-alert" class="w-3 h-3 text-rose-600"></i> Credit Risk Radar
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">Track total customer receivables, over-credit-limit breaches, and bills backlog beyond 2 months</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openQuickPaymentModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+            <i data-lucide="hand-coins" class="w-4 h-4"></i> + Collect Payment
+          </button>
+          <button type="button" onclick="exportOutstandingCsv()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Debtors & Aging Report to CSV">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i> Export CSV
+          </button>
+          <button type="button" onclick="shareDebtorsWhatsAppSummary()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Share Outstanding & Over-Limit Summary on WhatsApp">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp Summary
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Metric KPI Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <!-- Card 1: Total Receivables (Debtors) -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs cursor-pointer hover:border-indigo-300 transition" onclick="setOutstandingFilter('debtors')" title="Click to view all active debtors">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Outstanding</span>
+            <div class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i data-lucide="wallet-cards" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="outstanding-kpi-total" class="font-mono font-black text-xl text-slate-900">₹0</div>
+          <div id="outstanding-kpi-debtors-count" class="text-[10px] text-slate-500 mt-0.5">0 Active Debtors</div>
+        </div>
+
+        <!-- Card 2: Breached Beyond Credit Limit -->
+        <div class="bg-rose-50/70 rounded-2xl p-3.5 border border-rose-200 shadow-xs cursor-pointer hover:bg-rose-100/70 transition" onclick="setOutstandingFilter('overlimit')" title="Click to filter accounts over credit limit">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1">
+              <span>Over Credit Limit</span>
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            </span>
+            <div class="w-6 h-6 rounded-lg bg-rose-200 text-rose-800 flex items-center justify-center">
+              <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="outstanding-kpi-overlimit-amt" class="font-mono font-black text-xl text-rose-700">₹0</div>
+          <div id="outstanding-kpi-overlimit-count" class="text-[10px] font-bold text-rose-600 mt-0.5">0 Accounts Breached</div>
+        </div>
+
+        <!-- Card 3: Critical Backlog (> 60 Days / 2 Months) -->
+        <div class="bg-amber-50/70 rounded-2xl p-3.5 border border-amber-200 shadow-xs cursor-pointer hover:bg-amber-100/70 transition" onclick="setOutstandingFilter('backlog60')" title="Click to filter bills overdue by more than 60 days">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800">Backlog (> 2 Months)</span>
+            <div class="w-6 h-6 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center">
+              <i data-lucide="clock-alert" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="outstanding-kpi-backlog60-amt" class="font-mono font-black text-xl text-amber-800">₹0</div>
+          <div id="outstanding-kpi-backlog60-count" class="text-[10px] font-bold text-amber-700 mt-0.5">0 Accounts Overdue > 60d</div>
+        </div>
+
+        <!-- Card 4: Current Normal Cycle (<= 30 Days) -->
+        <div class="bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-200 shadow-xs cursor-pointer hover:bg-emerald-100/70 transition" onclick="setOutstandingFilter('current')" title="Click to view current cycle balances">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Current (0–30 Days)</span>
+            <div class="w-6 h-6 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="outstanding-kpi-current-amt" class="font-mono font-black text-xl text-emerald-800">₹0</div>
+          <div class="text-[10px] text-emerald-700 mt-0.5">Within normal cycle</div>
+        </div>
+
+        <!-- Card 5: Creditors / Advance Accounts -->
+        <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-100 transition" onclick="setOutstandingFilter('creditor')" title="Click to view Advance / Creditor accounts">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Creditors / Advances</span>
+            <div class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center">
+              <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="outstanding-kpi-creditors-amt" class="font-mono font-black text-xl text-slate-700">₹0</div>
+          <div id="outstanding-kpi-creditors-count" class="text-[10px] text-slate-500 mt-0.5">0 Advance Accounts</div>
+        </div>
+      </div>
+
+      <!-- Aging Buckets Matrix Bar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2.5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i> Bill Aging & Recovery Risk Distribution
+          </span>
+          <span class="text-[11px] font-semibold text-slate-400">Aging calculated from invoice delivery dates</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <!-- 0-30 Days -->
+          <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200 flex items-center justify-between cursor-pointer hover:bg-emerald-100/50 transition" onclick="setOutstandingFilter('current')">
+            <div>
+              <span class="text-[10px] font-bold uppercase text-emerald-800 block">Current (0–30 Days)</span>
+              <span id="aging-bar-current" class="font-mono font-black text-base text-emerald-900">₹0</span>
+            </div>
+            <span id="aging-pct-current" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">0%</span>
+          </div>
+          <!-- 31-60 Days -->
+          <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-200 flex items-center justify-between cursor-pointer hover:bg-amber-100/50 transition" onclick="setOutstandingFilter('due30to60')">
+            <div>
+              <span class="text-[10px] font-bold uppercase text-amber-800 block">Due Soon (31–60 Days)</span>
+              <span id="aging-bar-30to60" class="font-mono font-black text-base text-amber-900">₹0</span>
+            </div>
+            <span id="aging-pct-30to60" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">0%</span>
+          </div>
+          <!-- > 60 Days / 2 Months Backlog -->
+          <div class="p-3 rounded-xl bg-rose-50/50 border border-rose-200 flex items-center justify-between cursor-pointer hover:bg-rose-100/50 transition" onclick="setOutstandingFilter('backlog60')">
+            <div>
+              <span class="text-[10px] font-black uppercase text-rose-800 block flex items-center gap-1">
+                <span>Critical Backlog (> 2 Months)</span>
+                <span class="text-[9px] bg-rose-600 text-white font-bold px-1.5 py-0.2 rounded-full">HIGH RISK</span>
+              </span>
+              <span id="aging-bar-over60" class="font-mono font-black text-base text-rose-900">₹0</span>
+            </div>
+            <span id="aging-pct-over60" class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Bar -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2 flex-1">
+          <div class="relative flex-1 max-w-sm">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="outstanding-search-input" oninput="renderOutstandingDashboard()" placeholder="Search by customer, phone, beat..." class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs w-full outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
+          </div>
+          <select id="outstanding-route-filter" onchange="renderOutstandingDashboard()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none">
+            <option value="all">All Delivery Beats</option>
+          </select>
+        </div>
+
+        <!-- Filter Badges -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" onclick="setOutstandingFilter('all')" id="flt-out-all" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
+            All Parties
+          </button>
+          <button type="button" onclick="setOutstandingFilter('debtors')" id="flt-out-debtors" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+            Debtors (Receivables)
+          </button>
+          <button type="button" onclick="setOutstandingFilter('overlimit')" id="flt-out-overlimit" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-rose-700 hover:bg-rose-50 transition">
+            🔴 Over Limit
+          </button>
+          <button type="button" onclick="setOutstandingFilter('backlog60')" id="flt-out-backlog60" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-amber-800 hover:bg-amber-50 transition">
+            ⚠️ > 2 Months Backlog
+          </button>
+          <button type="button" onclick="setOutstandingFilter('creditor')" id="flt-out-creditor" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+            Creditors / Advance
+          </button>
+          <button type="button" onclick="setOutstandingFilter('cleared')" id="flt-out-cleared" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition">
+            Cleared (₹0)
+          </button>
+        </div>
+      </div>
+
+      <!-- Debtors & Creditors Ledger Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Party / Store Details</th>
+                <th class="p-3">Classification</th>
+                <th class="p-3 text-right">Credit Limit</th>
+                <th class="p-3 text-right">Total Outstanding</th>
+                <th class="p-3 text-right">Beyond Limit</th>
+                <th class="p-3">Aged Backlog (> 2 Months)</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="outstanding-table-body" class="divide-y divide-slate-100">
               <!-- Populated by JS -->
             </tbody>
           </table>
@@ -2553,6 +2749,86 @@
   </div>
 
   <!-- ==============================================================================
+       MODAL: QUICK PAYMENT & UDHAAR SETTLEMENT RECEIPT
+       ============================================================================== -->
+  <div id="modal-quick-payment" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="hand-coins" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm text-slate-900">Collect Udhaar Payment</h3>
+            <p class="text-[11px] text-slate-400">Record customer settlement & update ledger</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeQuickPaymentModal()" class="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-quick-payment" onsubmit="event.preventDefault(); submitQuickPayment();" class="space-y-3">
+        <!-- Customer Select -->
+        <div>
+          <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Customer / Store *</label>
+          <select id="quick-pay-customer" onchange="onQuickPayCustomerChange()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-xs outline-none focus:ring-1 focus:ring-emerald-500">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <!-- Ledger Balance Snapshot -->
+        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-500 block">Current Outstanding</span>
+            <span id="quick-pay-current-due" class="font-mono font-black text-rose-600 text-base">₹0</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-500 block">Credit Limit</span>
+            <span id="quick-pay-credit-limit" class="font-mono font-bold text-slate-700 text-sm">₹50,000</span>
+          </div>
+        </div>
+
+        <!-- Amount Received -->
+        <div>
+          <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1 flex items-center justify-between">
+            <span>Amount Received (₹) *</span>
+            <span class="text-[10px] text-emerald-600 font-bold cursor-pointer hover:underline" onclick="fillQuickPayFullDue()">Clear Full Due</span>
+          </label>
+          <input type="number" id="quick-pay-amount" min="1" step="any" required oninput="calculateQuickPayBalance()" placeholder="e.g. 30000" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-mono font-black text-emerald-700 text-base outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <!-- Balance After Settlement Preview -->
+        <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+          <span class="font-bold text-emerald-900">New Outstanding After Payment:</span>
+          <span id="quick-pay-new-balance" class="font-mono font-black text-emerald-800 text-sm">₹0</span>
+        </div>
+
+        <!-- Payment Mode & Reference -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Payment Mode *</label>
+            <select id="quick-pay-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-xs outline-none">
+              <option value="UPI / QR">UPI / QR</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer (NEFT/IMPS)</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Reference / Note</label>
+            <input type="text" id="quick-pay-ref" placeholder="Txn ID / Cheque No" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Settlement & Deduct Udhaar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
        FOOTER (ADMIN LINK & BANK DETAILS AT BOTTOM)
        ============================================================================== -->
   <footer class="mt-auto border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">
@@ -3036,6 +3312,7 @@
         calculateOrderTotals();
       }
       if (tabId === 'customers') renderCustomersTable();
+      if (tabId === 'outstanding') renderOutstandingDashboard();
       if (tabId === 'orders') renderOrdersHistoryTable();
       if (tabId === 'inward') renderInwardTables();
       if (tabId === 'samples') renderSamplesTable();
@@ -3048,6 +3325,7 @@
     // 5. MANAGER UI UPDATE
     function updateManagerUI() {
       renderCustomersTable();
+      renderOutstandingDashboard();
       renderSamplesTable();
       renderOrdersHistoryTable();
       if (window.lucide) lucide.createIcons();
@@ -7936,6 +8214,670 @@
       const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
       const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank');
+    }
+
+    // ==============================================================================
+    // 17B. OUTSTANDING, OVER-LIMIT & AGING DEBTORS HUB LOGIC
+    // ==============================================================================
+    let paymentReceipts = [];
+    function loadPaymentReceiptsLocally() {
+      try {
+        const d = localStorage.getItem('sg_payment_receipts');
+        if (d) paymentReceipts = JSON.parse(d);
+      } catch(e) { paymentReceipts = []; }
+    }
+    function savePaymentReceiptsLocally() {
+      try {
+        localStorage.setItem('sg_payment_receipts', JSON.stringify(paymentReceipts));
+      } catch(e) {}
+    }
+    loadPaymentReceiptsLocally();
+
+    function getCustomerOutstandingBreakdown(cust) {
+      if (!cust) return null;
+      const totalDue = Number(cust.pendingUdhaar || 0);
+      const creditLimit = Number(cust.creditLimit || 50000);
+      const overLimit = Math.max(0, totalDue - creditLimit);
+      const isOverLimit = overLimit > 0;
+      const utilizationPct = creditLimit > 0 ? Math.round((totalDue / creditLimit) * 100) : (totalDue > 0 ? 100 : 0);
+
+      // Find customer's orders
+      const custOrders = orders.filter(o => o.buyerId === cust.id || o.buyerName === cust.name);
+      
+      let oldestBillDate = null;
+      let oldestBillDays = 0;
+      let oldestBillId = null;
+      let backlog60DaysAmount = 0;
+      let dues30To60DaysAmount = 0;
+      let current0To30DaysAmount = 0;
+      
+      const now = new Date();
+
+      // Check order balances
+      custOrders.forEach(o => {
+        const payInfo = getOrderPaymentBreakdown(o);
+        const billDue = Number(payInfo.balanceDue || 0);
+        if (billDue > 0) {
+          const bDate = new Date(o.date);
+          const days = !isNaN(bDate.getTime()) ? Math.floor((now.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          
+          if (!oldestBillDate || bDate < oldestBillDate) {
+            oldestBillDate = bDate;
+            oldestBillDays = days;
+            oldestBillId = o.id;
+          }
+
+          if (days >= 60) {
+            backlog60DaysAmount += billDue;
+          } else if (days > 30) {
+            dues30To60DaysAmount += billDue;
+          } else {
+            current0To30DaysAmount += billDue;
+          }
+        }
+      });
+
+      // If customer has pendingUdhaar but individual order unpaid sums don't cover the full balance
+      // (e.g. manual ledger entry, older legacy balance before app, or credit adjustment)
+      const trackedSum = backlog60DaysAmount + dues30To60DaysAmount + current0To30DaysAmount;
+      if (totalDue > 0 && trackedSum < totalDue) {
+        const diff = totalDue - trackedSum;
+        if (custOrders.length > 0) {
+          const sorted = [...custOrders].sort((a,b) => new Date(a.date) - new Date(b.date));
+          const earliest = sorted[0];
+          const eDate = new Date(earliest.date);
+          const days = !isNaN(eDate.getTime()) ? Math.floor((now.getTime() - eDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          if (days >= 60) backlog60DaysAmount += diff;
+          else if (days > 30) dues30To60DaysAmount += diff;
+          else current0To30DaysAmount += diff;
+          if (!oldestBillDays || days > oldestBillDays) {
+            oldestBillDays = days;
+            oldestBillDate = eDate;
+            oldestBillId = earliest.id;
+          }
+        } else {
+          current0To30DaysAmount += diff;
+        }
+      }
+
+      // Classification: Debtor vs Creditor vs Settled
+      let classification = 'Settled';
+      if (totalDue > 0) classification = 'Debtor (Receivable)';
+      else if (totalDue < 0) classification = 'Creditor (Advance Balance)';
+
+      return {
+        totalDue,
+        creditLimit,
+        overLimit,
+        isOverLimit,
+        utilizationPct,
+        oldestBillDate,
+        oldestBillDays,
+        oldestBillId,
+        backlog60DaysAmount,
+        dues30To60DaysAmount,
+        current0To30DaysAmount,
+        hasBacklog60: (backlog60DaysAmount > 0 || oldestBillDays >= 60),
+        classification,
+        isDebtor: totalDue > 0,
+        isCreditor: totalDue < 0,
+        isCleared: totalDue === 0
+      };
+    }
+
+    let currentOutstandingFilter = 'all';
+
+    function setOutstandingFilter(filterType) {
+      currentOutstandingFilter = filterType;
+
+      const btnMap = {
+        'all': 'flt-out-all',
+        'debtors': 'flt-out-debtors',
+        'overlimit': 'flt-out-overlimit',
+        'backlog60': 'flt-out-backlog60',
+        'current': null,
+        'due30to60': null,
+        'creditor': 'flt-out-creditor',
+        'cleared': 'flt-out-cleared'
+      };
+
+      Object.keys(btnMap).forEach(k => {
+        const id = btnMap[k];
+        if (id) {
+          const el = document.getElementById(id);
+          if (el) {
+            if (k === filterType) {
+              el.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition';
+            } else {
+              el.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+            }
+          }
+        }
+      });
+
+      renderOutstandingDashboard();
+    }
+
+    function renderOutstandingDashboard() {
+      const sec = document.getElementById('view-outstanding');
+      if (!sec) return;
+
+      // Populate Route filter options once
+      const routeSelect = document.getElementById('outstanding-route-filter');
+      if (routeSelect && routeSelect.options.length <= 1) {
+        const uniqueRoutes = new Set();
+        customers.forEach(c => { if (c.homeRoute) uniqueRoutes.add(c.homeRoute.split(':')[0]); });
+        routes.forEach(r => { if (r.name) uniqueRoutes.add(r.name.split(':')[0]); });
+        uniqueRoutes.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.innerText = r;
+          routeSelect.appendChild(opt);
+        });
+      }
+
+      // Portfolio Aggregates
+      let totalReceivables = 0;
+      let debtorsCount = 0;
+      let totalOverLimit = 0;
+      let overLimitCount = 0;
+      let totalBacklog60 = 0;
+      let backlog60Count = 0;
+      let totalCurrent = 0;
+      let totalDue30to60 = 0;
+      let totalCreditors = 0;
+      let creditorsCount = 0;
+
+      const customerBreakdowns = customers.map(c => {
+        const info = getCustomerOutstandingBreakdown(c);
+        if (info.isDebtor) {
+          totalReceivables += info.totalDue;
+          debtorsCount++;
+        }
+        if (info.isOverLimit) {
+          totalOverLimit += info.overLimit;
+          overLimitCount++;
+        }
+        if (info.hasBacklog60) {
+          totalBacklog60 += info.backlog60DaysAmount;
+          backlog60Count++;
+        }
+        totalCurrent += info.current0To30DaysAmount;
+        totalDue30to60 += info.dues30To60DaysAmount;
+        if (info.isCreditor) {
+          totalCreditors += Math.abs(info.totalDue);
+          creditorsCount++;
+        }
+        return { cust: c, info };
+      });
+
+      // Update KPI Cards
+      const kpiTotal = document.getElementById('outstanding-kpi-total');
+      const kpiDebtorsCount = document.getElementById('outstanding-kpi-debtors-count');
+      const kpiOverLimitAmt = document.getElementById('outstanding-kpi-overlimit-amt');
+      const kpiOverLimitCount = document.getElementById('outstanding-kpi-overlimit-count');
+      const kpiBacklogAmt = document.getElementById('outstanding-kpi-backlog60-amt');
+      const kpiBacklogCount = document.getElementById('outstanding-kpi-backlog60-count');
+      const kpiCurrentAmt = document.getElementById('outstanding-kpi-current-amt');
+      const kpiCreditorsAmt = document.getElementById('outstanding-kpi-creditors-amt');
+      const kpiCreditorsCount = document.getElementById('outstanding-kpi-creditors-count');
+
+      if (kpiTotal) kpiTotal.innerText = formatINR(totalReceivables);
+      if (kpiDebtorsCount) kpiDebtorsCount.innerText = `${debtorsCount} Active Debtors`;
+      if (kpiOverLimitAmt) kpiOverLimitAmt.innerText = formatINR(totalOverLimit);
+      if (kpiOverLimitCount) kpiOverLimitCount.innerText = `${overLimitCount} Accounts Breached`;
+      if (kpiBacklogAmt) kpiBacklogAmt.innerText = formatINR(totalBacklog60);
+      if (kpiBacklogCount) kpiBacklogCount.innerText = `${backlog60Count} Accounts Overdue > 60d`;
+      if (kpiCurrentAmt) kpiCurrentAmt.innerText = formatINR(totalCurrent);
+      if (kpiCreditorsAmt) kpiCreditorsAmt.innerText = formatINR(totalCreditors);
+      if (kpiCreditorsCount) kpiCreditorsCount.innerText = `${creditorsCount} Advance Accounts`;
+
+      // Update Aging Distribution Matrix Bar
+      const totalAgedPool = totalReceivables > 0 ? totalReceivables : 1;
+      const pctCurrent = Math.round((totalCurrent / totalAgedPool) * 100);
+      const pct30to60 = Math.round((totalDue30to60 / totalAgedPool) * 100);
+      const pctOver60 = Math.max(0, 100 - pctCurrent - pct30to60);
+
+      const elBarCur = document.getElementById('aging-bar-current');
+      const elPctCur = document.getElementById('aging-pct-current');
+      const elBar30 = document.getElementById('aging-bar-30to60');
+      const elPct30 = document.getElementById('aging-pct-30to60');
+      const elBar60 = document.getElementById('aging-bar-over60');
+      const elPct60 = document.getElementById('aging-pct-over60');
+
+      if (elBarCur) elBarCur.innerText = formatINR(totalCurrent);
+      if (elPctCur) elPctCur.innerText = pctCurrent + '%';
+      if (elBar30) elBar30.innerText = formatINR(totalDue30to60);
+      if (elPct30) elPct30.innerText = pct30to60 + '%';
+      if (elBar60) elBar60.innerText = formatINR(totalBacklog60);
+      if (elPct60) elPct60.innerText = pctOver60 + '%';
+
+      // Update Nav Badge
+      const navBadge = document.getElementById('nav-outstanding-badge');
+      if (navBadge) {
+        const alertCount = overLimitCount + backlog60Count;
+        if (alertCount > 0) {
+          navBadge.innerText = alertCount;
+          navBadge.classList.remove('hidden');
+        } else {
+          navBadge.classList.add('hidden');
+        }
+      }
+
+      // Filter and Search Customer List
+      const q = (document.getElementById('outstanding-search-input')?.value || '').toLowerCase().trim();
+      const selectedRoute = document.getElementById('outstanding-route-filter')?.value || 'all';
+
+      let filtered = customerBreakdowns.filter(({ cust, info }) => {
+        // Route filter
+        if (selectedRoute !== 'all') {
+          const cRoute = (cust.homeRoute || '').split(':')[0];
+          if (cRoute !== selectedRoute) return false;
+        }
+
+        // Status filter
+        if (currentOutstandingFilter === 'debtors' && !info.isDebtor) return false;
+        if (currentOutstandingFilter === 'overlimit' && !info.isOverLimit) return false;
+        if (currentOutstandingFilter === 'backlog60' && !info.hasBacklog60) return false;
+        if (currentOutstandingFilter === 'current' && info.current0To30DaysAmount <= 0) return false;
+        if (currentOutstandingFilter === 'due30to60' && info.dues30To60DaysAmount <= 0) return false;
+        if (currentOutstandingFilter === 'creditor' && !info.isCreditor) return false;
+        if (currentOutstandingFilter === 'cleared' && !info.isCleared) return false;
+
+        // Search text
+        if (!q) return true;
+        return (
+          cust.name.toLowerCase().includes(q) ||
+          (cust.phone && cust.phone.includes(q)) ||
+          (cust.contactPerson && cust.contactPerson.toLowerCase().includes(q)) ||
+          (cust.homeRoute && cust.homeRoute.toLowerCase().includes(q)) ||
+          (cust.address && cust.address.toLowerCase().includes(q))
+        );
+      });
+
+      // Sort: Highest Over-limit first, then highest outstanding, then highest backlog
+      filtered.sort((a, b) => {
+        if (a.info.isOverLimit && !b.info.isOverLimit) return -1;
+        if (!a.info.isOverLimit && b.info.isOverLimit) return 1;
+        if (a.info.overLimit !== b.info.overLimit) return b.info.overLimit - a.info.overLimit;
+        return b.info.totalDue - a.info.totalDue;
+      });
+
+      // Render Table
+      const tbody = document.getElementById('outstanding-table-body');
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No parties match the selected outstanding filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(({ cust, info }) => {
+        // Classification Pill
+        let classBadge = '';
+        if (info.isDebtor) {
+          classBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200"><i data-lucide="arrow-up-right" class="w-3 h-3 text-rose-600"></i> Debtor</span>`;
+        } else if (info.isCreditor) {
+          classBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200"><i data-lucide="arrow-down-left" class="w-3 h-3 text-blue-600"></i> Creditor</span>`;
+        } else {
+          classBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200"><i data-lucide="check" class="w-3 h-3 text-slate-500"></i> Settled</span>`;
+        }
+
+        // Limit Utilization Bar
+        const barWidth = Math.min(100, Math.max(0, info.utilizationPct));
+        let barColor = 'bg-emerald-500';
+        let badgeColor = 'text-emerald-700 bg-emerald-50';
+        if (info.utilizationPct > 100) {
+          barColor = 'bg-rose-600';
+          badgeColor = 'text-rose-800 bg-rose-100';
+        } else if (info.utilizationPct >= 80) {
+          barColor = 'bg-amber-500';
+          badgeColor = 'text-amber-800 bg-amber-100';
+        }
+
+        // Over Limit Pill
+        let overLimitCell = '';
+        if (info.isOverLimit) {
+          overLimitCell = `
+            <div class="text-right">
+              <span class="inline-block px-2 py-0.5 rounded-md font-mono font-black text-[11px] bg-rose-100 text-rose-800 border border-rose-300">
+                +${formatINR(info.overLimit)}
+              </span>
+              <span class="block text-[9px] font-bold text-rose-600 uppercase tracking-tight">Limit Breached</span>
+            </div>
+          `;
+        } else {
+          overLimitCell = `<div class="text-right font-mono text-xs text-slate-400 font-semibold">₹0 <span class="text-[9px] text-emerald-600 block">(Safe)</span></div>`;
+        }
+
+        // Backlog details
+        let backlogCell = '';
+        if (info.hasBacklog60) {
+          backlogCell = `
+            <div>
+              <span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-700"></i> ${formatINR(info.backlog60DaysAmount)}
+              </span>
+              <span class="block text-[9px] text-rose-700 font-semibold mt-0.5">
+                Oldest: ${info.oldestBillDays}d overdue ${info.oldestBillId ? `(#${info.oldestBillId})` : ''}
+              </span>
+            </div>
+          `;
+        } else if (info.dues30To60DaysAmount > 0) {
+          backlogCell = `
+            <div>
+              <span class="text-[10px] font-bold text-slate-700 font-mono">${formatINR(info.dues30To60DaysAmount)}</span>
+              <span class="block text-[9px] text-amber-600 font-semibold">31–60d Due Cycle</span>
+            </div>
+          `;
+        } else {
+          backlogCell = `<span class="text-[10px] text-slate-400 font-medium">✅ Current / No Backlog</span>`;
+        }
+
+        return `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3">
+            <div class="font-extrabold text-slate-900 flex items-center gap-1.5">
+              <span>${escapeHtml(cust.name)}</span>
+              ${cust.tier ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-bold">${escapeHtml(cust.tier)}</span>` : ''}
+            </div>
+            <div class="text-[10px] text-slate-500 font-mono">
+              ${escapeHtml(cust.phone || 'No phone')} • Beat: <b>${escapeHtml((cust.homeRoute || 'General Beat').split(':')[0])}</b>
+            </div>
+            ${cust.contactPerson ? `<div class="text-[10px] text-slate-400 font-sans mt-0.5">Attn: ${escapeHtml(cust.contactPerson)}</div>` : ''}
+          </td>
+          <td class="p-3 whitespace-nowrap">${classBadge}</td>
+          <td class="p-3 text-right">
+            <div class="font-mono font-bold text-slate-700 text-xs">${formatINR(info.creditLimit)}</div>
+            <div class="w-20 ml-auto bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
+              <div class="${barColor} h-1.5 rounded-full" style="width: ${barWidth}%"></div>
+            </div>
+            <span class="text-[9px] font-bold ${badgeColor} px-1 rounded inline-block mt-0.5">${info.utilizationPct}% used</span>
+          </td>
+          <td class="p-3 text-right font-mono font-black text-sm ${info.isDebtor ? 'text-rose-600' : (info.isCreditor ? 'text-blue-600' : 'text-slate-400')}">
+            ${formatINR(info.totalDue)}
+          </td>
+          <td class="p-3 whitespace-nowrap">${overLimitCell}</td>
+          <td class="p-3">${backlogCell}</td>
+          <td class="p-3 text-right space-x-1 whitespace-nowrap">
+            <button type="button" onclick="openQuickPaymentModal('${cust.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 shadow-xs transition cursor-pointer" title="Collect Payment & Settle Ledger">
+              <i data-lucide="hand-coins" class="w-3.5 h-3.5"></i> Collect
+            </button>
+            <button type="button" onclick="shareCustomerOutstandingReminderWhatsApp('${cust.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer" title="Send WhatsApp Outstanding Reminder with UPI & Bank details">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            </button>
+            <button type="button" onclick="openCustomerStatementModal('${cust.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer" title="View Full Account Statement Slip">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+            </button>
+            <button type="button" onclick="openCustomerModal('${cust.id}')" class="p-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer" title="Edit Customer Limit or Records">
+              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ==============================================================================
+    // QUICK PAYMENT & UDHAAR SETTLEMENT ACTIONS
+    // ==============================================================================
+    function openQuickPaymentModal(preselectedCustId = null) {
+      const select = document.getElementById('quick-pay-customer');
+      if (!select) return;
+
+      select.innerHTML = customers.map(c => {
+        const due = Number(c.pendingUdhaar || 0);
+        return `<option value="${c.id}" ${c.id === preselectedCustId ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
+      }).join('');
+
+      if (preselectedCustId) {
+        select.value = preselectedCustId;
+      } else if (customers.length > 0) {
+        // Default to first customer with balance if any
+        const debtor = customers.find(c => Number(c.pendingUdhaar || 0) > 0);
+        if (debtor) select.value = debtor.id;
+      }
+
+      onQuickPayCustomerChange();
+      document.getElementById('modal-quick-payment').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeQuickPaymentModal() {
+      document.getElementById('modal-quick-payment').classList.add('hidden');
+    }
+
+    function onQuickPayCustomerChange() {
+      const custId = document.getElementById('quick-pay-customer')?.value;
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) return;
+
+      const due = Number(cust.pendingUdhaar || 0);
+      const limit = Number(cust.creditLimit || 50000);
+
+      document.getElementById('quick-pay-current-due').innerText = formatINR(due);
+      document.getElementById('quick-pay-credit-limit').innerText = formatINR(limit);
+
+      const amtInput = document.getElementById('quick-pay-amount');
+      if (amtInput) {
+        amtInput.value = (due > 0) ? due : '';
+      }
+      calculateQuickPayBalance();
+    }
+
+    function calculateQuickPayBalance() {
+      const custId = document.getElementById('quick-pay-customer')?.value;
+      const cust = customers.find(c => c.id === custId);
+      const due = cust ? Number(cust.pendingUdhaar || 0) : 0;
+      const amt = parseFloat(document.getElementById('quick-pay-amount')?.value) || 0;
+      const newBal = Math.max(0, due - amt);
+
+      const el = document.getElementById('quick-pay-new-balance');
+      if (el) el.innerText = formatINR(newBal);
+    }
+
+    function fillQuickPayFullDue() {
+      const custId = document.getElementById('quick-pay-customer')?.value;
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) return;
+      const due = Number(cust.pendingUdhaar || 0);
+      const amtInput = document.getElementById('quick-pay-amount');
+      if (amtInput) amtInput.value = Math.max(0, due);
+      calculateQuickPayBalance();
+    }
+
+    async function submitQuickPayment() {
+      const custId = document.getElementById('quick-pay-customer')?.value;
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) { alert("Please select a customer."); return; }
+
+      const amt = parseFloat(document.getElementById('quick-pay-amount')?.value);
+      if (isNaN(amt) || amt <= 0) {
+        alert("Please enter a valid amount received.");
+        return;
+      }
+
+      const payMode = document.getElementById('quick-pay-mode')?.value || 'UPI / QR';
+      const ref = document.getElementById('quick-pay-ref')?.value || '';
+      const prevDue = Number(cust.pendingUdhaar || 0);
+      const newDue = Math.max(0, prevDue - amt);
+
+      cust.pendingUdhaar = newDue;
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('buyers').update({ pendingUdhaar: newDue }).eq('id', cust.id);
+        } catch(e) {
+          console.error("Supabase payment update error:", e);
+        }
+      }
+      saveCustomersLocally();
+
+      const receipt = {
+        id: 'REC-' + Math.floor(1000 + Math.random() * 9000),
+        buyerId: cust.id,
+        buyerName: cust.name,
+        buyerPhone: cust.phone,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        amount: amt,
+        previousDue: prevDue,
+        newBalance: newDue,
+        paymentMode: payMode,
+        ref: ref
+      };
+      paymentReceipts.unshift(receipt);
+      savePaymentReceiptsLocally();
+
+      closeQuickPaymentModal();
+      renderOutstandingDashboard();
+      renderCustomersTable();
+      renderDashboard();
+
+      const sendReceipt = confirm(`✅ Received payment of ${formatINR(amt)} from ${cust.name}!\nNew Balance: ${formatINR(newDue)}.\n\nSend WhatsApp Payment Receipt Acknowledgement to customer?`);
+      if (sendReceipt) {
+        sharePaymentReceiptWhatsApp(receipt);
+      }
+    }
+
+    function sharePaymentReceiptWhatsApp(rec) {
+      if (!rec) return;
+      const settings = getCompanySettings();
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*PAYMENT ACKNOWLEDGEMENT RECEIPT*\n` +
+        `--------------------------------\n` +
+        `Receipt Ref: *#${rec.id}*\n` +
+        `Date: ${rec.date} ${rec.time}\n` +
+        `Received From: *${rec.buyerName}*\n` +
+        `--------------------------------\n` +
+        `• *AMOUNT RECEIVED: ${formatINR(rec.amount)}*\n` +
+        `• Payment Mode: ${rec.paymentMode}\n` +
+        (rec.ref ? `• Txn Ref / Note: ${rec.ref}\n` : '') +
+        `--------------------------------\n` +
+        `• Previous Udhaar: ${formatINR(rec.previousDue)}\n` +
+        `• *UPDATED BALANCE DUE: ${formatINR(rec.newBalance)}*\n` +
+        `--------------------------------\n` +
+        `Thank you for your timely settlement!\n${settings.companyName} • Phone: ${settings.phone}`;
+
+      const cleanPhone = (rec.buyerPhone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    function shareCustomerOutstandingReminderWhatsApp(custId) {
+      const cust = customers.find(c => c.id === custId);
+      if (!cust) return;
+
+      const settings = getCompanySettings();
+      const info = getCustomerOutstandingBreakdown(cust);
+
+      let urgencyNote = '';
+      if (info.isOverLimit) {
+        urgencyNote = `⚠️ *ATTENTION*: Your balance exceeds your approved credit limit (${formatINR(info.creditLimit)}) by *${formatINR(info.overLimit)}*.\n`;
+      }
+      if (info.hasBacklog60) {
+        urgencyNote += `⏳ *OVERDUE NOTICE*: Your oldest unpaid bill is *${info.oldestBillDays} days overdue* (${info.oldestBillId ? '#' + info.oldestBillId : 'prior bill'}).\n`;
+      }
+
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*OUTSTANDING BALANCE & RECOVERY NOTICE*\n` +
+        `--------------------------------\n` +
+        `To: *${cust.name}*\n` +
+        `Route Beat: ${cust.homeRoute || 'General Beat'}\n` +
+        `Date: ${new Date().toLocaleDateString('en-IN')}\n` +
+        `--------------------------------\n` +
+        `• *CURRENT TOTAL DUE: ${formatINR(info.totalDue)}*\n` +
+        `• Approved Credit Limit: ${formatINR(info.creditLimit)}\n` +
+        (urgencyNote ? `--------------------------------\n${urgencyNote}` : '') +
+        `--------------------------------\n` +
+        `*BANK ACCOUNT FOR SETTLEMENT:*\n` +
+        `Bank: ${settings.bankName}\n` +
+        `A/C Name: ${settings.accountName}\n` +
+        `A/C No: ${settings.accountNumber}\n` +
+        `IFSC: ${settings.ifsc}\n` +
+        `UPI ID: ${settings.upiId}\n` +
+        `--------------------------------\n` +
+        `Kindly arrange payment via UPI or Bank transfer at your earliest convenience.\n` +
+        `Please share the payment reference screenshot here once transferred.\n` +
+        `Thank you! Sri Govinda Food Products`;
+
+      const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    function shareDebtorsWhatsAppSummary() {
+      const settings = getCompanySettings();
+      let totalDue = 0;
+      let totalOverLimit = 0;
+      let totalBacklog60 = 0;
+      const debtorList = [];
+
+      customers.forEach(c => {
+        const info = getCustomerOutstandingBreakdown(c);
+        if (info.isDebtor) {
+          totalDue += info.totalDue;
+          if (info.isOverLimit) totalOverLimit += info.overLimit;
+          if (info.hasBacklog60) totalBacklog60 += info.backlog60DaysAmount;
+          debtorList.push({ name: c.name, due: info.totalDue, over: info.overLimit, days: info.oldestBillDays });
+        }
+      });
+
+      debtorList.sort((a,b) => b.due - a.due);
+
+      const topLines = debtorList.slice(0, 10).map((d, i) => 
+        `${i + 1}. *${d.name}*: ${formatINR(d.due)} ${d.over > 0 ? `(Over Limit: +${formatINR(d.over)})` : ''} ${d.days >= 60 ? `[${d.days}d overdue]` : ''}`
+      ).join('\n') || '• No outstanding debtors';
+
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*EXECUTIVE DEBTORS & AGING SUMMARY*\n` +
+        `Date: ${new Date().toLocaleDateString('en-IN')}\n` +
+        `--------------------------------\n` +
+        `• *TOTAL RECEIVABLES: ${formatINR(totalDue)}*\n` +
+        `• Active Debtors: *${debtorList.length} Accounts*\n` +
+        `• Breached Beyond Limit: *${formatINR(totalOverLimit)}*\n` +
+        `• Critical Backlog (> 2 Months): *${formatINR(totalBacklog60)}*\n` +
+        `--------------------------------\n` +
+        `*TOP OUTSTANDING DEBTORS:*\n` +
+        topLines +
+        `\n--------------------------------\n` +
+        `Internal Management Audit Report • Sri Govinda Food Products`;
+
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    function exportOutstandingCsv() {
+      const headers = ["Customer Name", "Contact Person", "Phone", "Route Beat", "Classification", "Credit Limit (INR)", "Total Outstanding (INR)", "Beyond Limit (INR)", "Utilization Pct", "Oldest Bill Days", "Backlog Over 60d (INR)"];
+      const rows = customers.map(c => {
+        const info = getCustomerOutstandingBreakdown(c);
+        return [
+          `"${(c.name || '').replace(/"/g, '""')}"`,
+          `"${(c.contactPerson || '').replace(/"/g, '""')}"`,
+          `"${(c.phone || '').replace(/"/g, '""')}"`,
+          `"${(c.homeRoute || 'General Beat').replace(/"/g, '""')}"`,
+          `"${info.classification}"`,
+          info.creditLimit,
+          info.totalDue,
+          info.overLimit,
+          info.utilizationPct + '%',
+          info.oldestBillDays,
+          info.backlog60DaysAmount
+        ];
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Sri_Govinda_Debtors_Aging_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     // ==============================================================================
