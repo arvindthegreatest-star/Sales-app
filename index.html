@@ -2628,6 +2628,20 @@
 
     let products = [];
     let customers = [];
+    try {
+      const savedCust = localStorage.getItem('sg_customers');
+      if (savedCust) customers = JSON.parse(savedCust);
+    } catch (e) {
+      customers = [];
+    }
+
+    function saveCustomersLocally() {
+      try {
+        localStorage.setItem('sg_customers', JSON.stringify(customers));
+      } catch (e) {
+        console.warn("Error saving customers locally:", e);
+      }
+    }
     let orders = [];
     let routes = [];
     let inwardEntries = [];
@@ -2819,7 +2833,7 @@
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
             const { data } = await supabaseClient.from('buyers').select('*');
-            if (data) { customers = data; refreshAllUI(); }
+            if (data) { customers = data; saveCustomersLocally(); refreshAllUI(); }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
             const { data } = await supabaseClient.from('products').select('*');
@@ -2881,7 +2895,18 @@
         }
 
         const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
-        if (dbBuyers) customers = dbBuyers;
+        if (dbBuyers && dbBuyers.length > 0) {
+          customers = dbBuyers;
+          saveCustomersLocally();
+        } else if (customers.length === 0) {
+          const localSaved = localStorage.getItem('sg_customers');
+          if (localSaved) {
+            try {
+              const parsed = JSON.parse(localSaved);
+              if (parsed && parsed.length > 0) customers = parsed;
+            } catch (e) {}
+          }
+        }
 
         const { data: dbRoutes } = await supabaseClient.from('routes').select('*');
         if (dbRoutes) routes = dbRoutes;
@@ -4485,6 +4510,20 @@
       });
     }
 
+    function sanitizeBuyerForSupabase(b) {
+      if (!b) return null;
+      return {
+        id: String(b.id),
+        name: String(b.name || 'Store'),
+        tier: b.tier || 'Retail',
+        phone: b.phone || '',
+        homeRoute: b.homeRoute || '',
+        creditLimit: Number(b.creditLimit || 0),
+        pendingUdhaar: Number(b.pendingUdhaar || 0),
+        address: b.address || ''
+      };
+    }
+
     async function handleSaveCustomer(e) {
       e.preventDefault();
       const editId = document.getElementById('cust-id').value;
@@ -4533,6 +4572,9 @@
         customers.push(record);
       }
 
+      // Always save to localStorage immediately
+      saveCustomersLocally();
+
       // Collect contract pricing overrides from the form
       const pricingInputs = document.querySelectorAll('#cust-pricing-list input[data-prod-id]');
       const overridesToSave = [];
@@ -4557,7 +4599,8 @@
       // Persist to Supabase
       if (supabaseClient) {
         try {
-          const { error: custErr } = await supabaseClient.from('buyers').upsert([record]);
+          const dbRecord = sanitizeBuyerForSupabase(record);
+          const { error: custErr } = await supabaseClient.from('buyers').upsert([dbRecord]);
           if (custErr) console.error("Supabase customer save error:", custErr);
 
           // Delete previous overrides for this buyer, then insert new ones
@@ -4584,6 +4627,7 @@
       if (!confirm("Are you sure you want to delete this customer?")) return;
       customers = customers.filter(c => c.id !== custId);
       contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
+      saveCustomersLocally();
 
       if (supabaseClient) {
         try {
