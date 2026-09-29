@@ -1632,6 +1632,7 @@
         </button>
       </div>
     </div>
+  </div>
 
 
   <!-- ==============================================================================
@@ -2751,8 +2752,8 @@
   <!-- ==============================================================================
        MODAL: QUICK PAYMENT & UDHAAR SETTLEMENT RECEIPT
        ============================================================================== -->
-  <div id="modal-quick-payment" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200">
+  <div id="modal-quick-payment" class="fixed inset-0 z-[95] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto" style="z-index: 9999;" onclick="if(event.target === this) closeQuickPaymentModal();">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 space-y-4 border border-slate-200" onclick="event.stopPropagation();">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
@@ -8624,41 +8625,56 @@
     // QUICK PAYMENT & UDHAAR SETTLEMENT ACTIONS
     // ==============================================================================
     function openQuickPaymentModal(preselectedCustId = null) {
+      const modal = document.getElementById('modal-quick-payment');
+      if (!modal) {
+        alert("Payment dialog not found. Please refresh the page.");
+        return;
+      }
+
       const select = document.getElementById('quick-pay-customer');
-      if (!select) return;
+      if (select) {
+        select.innerHTML = customers.map(c => {
+          const due = Number(c.pendingUdhaar || 0);
+          const isSelected = preselectedCustId ? (String(c.id) === String(preselectedCustId)) : false;
+          return `<option value="${c.id}" ${isSelected ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
+        }).join('');
 
-      select.innerHTML = customers.map(c => {
-        const due = Number(c.pendingUdhaar || 0);
-        return `<option value="${c.id}" ${c.id === preselectedCustId ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
-      }).join('');
-
-      if (preselectedCustId) {
-        select.value = preselectedCustId;
-      } else if (customers.length > 0) {
-        // Default to first customer with balance if any
-        const debtor = customers.find(c => Number(c.pendingUdhaar || 0) > 0);
-        if (debtor) select.value = debtor.id;
+        if (preselectedCustId) {
+          select.value = String(preselectedCustId);
+        } else if (customers.length > 0) {
+          // Default to first customer with balance if any
+          const debtor = customers.find(c => Number(c.pendingUdhaar || 0) > 0);
+          if (debtor) select.value = String(debtor.id);
+        }
       }
 
       onQuickPayCustomerChange();
-      document.getElementById('modal-quick-payment').classList.remove('hidden');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
       if (window.lucide) lucide.createIcons();
     }
 
     function closeQuickPaymentModal() {
-      document.getElementById('modal-quick-payment').classList.add('hidden');
+      const modal = document.getElementById('modal-quick-payment');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function onQuickPayCustomerChange() {
       const custId = document.getElementById('quick-pay-customer')?.value;
-      const cust = customers.find(c => c.id === custId);
+      const cust = customers.find(c => String(c.id) === String(custId));
       if (!cust) return;
 
       const due = Number(cust.pendingUdhaar || 0);
       const limit = Number(cust.creditLimit || 50000);
 
-      document.getElementById('quick-pay-current-due').innerText = formatINR(due);
-      document.getElementById('quick-pay-credit-limit').innerText = formatINR(limit);
+      const dueEl = document.getElementById('quick-pay-current-due');
+      const limitEl = document.getElementById('quick-pay-credit-limit');
+      if (dueEl) dueEl.innerText = formatINR(due);
+      if (limitEl) limitEl.innerText = formatINR(limit);
 
       const amtInput = document.getElementById('quick-pay-amount');
       if (amtInput) {
@@ -8669,7 +8685,7 @@
 
     function calculateQuickPayBalance() {
       const custId = document.getElementById('quick-pay-customer')?.value;
-      const cust = customers.find(c => c.id === custId);
+      const cust = customers.find(c => String(c.id) === String(custId));
       const due = cust ? Number(cust.pendingUdhaar || 0) : 0;
       const amt = parseFloat(document.getElementById('quick-pay-amount')?.value) || 0;
       const newBal = Math.max(0, due - amt);
@@ -8680,7 +8696,7 @@
 
     function fillQuickPayFullDue() {
       const custId = document.getElementById('quick-pay-customer')?.value;
-      const cust = customers.find(c => c.id === custId);
+      const cust = customers.find(c => String(c.id) === String(custId));
       if (!cust) return;
       const due = Number(cust.pendingUdhaar || 0);
       const amtInput = document.getElementById('quick-pay-amount');
@@ -8690,7 +8706,7 @@
 
     async function submitQuickPayment() {
       const custId = document.getElementById('quick-pay-customer')?.value;
-      const cust = customers.find(c => c.id === custId);
+      const cust = customers.find(c => String(c.id) === String(custId));
       if (!cust) { alert("Please select a customer."); return; }
 
       const amt = parseFloat(document.getElementById('quick-pay-amount')?.value);
