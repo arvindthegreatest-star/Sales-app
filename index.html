@@ -362,9 +362,10 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Payment Mode</label>
-            <select id="order-payment-mode" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
+            <select id="order-payment-mode" onchange="onOrderPaymentModeChange()" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold">
               <option value="Cash">Cash</option>
               <option value="UPI / QR">UPI / QR</option>
+              <option value="Part Payment">Part Payment (Advance / Split)</option>
               <option value="Credit / Udhaar">Credit / Udhaar</option>
               <option value="Cheque">Cheque</option>
             </select>
@@ -376,6 +377,24 @@
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Rep Name / Note</label>
             <input type="text" id="order-notes" placeholder="Optional notes" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+          </div>
+        </div>
+
+        <!-- Part Payment & Ledger Breakdown -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+          <div>
+            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-0.5 flex items-center justify-between">
+              <span>Amount Paid Now (₹)</span>
+              <span id="order-paid-status-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">Full Paid</span>
+            </label>
+            <input type="number" id="order-amount-paid" min="0" step="any" oninput="onOrderAmountPaidChange()" placeholder="0" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-mono font-black text-emerald-600 text-sm focus:ring-1 focus:ring-emerald-500 outline-none">
+          </div>
+          <div class="flex flex-col justify-center">
+            <span class="text-[10px] font-bold uppercase text-slate-500">Balance Added to Customer Udhaar / Ledger</span>
+            <div class="flex items-baseline gap-1 mt-0.5">
+              <span id="order-balance-due" class="font-mono font-black text-rose-600 text-base">₹0</span>
+              <span id="order-ledger-impact-note" class="text-[10px] text-slate-500 font-semibold">(No Udhaar added)</span>
+            </div>
           </div>
         </div>
 
@@ -2063,6 +2082,12 @@
                 <div class="flex justify-between text-black font-black text-base border-t-2 border-black pt-1">
                   <span>Total Amount:</span> <span id="invoice-net-payable">₹0</span>
                 </div>
+                <div class="flex justify-between text-black text-[11px] pt-1" id="invoice-paid-row">
+                  <span>Amount Paid:</span> <span id="invoice-amount-paid" class="font-bold text-emerald-800">₹0</span>
+                </div>
+                <div class="flex justify-between text-black text-[11px] font-bold" id="invoice-balance-row">
+                  <span>Balance Due (Udhaar):</span> <span id="invoice-balance-due" class="font-bold text-rose-800">₹0</span>
+                </div>
                 <div class="text-left font-sans pt-1">
                   <span class="text-[10px] font-bold uppercase block text-black">Amount in Words:</span>
                   <p class="font-bold italic text-xs leading-tight" id="invoice-amount-words">Rupees Zero Only</p>
@@ -3358,6 +3383,16 @@
       if (prevDueEl) prevDueEl.innerText = formatINR(prevDue);
       if (combinedEl) combinedEl.innerText = formatINR(combinedReceivables);
 
+      // Live update Amount Paid input and Ledger Impact
+      if (!isManualAmountPaidSet) {
+        const mode = document.getElementById('order-payment-mode')?.value || 'Cash';
+        const paidInput = document.getElementById('order-amount-paid');
+        if (paidInput) {
+          paidInput.value = (mode === 'Credit / Udhaar') ? 0 : netPayable;
+        }
+      }
+      updateOrderPaymentUI(netPayable);
+
       const submitBtn = document.getElementById('btn-submit-order');
       const btnInstant = document.getElementById('btn-submit-order-instant-bill');
       const btnWhatsApp = document.getElementById('btn-submit-order-whatsapp-bill');
@@ -3365,6 +3400,141 @@
       if (submitBtn) submitBtn.disabled = !hasUnits;
       if (btnInstant) btnInstant.disabled = !hasUnits;
       if (btnWhatsApp) btnWhatsApp.disabled = !hasUnits;
+    }
+
+    function getOrderPaymentBreakdown(order) {
+      if (!order) return { amountPaid: 0, balanceDue: 0, isPartPayment: false };
+      const net = Number(order.netPayable || 0);
+
+      if (order.amountPaid !== undefined && order.amountPaid !== null && !isNaN(Number(order.amountPaid))) {
+        const paid = Math.min(net, Math.max(0, Number(order.amountPaid)));
+        const bal = Math.max(0, net - paid);
+        return { amountPaid: paid, balanceDue: bal, isPartPayment: (paid > 0 && bal > 0) };
+      }
+
+      const notes = order.notes || '';
+      const match = notes.match(/\[PAID:([0-9.]+)\]/);
+      if (match) {
+        const paid = Math.min(net, Math.max(0, parseFloat(match[1])));
+        const bal = Math.max(0, net - paid);
+        return { amountPaid: paid, balanceDue: bal, isPartPayment: (paid > 0 && bal > 0) };
+      }
+
+      const mode = (order.paymentMode || '').toLowerCase();
+      if (mode.includes('credit') || mode.includes('udhaar')) {
+        return { amountPaid: 0, balanceDue: net, isPartPayment: false };
+      }
+
+      return { amountPaid: net, balanceDue: 0, isPartPayment: false };
+    }
+
+    let isManualAmountPaidSet = false;
+
+    function onOrderPaymentModeChange() {
+      const mode = document.getElementById('order-payment-mode')?.value || 'Cash';
+      const netText = (document.getElementById('cart-net-total')?.innerText || '₹0').replace(/[^\d.]/g, '');
+      const net = parseFloat(netText) || 0;
+      const paidInput = document.getElementById('order-amount-paid');
+      if (!paidInput) return;
+
+      if (mode === 'Credit / Udhaar') {
+        paidInput.value = 0;
+        isManualAmountPaidSet = true;
+      } else if (mode === 'Part Payment') {
+        if (!isManualAmountPaidSet || parseFloat(paidInput.value) >= net || parseFloat(paidInput.value) <= 0) {
+          paidInput.value = Math.round(net / 2);
+        }
+        isManualAmountPaidSet = true;
+      } else {
+        paidInput.value = net;
+        isManualAmountPaidSet = false;
+      }
+
+      updateOrderPaymentUI(net);
+    }
+
+    function onOrderAmountPaidChange() {
+      isManualAmountPaidSet = true;
+      const netText = (document.getElementById('cart-net-total')?.innerText || '₹0').replace(/[^\d.]/g, '');
+      const net = parseFloat(netText) || 0;
+      const paidInput = document.getElementById('order-amount-paid');
+      const modeSelect = document.getElementById('order-payment-mode');
+      const val = parseFloat(paidInput?.value) || 0;
+
+      if (val <= 0 && net > 0) {
+        if (modeSelect) modeSelect.value = 'Credit / Udhaar';
+      } else if (val < net) {
+        if (modeSelect) modeSelect.value = 'Part Payment';
+      } else if (val >= net && modeSelect?.value === 'Part Payment') {
+        if (modeSelect) modeSelect.value = 'Cash';
+      }
+
+      updateOrderPaymentUI(net);
+    }
+
+    function updateOrderPaymentUI(net) {
+      const paidInput = document.getElementById('order-amount-paid');
+      const badge = document.getElementById('order-paid-status-badge');
+      const balEl = document.getElementById('order-balance-due');
+      const noteEl = document.getElementById('order-ledger-impact-note');
+      if (!paidInput) return;
+
+      const rawVal = paidInput.value;
+      const paid = (rawVal === '' || isNaN(parseFloat(rawVal))) ? 0 : Math.max(0, parseFloat(rawVal));
+      const bal = Math.max(0, net - paid);
+
+      if (balEl) balEl.innerText = formatINR(bal);
+
+      if (bal === 0 && net > 0) {
+        if (badge) {
+          badge.innerText = 'Full Paid';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800';
+        }
+        if (noteEl) noteEl.innerText = '(No Udhaar added)';
+      } else if (paid > 0 && bal > 0) {
+        if (badge) {
+          badge.innerText = `Part Paid (₹${paid})`;
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800';
+        }
+        if (noteEl) noteEl.innerText = `(+${formatINR(bal)} added to Ledger Udhaar)`;
+      } else if (net > 0 && paid === 0) {
+        if (badge) {
+          badge.innerText = '100% Credit';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800';
+        }
+        if (noteEl) noteEl.innerText = `(+${formatINR(bal)} added to Ledger Udhaar)`;
+      } else {
+        if (badge) {
+          badge.innerText = 'Ready';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600';
+        }
+        if (noteEl) noteEl.innerText = '(No Udhaar added)';
+      }
+    }
+
+    function sanitizeOrderForSupabase(ord) {
+      if (!ord) return null;
+      return {
+        id: ord.id,
+        repId: ord.repId || null,
+        repName: ord.repName || 'Manager',
+        buyerId: ord.buyerId || null,
+        buyerName: ord.buyerName || '',
+        buyerPhone: ord.buyerPhone || '',
+        buyerTier: ord.buyerTier || null,
+        buyerHomeRoute: ord.buyerHomeRoute || null,
+        dispatchRoute: ord.dispatchRoute || '',
+        date: ord.date,
+        time: ord.time || '',
+        items: ord.items || [],
+        totalUnits: Number(ord.totalUnits || 0),
+        itemsSubtotal: Number(ord.itemsSubtotal || 0),
+        logisticsFee: Number(ord.logisticsFee || 0),
+        extraRebate: Number(ord.extraRebate || 0),
+        netPayable: Number(ord.netPayable || 0),
+        paymentMode: ord.paymentMode || 'Cash',
+        notes: ord.notes || ''
+      };
     }
 
     function setOrderFulfillmentStage(stage) {
@@ -3440,10 +3610,28 @@
       const route = document.getElementById('order-route-select').value;
       const deliveryStage = forcedStage || document.getElementById('order-fulfillment-stage')?.value || 'Pending Delivery';
 
+      // Calculate Amount Paid & Balance Due
+      const rawPaidInput = document.getElementById('order-amount-paid')?.value;
+      let amountPaid = (rawPaidInput === '' || isNaN(parseFloat(rawPaidInput)))
+        ? (payMode === 'Credit / Udhaar' ? 0 : netPayable)
+        : Math.max(0, parseFloat(rawPaidInput));
+      amountPaid = Math.min(netPayable, amountPaid);
+      const balanceDue = Math.max(0, netPayable - amountPaid);
+
+      let effectivePayMode = payMode;
+      if (amountPaid > 0 && balanceDue > 0) {
+        effectivePayMode = `Part Payment (₹${amountPaid} Paid, ₹${balanceDue} Udhaar)`;
+      } else if (amountPaid === 0 && netPayable > 0) {
+        effectivePayMode = 'Credit / Udhaar';
+      } else if (amountPaid >= netPayable && payMode === 'Part Payment') {
+        effectivePayMode = 'Cash';
+      }
+
       const now = new Date();
       const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
       const statusTag = (deliveryStage === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
-      const notes = rawNotes ? (rawNotes + ' ' + statusTag) : statusTag;
+      const payTag = `[PAID:${amountPaid}] [BAL:${balanceDue}]`;
+      const notes = (rawNotes ? (rawNotes + ' ' + payTag + ' ' + statusTag) : (payTag + ' ' + statusTag)).trim();
 
       const activeRepName = 'Manager';
       const activeRepId = null;
@@ -3463,35 +3651,33 @@
         itemsSubtotal,
         extraRebate: rebate,
         netPayable,
-        paymentMode: payMode,
+        amountPaid,
+        balanceDue,
+        paymentMode: effectivePayMode,
         status: deliveryStage,
         notes
       };
 
       orders.unshift(orderRecord);
 
-      // If booked on credit, update customer pending balance
-      if (payMode === 'Credit / Udhaar') {
-        cust.pendingUdhaar = Number(cust.pendingUdhaar || 0) + netPayable;
+      // UPDATE CUSTOMER LEDGER:
+      // Any unpaid balance goes straight to customer pendingUdhaar
+      if (balanceDue > 0) {
+        cust.pendingUdhaar = Number(cust.pendingUdhaar || 0) + balanceDue;
       }
 
       if (supabaseClient) {
         try {
-          const payload = { ...orderRecord };
-          const { error } = await supabaseClient.from('orders').insert([payload]);
-          if (error && error.code === 'PGRST204') {
-            // If status or repId column is not present in supabase yet, fall back gracefully
-            delete payload.status;
-            delete payload.repId;
-            await supabaseClient.from('orders').insert([payload]);
-          }
-          if (payMode === 'Credit / Udhaar') {
+          const payload = sanitizeOrderForSupabase(orderRecord);
+          await supabaseClient.from('orders').insert([payload]);
+          if (balanceDue > 0) {
             await supabaseClient.from('buyers').update({ pendingUdhaar: cust.pendingUdhaar }).eq('id', cust.id);
           }
         } catch (e) {
           console.error("Supabase order insert error:", e);
         }
       }
+      saveCustomersLocally();
 
       latestOrder = orderRecord;
       if (directAction === 'open_bill') {
@@ -3504,10 +3690,16 @@
         showOrderSuccess(orderRecord);
       }
 
-      // Reset cart
+      // Reset cart & payment inputs
       cart = {};
+      isManualAmountPaidSet = false;
       document.getElementById('order-rebate').value = '0';
       document.getElementById('order-notes').value = '';
+      const paidInput = document.getElementById('order-amount-paid');
+      if (paidInput) paidInput.value = '0';
+      const payModeSelect = document.getElementById('order-payment-mode');
+      if (payModeSelect) payModeSelect.value = 'Cash';
+      updateOrderPaymentUI(0);
       
       // Real-time stock refresh: order units are instantly deducted!
       renderOrderCatalog();
@@ -3520,17 +3712,16 @@
       const isDelivered = (getOrderStatus(o) === 'Delivered');
       const cust = customers.find(c => c.id === o.buyerId);
       const currentTotalDue = cust ? Number(cust.pendingUdhaar || 0) : 0;
-      const prevDue = (o.paymentMode === 'Credit / Udhaar') 
-        ? Math.max(0, currentTotalDue - o.netPayable) 
-        : currentTotalDue;
-      const combinedReceivables = (o.paymentMode === 'Credit / Udhaar') 
-        ? currentTotalDue 
-        : (prevDue + o.netPayable);
+      const { amountPaid, balanceDue, isPartPayment } = getOrderPaymentBreakdown(o);
+      const prevDue = Math.max(0, currentTotalDue - balanceDue);
+      const combinedReceivables = currentTotalDue;
 
       document.getElementById('success-order-id').innerText = '#' + o.id;
       document.getElementById('success-cust-name').innerText = o.buyerName;
       document.getElementById('success-net-amount').innerText = formatINR(o.netPayable);
-      document.getElementById('success-pay-mode').innerText = o.paymentMode;
+      document.getElementById('success-pay-mode').innerText = isPartPayment 
+        ? `Part Paid: ${formatINR(amountPaid)} (Due: ${formatINR(balanceDue)})` 
+        : o.paymentMode;
 
       const prevDueEl = document.getElementById('success-prev-due');
       if (prevDueEl) prevDueEl.innerText = formatINR(prevDue);
@@ -3576,6 +3767,16 @@
       const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
       const userNotes = cleanOrderNotes(o.notes);
 
+      const payInfo = getOrderPaymentBreakdown(o);
+      let payLine = `• Payment Mode: ${o.paymentMode}\n`;
+      if (payInfo.isPartPayment) {
+        payLine = `• Amount Paid: *${formatINR(payInfo.amountPaid)}* (${o.paymentMode})\n• Balance Added to Udhaar: *${formatINR(payInfo.balanceDue)}*\n`;
+      } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+        payLine = `• Payment: *Credit / Udhaar* (Balance Due: *${formatINR(payInfo.balanceDue)}*)\n`;
+      } else {
+        payLine = `• Payment: *${o.paymentMode || 'Cash'}* (Fully Paid)\n`;
+      }
+
       const text = `*SRI GOVINDA FOOD PRODUCTS*\n` +
         `*TAX INVOICE & DELIVERY BILL*\n` +
         `--------------------------------\n` +
@@ -3590,6 +3791,7 @@
         `Total Units: *${o.totalUnits}*\n` +
         (o.extraRebate > 0 ? `Special Rebate: -${formatINR(o.extraRebate)}\n` : '') +
         `*NET AMOUNT: ${formatINR(o.netPayable)}*\n` +
+        payLine +
         (userNotes ? `Notes: _${userNotes}_\n` : '') +
         `--------------------------------\n` +
         `Thank you for your business! Sri Govinda Food Products`;
@@ -4688,6 +4890,16 @@
           ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"><i data-lucide="check-circle" class="w-3 h-3"></i> Delivered</span>`
           : `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"><i data-lucide="clock" class="w-3 h-3"></i> Pending</span>`;
 
+        const payInfo = getOrderPaymentBreakdown(o);
+        let payBadge = '';
+        if (payInfo.isPartPayment) {
+          payBadge = `<div class="space-y-0.5"><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">Part Paid: ${formatINR(payInfo.amountPaid)}</span><span class="block text-[9px] font-bold text-rose-700">Due: ${formatINR(payInfo.balanceDue)}</span></div>`;
+        } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+          payBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">Credit / Udhaar</span>`;
+        } else {
+          payBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${escapeHtml(o.paymentMode || 'Paid')}</span>`;
+        }
+
         return `
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3 font-mono font-bold text-slate-800">
@@ -4700,7 +4912,7 @@
           </td>
           <td class="p-3 font-mono text-right font-bold">${o.totalUnits}</td>
           <td class="p-3 font-mono font-black text-right text-emerald-600">${formatINR(o.netPayable)}</td>
-          <td class="p-3"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${escapeHtml(o.paymentMode)}</span></td>
+          <td class="p-3">${payBadge}</td>
           <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
             ${!isDelivered ? `
@@ -6984,6 +7196,24 @@
       document.getElementById('invoice-net-payable').innerText = formatINR(o.netPayable);
       document.getElementById('invoice-amount-words').innerText = numberToWordsINR(o.netPayable);
 
+      // Populate Amount Paid & Balance Due
+      const payInfo = getOrderPaymentBreakdown(o);
+      const paidRow = document.getElementById('invoice-paid-row');
+      const balRow = document.getElementById('invoice-balance-row');
+      if (paidRow) {
+        document.getElementById('invoice-amount-paid').innerText = payInfo.amountPaid > 0 
+          ? `${formatINR(payInfo.amountPaid)} (${o.paymentMode || 'Paid'})`
+          : '₹0 (Pending / Credit)';
+      }
+      if (balRow) {
+        if (payInfo.balanceDue > 0) {
+          balRow.classList.remove('hidden');
+          document.getElementById('invoice-balance-due').innerText = formatINR(payInfo.balanceDue);
+        } else {
+          balRow.classList.add('hidden');
+        }
+      }
+
       const notesEl = document.getElementById('invoice-notes-display');
       const cleanNotes = cleanOrderNotes(o.notes);
       if (notesEl) {
@@ -7553,9 +7783,8 @@
 
       if (latestOrderForCust) {
         latestBillAmount = Number(latestOrderForCust.netPayable || 0);
-        if (latestOrderForCust.paymentMode === 'Credit / Udhaar') {
-          prevBillsDue = Math.max(0, totalOutstanding - latestBillAmount);
-        }
+        const { balanceDue } = getOrderPaymentBreakdown(latestOrderForCust);
+        prevBillsDue = Math.max(0, totalOutstanding - balanceDue);
       }
 
       document.getElementById('stmt-prev-due').innerText = formatINR(prevBillsDue);
@@ -7579,6 +7808,19 @@
             ? o.items.map(it => `${it.qty}x ${it.name}`).join(', ') 
             : `${o.totalUnits || 0} units`;
           const isDelivered = (getOrderStatus(o) === 'Delivered');
+          const payInfo = getOrderPaymentBreakdown(o);
+
+          let payDesc = escapeHtml(o.paymentMode || 'Paid');
+          if (payInfo.isPartPayment) {
+            payDesc = `Part Paid (₹${payInfo.amountPaid})`;
+          } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+            payDesc = `Credit / Udhaar`;
+          }
+
+          let amountDisplay = `<div class="font-black">${formatINR(o.netPayable)}</div>`;
+          if (payInfo.isPartPayment) {
+            amountDisplay += `<div class="text-[9px] font-bold text-rose-700 font-mono">Bal: ${formatINR(payInfo.balanceDue)}</div>`;
+          }
 
           return `
             <tr class="hover:bg-slate-50 transition">
@@ -7586,8 +7828,8 @@
               <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.date)}</td>
               <td class="border-r border-black p-1.5 font-mono font-bold text-black">#${escapeHtml(o.id)}</td>
               <td class="border-r border-black p-1.5 font-sans truncate max-w-[180px]" title="${escapeHtml(itemsSummary)}">${escapeHtml(itemsSummary)}</td>
-              <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.paymentMode || 'Credit')}</td>
-              <td class="border-r border-black p-1.5 text-right font-mono font-black">${formatINR(o.netPayable)}</td>
+              <td class="border-r border-black p-1.5 font-mono text-[10px]">${payDesc}</td>
+              <td class="border-r border-black p-1.5 text-right font-mono">${amountDisplay}</td>
               <td class="p-1.5 text-center font-sans text-[10px] font-bold">
                 ${isDelivered ? '✅ Delivered' : '🚚 In Transit'}
               </td>
@@ -7652,15 +7894,18 @@
 
       if (latestOrderForCust) {
         latestBillAmount = Number(latestOrderForCust.netPayable || 0);
-        if (latestOrderForCust.paymentMode === 'Credit / Udhaar') {
-          prevBillsDue = Math.max(0, totalOutstanding - latestBillAmount);
-        }
+        const { balanceDue } = getOrderPaymentBreakdown(latestOrderForCust);
+        prevBillsDue = Math.max(0, totalOutstanding - balanceDue);
       }
 
       // Recent bills lines
-      const recentBillsText = custOrders.slice(0, 5).map(o => 
-        `• ${o.date} | Bill #${o.id} | *${formatINR(o.netPayable)}* (${o.paymentMode})`
-      ).join('\n') || '• No previous bills recorded';
+      const recentBillsText = custOrders.slice(0, 5).map(o => {
+        const payInfo = getOrderPaymentBreakdown(o);
+        const payDesc = payInfo.isPartPayment 
+          ? `(Paid: ${formatINR(payInfo.amountPaid)}, Bal: ${formatINR(payInfo.balanceDue)})`
+          : `(${o.paymentMode || 'Credit'})`;
+        return `• ${o.date} | Bill #${o.id} | *${formatINR(o.netPayable)}* ${payDesc}`;
+      }).join('\n') || '• No previous bills recorded';
 
       const text = `*${settings.companyName.toUpperCase()}*\n` +
         `*GSTIN: ${settings.gstin}*\n` +
