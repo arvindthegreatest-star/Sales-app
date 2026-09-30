@@ -2328,6 +2328,9 @@
           <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1 transition" title="Update Official Bank Details & QR Code">
             <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Bank & QR
           </button>
+          <button type="button" onclick="closeCustomerStatementModal(); openCustomerLedgerModal(currentStatementCustomerId);" class="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition cursor-pointer" title="Open Detailed Concurrent Ledger">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Ledger Hub
+          </button>
           <button type="button" onclick="downloadStatementPdf()" class="px-3 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-xs transition">
             <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF Slip
           </button>
@@ -2499,6 +2502,9 @@
           </button>
           <button type="button" onclick="openStatementFromProfile()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1 transition" title="View Statement Slip">
             <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
+          </button>
+          <button type="button" onclick="openLedgerFromProfile()" class="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition cursor-pointer" title="View Customer Account Ledger">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Ledger
           </button>
           <button type="button" onclick="editCustomerFromProfile()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1 transition" title="Edit Customer Details">
             <i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Edit Store
@@ -2826,6 +2832,170 @@
           <i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Settlement & Deduct Udhaar
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: CUSTOMER LEDGER & CONCURRENT BILL STATEMENT HUB
+       ============================================================================== -->
+  <div id="modal-customer-ledger" class="fixed inset-0 z-[95] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto" style="z-index: 9999;" onclick="if(event.target === this) closeCustomerLedgerModal();">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col border border-slate-200 overflow-hidden" onclick="event.stopPropagation();">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-inner">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-black text-sm sm:text-base text-white">Customer Account Ledger</h3>
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30">Khatta & Concurrent Bills</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Chronological transaction record, bill amounts & concurrent balance</p>
+          </div>
+        </div>
+
+        <!-- Customer Selector Dropdown in Header -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700 px-2.5 py-1 rounded-xl">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Account:</span>
+            <select id="ledger-customer-select" onchange="renderCustomerLedger(this.value)" class="bg-transparent text-white font-bold text-xs outline-none cursor-pointer">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <button type="button" onclick="closeCustomerLedgerModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Ledger Content -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-slate-50/60" id="ledger-printable-content">
+        <!-- Customer Details & Balance Banner -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="font-black text-lg text-slate-900" id="ledger-cust-name">-</h4>
+              <span id="ledger-cust-tier" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">-</span>
+              <span id="ledger-cust-status" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Active Account</span>
+            </div>
+            <div class="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
+              <span>Beat: <b class="text-slate-800" id="ledger-cust-route">-</b></span>
+              <span>•</span>
+              <span>Phone: <b class="text-slate-800 font-mono" id="ledger-cust-phone">-</b></span>
+              <span>•</span>
+              <span>Attn: <b class="text-slate-800" id="ledger-cust-contact">-</b></span>
+            </div>
+            <div class="text-[11px] text-slate-400" id="ledger-cust-address">-</div>
+          </div>
+
+          <!-- Quick Actions on Customer -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="openQuickPaymentModal(currentLedgerCustomerId)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Record payment & deduct from ledger">
+              <i data-lucide="hand-coins" class="w-4 h-4"></i> + Collect Payment
+            </button>
+            <button type="button" onclick="openOrderModalForCustomer(currentLedgerCustomerId)" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Book new order for this customer">
+              <i data-lucide="plus" class="w-4 h-4"></i> + New Bill
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Summary Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Total Billed (Debits)</span>
+            <div id="ledger-kpi-total-billed" class="font-mono font-black text-slate-900 text-lg sm:text-xl">₹0</div>
+            <span id="ledger-kpi-bills-count" class="text-[10px] text-slate-500">0 Invoices</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase text-emerald-600 block mb-0.5">Total Paid (Credits)</span>
+            <div id="ledger-kpi-total-paid" class="font-mono font-black text-emerald-700 text-lg sm:text-xl">₹0</div>
+            <span id="ledger-kpi-receipts-count" class="text-[10px] text-emerald-600">0 Collections</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase text-rose-600 block mb-0.5">Concurrent Balance Due</span>
+            <div id="ledger-kpi-current-due" class="font-mono font-black text-rose-600 text-lg sm:text-xl">₹0</div>
+            <span id="ledger-kpi-due-status" class="text-[10px] font-bold text-rose-500">Current Khatta Due</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Credit Limit & Headroom</span>
+            <div id="ledger-kpi-credit-limit" class="font-mono font-bold text-slate-800 text-base sm:text-lg">₹50,000</div>
+            <span id="ledger-kpi-credit-available" class="text-[10px] font-bold text-indigo-600">₹50,000 Available</span>
+          </div>
+        </div>
+
+        <!-- Ledger Table Controls -->
+        <div class="flex items-center justify-between gap-3 flex-wrap bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+          <!-- Filter Buttons -->
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="setLedgerFilter('all')" id="btn-ledger-filter-all" class="px-3 py-1 rounded-xl text-xs font-bold bg-purple-600 text-white transition cursor-pointer">
+              All Transactions
+            </button>
+            <button type="button" onclick="setLedgerFilter('bills')" id="btn-ledger-filter-bills" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+              Bills Only
+            </button>
+            <button type="button" onclick="setLedgerFilter('payments')" id="btn-ledger-filter-payments" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+              Payments Only
+            </button>
+          </div>
+
+          <!-- Expand / Collapse All Details -->
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="toggleAllLedgerBillDropdowns()" id="btn-ledger-toggle-all" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 transition cursor-pointer">
+              <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
+              <span id="btn-ledger-toggle-all-label">Expand All Bills</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100/90 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200 sticky top-0 z-10">
+                <tr>
+                  <th class="p-3 w-10 text-center">#</th>
+                  <th class="p-3 w-28">Date & Time</th>
+                  <th class="p-3 w-36">Type & Ref</th>
+                  <th class="p-3">Particulars & Concurrent Bill</th>
+                  <th class="p-3 text-right w-28">Billed (Debit)</th>
+                  <th class="p-3 text-right w-28">Paid (Credit)</th>
+                  <th class="p-3 text-right w-36">Concurrent Bal</th>
+                  <th class="p-3 text-center w-28">Bill Dropdown</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-entries-tbody" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Toolbar -->
+      <div class="p-3.5 bg-white border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+        <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Official Customer Ledger • Concurrent Running Balance Verified</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="shareCustomerLedgerWhatsApp()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Send full running ledger statement on WhatsApp">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp Ledger
+          </button>
+          <button type="button" onclick="exportCustomerLedgerCsv()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Export Ledger Statement to CSV">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i> Export CSV
+          </button>
+          <button type="button" onclick="printCustomerLedger()" class="px-3 py-1.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Print Customer Statement">
+            <i data-lucide="printer" class="w-4 h-4"></i> Print Statement
+          </button>
+          <button type="button" onclick="closeCustomerLedgerModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4819,6 +4989,9 @@
             </button>
             <button onclick="openCustomerStatementModal('${c.id}')" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View & Download Official Statement Slip">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
+            </button>
+            <button type="button" onclick="openCustomerLedgerModal('${c.id}')" class="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1 transition shadow-xs cursor-pointer" title="View Customer Account Ledger & Concurrent Bills">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Ledger
             </button>
             <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer Details">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
@@ -8218,6 +8391,537 @@
     }
 
     // ==============================================================================
+    // 17C. OFFICIAL CUSTOMER ACCOUNT LEDGER & CONCURRENT BILLS LOGIC
+    // ==============================================================================
+    let currentLedgerCustomerId = null;
+    let currentLedgerFilter = 'all'; // 'all', 'bills', 'payments'
+    let ledgerExpandedBillIds = new Set();
+
+    function openCustomerLedgerModal(custId = null) {
+      const modal = document.getElementById('modal-customer-ledger');
+      if (!modal) return;
+
+      const targetCustId = custId || currentStatementCustomerId || (latestOrder ? latestOrder.buyerId : (customers[0] ? customers[0].id : null));
+      if (!targetCustId && customers.length === 0) {
+        alert("No customers available to display ledger.");
+        return;
+      }
+
+      // Populate customer select dropdown
+      const sel = document.getElementById('ledger-customer-select');
+      if (sel) {
+        sel.innerHTML = customers.map(c => {
+          const due = Number(c.pendingUdhaar || 0);
+          return `<option value="${c.id}" ${String(c.id) === String(targetCustId) ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
+        }).join('');
+      }
+
+      currentLedgerCustomerId = targetCustId || (customers[0] ? customers[0].id : null);
+      currentLedgerFilter = 'all';
+      ledgerExpandedBillIds.clear();
+
+      renderCustomerLedger(currentLedgerCustomerId);
+
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCustomerLedgerModal() {
+      const modal = document.getElementById('modal-customer-ledger');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
+    }
+
+    function openLedgerFromProfile() {
+      if (!currentProfileCustomerId) return;
+      closeCustomerProfileModal();
+      openCustomerLedgerModal(currentProfileCustomerId);
+    }
+
+    function setLedgerFilter(filterType) {
+      currentLedgerFilter = filterType;
+      ['all', 'bills', 'payments'].forEach(t => {
+        const btn = document.getElementById(`btn-ledger-filter-${t}`);
+        if (btn) {
+          if (t === filterType) {
+            btn.className = 'px-3 py-1 rounded-xl text-xs font-bold bg-purple-600 text-white transition cursor-pointer';
+          } else {
+            btn.className = 'px-3 py-1 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer';
+          }
+        }
+      });
+      renderCustomerLedger(currentLedgerCustomerId, filterType);
+    }
+
+    function toggleLedgerBillDropdown(billId) {
+      if (ledgerExpandedBillIds.has(billId)) {
+        ledgerExpandedBillIds.delete(billId);
+      } else {
+        ledgerExpandedBillIds.add(billId);
+      }
+      const drawer = document.getElementById(`ledger-bill-drawer-${billId}`);
+      const icon = document.getElementById(`ledger-chevron-icon-${billId}`);
+      const label = document.getElementById(`ledger-chevron-label-${billId}`);
+      if (drawer) {
+        if (ledgerExpandedBillIds.has(billId)) {
+          drawer.classList.remove('hidden');
+          if (icon) icon.style.transform = 'rotate(180deg)';
+          if (label) label.innerText = 'Hide Details';
+        } else {
+          drawer.classList.add('hidden');
+          if (icon) icon.style.transform = 'rotate(0deg)';
+          if (label) label.innerText = 'Bill Details';
+        }
+      }
+    }
+
+    function toggleAllLedgerBillDropdowns() {
+      const allDrawers = document.querySelectorAll('[id^="ledger-bill-drawer-"]');
+      const btnLabel = document.getElementById('btn-ledger-toggle-all-label');
+      const isAnyHidden = Array.from(allDrawers).some(d => d.classList.contains('hidden'));
+
+      allDrawers.forEach(drawer => {
+        const billId = drawer.id.replace('ledger-bill-drawer-', '');
+        const icon = document.getElementById(`ledger-chevron-icon-${billId}`);
+        const label = document.getElementById(`ledger-chevron-label-${billId}`);
+        if (isAnyHidden) {
+          drawer.classList.remove('hidden');
+          ledgerExpandedBillIds.add(billId);
+          if (icon) icon.style.transform = 'rotate(180deg)';
+          if (label) label.innerText = 'Hide Details';
+        } else {
+          drawer.classList.add('hidden');
+          ledgerExpandedBillIds.delete(billId);
+          if (icon) icon.style.transform = 'rotate(0deg)';
+          if (label) label.innerText = 'Bill Details';
+        }
+      });
+
+      if (btnLabel) {
+        btnLabel.innerText = isAnyHidden ? 'Collapse All Bills' : 'Expand All Bills';
+      }
+    }
+
+    function getCustomerChronologicalLedger(custId) {
+      const cust = customers.find(c => String(c.id) === String(custId));
+      if (!cust) return { customer: null, entries: [], totalGrossBilled: 0, totalPaymentsCollected: 0, currentBalance: 0, openingBalance: 0, ordersCount: 0, receiptsCount: 0 };
+
+      // 1. Gather all orders for customer
+      const custOrders = orders.filter(o => String(o.buyerId) === String(cust.id) || (o.buyerName && o.buyerName.toLowerCase() === cust.name.toLowerCase()));
+
+      // 2. Gather all payment receipts
+      const custReceipts = (paymentReceipts || []).filter(r => String(r.buyerId) === String(cust.id) || (r.buyerName && r.buyerName.toLowerCase() === cust.name.toLowerCase()));
+
+      // 3. Build unified events
+      const events = [];
+      custOrders.forEach(o => {
+        events.push({
+          type: 'bill',
+          id: o.id,
+          date: o.date,
+          time: o.time || '',
+          timestamp: new Date(o.date + ' ' + (o.time || '00:00')).getTime() || 0,
+          debit: Number(o.netPayable || 0),
+          credit: Number(o.amountPaid || 0),
+          netDueAdded: Number(o.balanceDue !== undefined ? o.balanceDue : (Number(o.netPayable || 0) - Number(o.amountPaid || 0))),
+          status: getOrderStatus(o),
+          paymentMode: o.paymentMode || (o.amountPaid > 0 ? 'Part Paid' : 'Credit / Udhaar'),
+          order: o,
+          itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+          unitsCount: Number(o.totalUnits || 0)
+        });
+      });
+
+      custReceipts.forEach(r => {
+        events.push({
+          type: 'payment',
+          id: r.id,
+          date: r.date,
+          time: r.time || '',
+          timestamp: new Date(r.date + ' ' + (r.time || '00:00')).getTime() || 0,
+          debit: 0,
+          credit: Number(r.amount || 0),
+          netDueAdded: -Number(r.amount || 0),
+          receipt: r
+        });
+      });
+
+      // Sort chronological from oldest to newest to compute running concurrent balances
+      events.sort((a,b) => a.timestamp - b.timestamp);
+
+      // Reconcile opening balance
+      const totalNetBilled = custOrders.reduce((sum, o) => sum + Number(o.balanceDue !== undefined ? o.balanceDue : (Number(o.netPayable || 0) - Number(o.amountPaid || 0))), 0);
+      const totalReceipts = custReceipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const currentPending = Number(cust.pendingUdhaar || 0);
+      const calculatedCurrent = totalNetBilled - totalReceipts;
+      const openingBalance = Math.max(0, currentPending - calculatedCurrent);
+
+      let running = openingBalance;
+      const chronological = [];
+
+      if (openingBalance > 0) {
+        chronological.push({
+          type: 'opening',
+          id: 'OPN-UDHAAR',
+          date: events[0] ? events[0].date : (cust.created_at ? cust.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+          time: '',
+          debit: openingBalance,
+          credit: 0,
+          concurrentBalance: openingBalance,
+          summary: 'Historical Opening Balance / Pre-existing Due'
+        });
+      }
+
+      events.forEach(e => {
+        running = Math.max(0, running + e.netDueAdded);
+        e.concurrentBalance = running;
+        chronological.push(e);
+      });
+
+      const totalGrossBilled = custOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const totalPaymentsCollected = custOrders.reduce((sum, o) => sum + Number(o.amountPaid || 0), 0) + totalReceipts;
+
+      return {
+        customer: cust,
+        openingBalance,
+        totalGrossBilled,
+        totalPaymentsCollected,
+        currentBalance: running,
+        entries: chronological,
+        ordersCount: custOrders.length,
+        receiptsCount: custReceipts.length
+      };
+    }
+
+    function renderCustomerLedger(custId = null, filter = null) {
+      const targetId = custId || currentLedgerCustomerId;
+      if (!targetId) return;
+      currentLedgerCustomerId = targetId;
+      const activeFilter = filter || currentLedgerFilter || 'all';
+
+      const cust = customers.find(c => String(c.id) === String(targetId));
+      if (!cust) return;
+
+      const ledger = getCustomerChronologicalLedger(targetId);
+
+      // Populate header info
+      document.getElementById('ledger-cust-name').innerText = cust.name;
+      document.getElementById('ledger-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
+      document.getElementById('ledger-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+      document.getElementById('ledger-cust-phone').innerText = cust.phone || 'No phone';
+      document.getElementById('ledger-cust-contact').innerText = cust.contactPerson || cust.name;
+      document.getElementById('ledger-cust-address').innerText = cust.address || 'Address as per master records';
+
+      const limit = Number(cust.creditLimit || 50000);
+      const curDue = Number(cust.pendingUdhaar || 0);
+      const availableCredit = Math.max(0, limit - curDue);
+
+      document.getElementById('ledger-kpi-total-billed').innerText = formatINR(ledger.totalGrossBilled);
+      document.getElementById('ledger-kpi-bills-count').innerText = `${ledger.ordersCount} Invoices Total`;
+
+      document.getElementById('ledger-kpi-total-paid').innerText = formatINR(ledger.totalPaymentsCollected);
+      document.getElementById('ledger-kpi-receipts-count').innerText = `${ledger.receiptsCount} Collections Recorded`;
+
+      document.getElementById('ledger-kpi-current-due').innerText = formatINR(curDue);
+      document.getElementById('ledger-kpi-current-due').className = `font-mono font-black text-lg sm:text-xl ${curDue > 0 ? 'text-rose-600' : 'text-emerald-700'}`;
+      document.getElementById('ledger-kpi-due-status').innerText = curDue > 0 ? `${formatINR(curDue)} Pending Recovery` : '✅ All Bills Settled';
+
+      document.getElementById('ledger-kpi-credit-limit').innerText = formatINR(limit);
+      document.getElementById('ledger-kpi-credit-available').innerText = `${formatINR(availableCredit)} Headroom`;
+
+      // Filter entries
+      let filteredEntries = [...ledger.entries];
+      if (activeFilter === 'bills') {
+        filteredEntries = filteredEntries.filter(e => e.type === 'bill' || e.type === 'opening');
+      } else if (activeFilter === 'payments') {
+        filteredEntries = filteredEntries.filter(e => e.type === 'payment');
+      }
+
+      // Display newest transactions first for immediate visibility
+      const displayList = [...filteredEntries].reverse();
+
+      const tbody = document.getElementById('ledger-entries-tbody');
+      if (!tbody) return;
+
+      if (displayList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No transaction records found under this filter for <b>${escapeHtml(cust.name)}</b>.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = displayList.map((entry, idx) => {
+        if (entry.type === 'opening') {
+          return `
+            <tr class="bg-amber-50/60 font-semibold border-b border-amber-200">
+              <td class="p-3 text-center font-mono text-amber-800">${displayList.length - idx}</td>
+              <td class="p-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(entry.date)}</td>
+              <td class="p-3 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  <i data-lucide="clock" class="w-3 h-3"></i> Opening Due
+                </span>
+              </td>
+              <td class="p-3 text-slate-700 font-bold">Historical / Pre-existing Udhaar Balance</td>
+              <td class="p-3 text-right font-mono font-bold text-slate-700">${formatINR(entry.debit)}</td>
+              <td class="p-3 text-right font-mono text-slate-400">-</td>
+              <td class="p-3 text-right font-mono font-black text-rose-600">${formatINR(entry.concurrentBalance)}</td>
+              <td class="p-3 text-center text-[10px] text-slate-400 font-semibold">Base Due</td>
+            </tr>
+          `;
+        }
+
+        if (entry.type === 'payment') {
+          const rec = entry.receipt;
+          return `
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="p-3 text-center font-mono text-slate-400">${displayList.length - idx}</td>
+              <td class="p-3 whitespace-nowrap">
+                <div class="font-mono font-bold text-slate-800">${escapeHtml(entry.date)}</div>
+                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(entry.time || '')}</div>
+              </td>
+              <td class="p-3 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <i data-lucide="hand-coins" class="w-3 h-3"></i> Receipt #${escapeHtml(entry.id)}
+                </span>
+                <div class="text-[10px] text-emerald-600 font-semibold mt-0.5">${escapeHtml(rec.paymentMode || 'Payment')}</div>
+              </td>
+              <td class="p-3">
+                <div class="font-bold text-slate-800">Udhaar Collection / Settlement</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">${rec.ref ? `Ref / Note: <b>${escapeHtml(rec.ref)}</b>` : 'Direct Ledger Credit'}</div>
+              </td>
+              <td class="p-3 text-right font-mono text-slate-400">-</td>
+              <td class="p-3 text-right font-mono font-black text-emerald-700">-${formatINR(entry.credit)}</td>
+              <td class="p-3 text-right font-mono font-black text-sm ${entry.concurrentBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}">${formatINR(entry.concurrentBalance)}</td>
+              <td class="p-3 text-center">
+                <button type="button" onclick="sharePaymentReceiptWhatsApp({ id: '${entry.id}', buyerName: '${escapeHtml(cust.name)}', buyerPhone: '${escapeHtml(cust.phone)}', date: '${entry.date}', time: '${entry.time}', amount: ${entry.credit}, paymentMode: '${escapeHtml(rec.paymentMode || 'Cash')}', ref: '${escapeHtml(rec.ref || '')}', previousDue: ${entry.concurrentBalance + entry.credit}, newBalance: ${entry.concurrentBalance} })" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer shadow-2xs" title="Send WhatsApp Receipt">
+                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+
+        // It is a Bill / Order
+        const o = entry.order;
+        const isDelivered = (entry.status === 'Delivered');
+        const items = Array.isArray(o.items) ? o.items : [];
+        const isExpanded = ledgerExpandedBillIds.has(entry.id);
+
+        const itemsSummary = items.length > 0 
+          ? items.map(it => `${it.qty}x ${it.name}`).slice(0, 3).join(', ') + (items.length > 3 ? ` +${items.length - 3} more` : '')
+          : `${o.totalUnits || 0} units total`;
+
+        const itemsRows = items.map((it, itemIdx) => `
+          <tr class="hover:bg-indigo-50/40">
+            <td class="p-2 pl-3">
+              <span class="font-bold text-slate-800">${escapeHtml(it.name)}</span>
+              <span class="font-mono text-[10px] text-slate-400 block">${escapeHtml(it.sku || '')}</span>
+            </td>
+            <td class="p-2 text-center font-mono text-slate-600 font-semibold">${escapeHtml(it.unitSize || '-')}</td>
+            <td class="p-2 text-center font-mono font-bold text-slate-900">${it.qty}</td>
+            <td class="p-2 text-right font-mono text-slate-700">${formatINR(it.rate)}</td>
+            <td class="p-2 pr-3 text-right font-mono font-black text-slate-900">${formatINR(it.subtotal || (it.qty * it.rate))}</td>
+          </tr>
+        `).join('');
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition cursor-pointer select-none" onclick="toggleLedgerBillDropdown('${entry.id}')">
+            <td class="p-3 text-center font-mono text-slate-400">${displayList.length - idx}</td>
+            <td class="p-3 whitespace-nowrap">
+              <div class="font-mono font-bold text-slate-800">${escapeHtml(entry.date)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(entry.time || '')}</div>
+            </td>
+            <td class="p-3 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <i data-lucide="file-text" class="w-3 h-3"></i> Bill #${escapeHtml(entry.id)}
+              </span>
+              <div class="text-[10px] ${isDelivered ? 'text-emerald-600' : 'text-amber-600'} font-semibold mt-0.5">
+                ${isDelivered ? '✅ Delivered' : '🚚 ' + escapeHtml(entry.status)}
+              </div>
+            </td>
+            <td class="p-3">
+              <div class="font-bold text-slate-800 truncate max-w-xs" title="${escapeHtml(itemsSummary)}">${escapeHtml(itemsSummary)}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Pay Mode: <b>${escapeHtml(entry.paymentMode)}</b></div>
+            </td>
+            <td class="p-3 text-right font-mono font-black text-slate-900">${formatINR(entry.debit)}</td>
+            <td class="p-3 text-right font-mono font-bold ${entry.credit > 0 ? 'text-emerald-700' : 'text-slate-400'}">${entry.credit > 0 ? formatINR(entry.credit) : '-'}</td>
+            <td class="p-3 text-right font-mono font-black text-sm ${entry.concurrentBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}">${formatINR(entry.concurrentBalance)}</td>
+            <td class="p-3 text-center">
+              <button type="button" onclick="event.stopPropagation(); toggleLedgerBillDropdown('${entry.id}')" class="px-2.5 py-1 rounded-lg ${isExpanded ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'} text-[11px] font-bold inline-flex items-center gap-1 transition cursor-pointer shadow-2xs">
+                <span id="ledger-chevron-label-${entry.id}">${isExpanded ? 'Hide Details' : 'Bill Details'}</span>
+                <i data-lucide="chevron-down" id="ledger-chevron-icon-${entry.id}" class="w-3.5 h-3.5 transition-transform duration-200" style="${isExpanded ? 'transform: rotate(180deg);' : ''}"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- CONCURRENT BILL DROPDOWN DRAWER -->
+          <tr id="ledger-bill-drawer-${entry.id}" class="${isExpanded ? '' : 'hidden'} bg-indigo-50/30 border-y border-indigo-100">
+            <td colspan="8" class="p-3 sm:p-4">
+              <div class="bg-white rounded-2xl p-4 border border-indigo-200/70 shadow-sm space-y-3">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 flex-wrap gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                    <span class="font-extrabold text-xs sm:text-sm text-slate-900">Concurrent Bill Breakdown #${escapeHtml(entry.id)}</span>
+                    <span class="text-[10px] text-slate-500 font-mono">Date: ${escapeHtml(entry.date)} ${escapeHtml(entry.time || '')}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="openInvoiceModal('${entry.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer">
+                      <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Full Invoice Slip
+                    </button>
+                    <button type="button" onclick="downloadInvoicePdf('${entry.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer">
+                      <i data-lucide="file-down" class="w-3.5 h-3.5"></i> PDF
+                    </button>
+                    <button type="button" onclick="shareWhatsApp('${entry.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer" title="Send Invoice on WhatsApp">
+                      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Products Table inside Bill Dropdown -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                  <table class="w-full text-xs">
+                    <thead class="bg-slate-100 text-slate-700 text-[10px] uppercase font-bold">
+                      <tr>
+                        <th class="p-2 pl-3 text-left">Product / SKU</th>
+                        <th class="p-2 text-center w-24">Pack Size</th>
+                        <th class="p-2 text-center w-20">Qty</th>
+                        <th class="p-2 text-right w-24">Rate (₹)</th>
+                        <th class="p-2 pr-3 text-right w-28">Subtotal (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${itemsRows.length > 0 ? itemsRows : `<tr><td colspan="5" class="p-3 text-center text-slate-400">Total ${o.totalUnits || 0} units</td></tr>`}
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Bill Totals & Settlement Calculation Bar -->
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs flex-wrap gap-3 font-mono">
+                  <div class="flex items-center gap-3 text-[11px] text-slate-600 flex-wrap">
+                    <span>Items Subtotal: <b>${formatINR(o.itemsSubtotal || o.netPayable)}</b></span>
+                    ${o.extraRebate > 0 ? `<span>• Cash Discount: <b class="text-emerald-700 font-bold">-${formatINR(o.extraRebate)}</b></span>` : ''}
+                    <span>• Route Beat: <b>${escapeHtml((o.dispatchRoute || cust.homeRoute || 'Main Beat').split(':')[0])}</b></span>
+                    <span>• Payment Mode: <b class="text-slate-800">${escapeHtml(o.paymentMode || 'Credit')}</b></span>
+                  </div>
+                  <div class="flex items-center gap-3 text-xs">
+                    <div><span class="text-slate-500 font-sans text-[11px]">Total Bill:</span> <b class="text-slate-900">${formatINR(o.netPayable)}</b></div>
+                    <div><span class="text-slate-500 font-sans text-[11px]">Paid:</span> <b class="text-emerald-700">${formatINR(o.amountPaid || 0)}</b></div>
+                    <div><span class="text-slate-500 font-sans text-[11px]">Due Added:</span> <b class="text-rose-600 font-black">${formatINR(entry.netDueAdded)}</b></div>
+                    <div class="pl-2 border-l border-slate-300"><span class="text-slate-500 font-sans text-[11px]">Concurrent Bal:</span> <b class="text-slate-900 font-black">${formatINR(entry.concurrentBalance)}</b></div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openOrderModalForCustomer(custId) {
+      closeCustomerLedgerModal();
+      setTab('order');
+      const select = document.getElementById('order-customer-select');
+      if (select && custId) {
+        select.value = custId;
+        onOrderCustomerChange();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function shareCustomerLedgerWhatsApp() {
+      if (!currentLedgerCustomerId) return;
+      const cust = customers.find(c => String(c.id) === String(currentLedgerCustomerId));
+      if (!cust) return;
+
+      const settings = getCompanySettings();
+      const ledger = getCustomerChronologicalLedger(cust.id);
+
+      const recentLines = ledger.entries.slice(-10).reverse().map((e, i) => {
+        if (e.type === 'bill') {
+          return `${i + 1}. *${e.date}* Bill #${e.id}: Total ${formatINR(e.debit)} | Paid ${formatINR(e.credit)} ➔ Bal: *${formatINR(e.concurrentBalance)}*`;
+        } else if (e.type === 'payment') {
+          return `${i + 1}. *${e.date}* Receipt #${e.id}: Payment -${formatINR(e.credit)} (${e.receipt.paymentMode || 'UPI'}) ➔ Bal: *${formatINR(e.concurrentBalance)}*`;
+        } else {
+          return `${i + 1}. Opening Due: ${formatINR(e.debit)} ➔ Bal: *${formatINR(e.concurrentBalance)}*`;
+        }
+      }).join('\n');
+
+      const text = `*${settings.companyName.toUpperCase()}*\n` +
+        `*CUSTOMER ACCOUNT STATEMENT & LEDGER*\n` +
+        `--------------------------------\n` +
+        `Customer: *${cust.name}* [${cust.tier || 'Retail'}]\n` +
+        `Beat: ${(cust.homeRoute || 'General Beat').split(':')[0]}\n` +
+        `Statement Date: ${new Date().toLocaleDateString('en-IN')}\n` +
+        `--------------------------------\n` +
+        `*LEDGER SUMMARY:*\n` +
+        `• Total Invoiced: *${formatINR(ledger.totalGrossBilled)}* (${ledger.ordersCount} Bills)\n` +
+        `• Total Payments Received: *${formatINR(ledger.totalPaymentsCollected)}*\n` +
+        `• Approved Credit Limit: ${formatINR(cust.creditLimit || 50000)}\n` +
+        `• *CONCURRENT BALANCE DUE: ${formatINR(cust.pendingUdhaar || 0)}*\n` +
+        `--------------------------------\n` +
+        `*CONCURRENT BILLS & TRANSACTIONS:*\n` +
+        recentLines +
+        `\n--------------------------------\n` +
+        `*BANK ACCOUNT FOR SETTLEMENT:*\n` +
+        `Bank: ${settings.bankName}\n` +
+        `A/C: ${settings.accountNumber} | IFSC: ${settings.ifsc}\n` +
+        `UPI ID: ${settings.upiId}\n` +
+        `--------------------------------\n` +
+        `Please verify against your records.\nThank you! Sri Govinda Food Products`;
+
+      const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    function exportCustomerLedgerCsv() {
+      if (!currentLedgerCustomerId) return;
+      const cust = customers.find(c => String(c.id) === String(currentLedgerCustomerId));
+      if (!cust) return;
+
+      const ledger = getCustomerChronologicalLedger(cust.id);
+      const headers = ["Index", "Date", "Time", "Type", "Reference", "Particulars", "Debit (Billed INR)", "Credit (Paid INR)", "Concurrent Balance (INR)"];
+
+      const rows = ledger.entries.map((e, idx) => {
+        const typeStr = e.type === 'bill' ? 'Bill / Invoice' : (e.type === 'payment' ? 'Payment Collection' : 'Opening Due');
+        const refStr = e.id || '';
+        const partStr = e.type === 'bill' 
+          ? `Bill #${e.id} (${(e.order.items || []).map(it => `${it.qty}x ${it.name}`).join('; ')})`
+          : (e.type === 'payment' ? `Payment Receipt (${e.receipt.paymentMode || 'Cash'}) ${e.receipt.ref || ''}` : 'Historical Opening Balance');
+        
+        return [
+          idx + 1,
+          `"${e.date}"`,
+          `"${e.time || ''}"`,
+          `"${typeStr}"`,
+          `"${refStr}"`,
+          `"${partStr.replace(/"/g, '""')}"`,
+          e.debit,
+          e.credit,
+          e.concurrentBalance
+        ];
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Ledger_${cust.name.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function printCustomerLedger() {
+      window.print();
+    }
+
+    // ==============================================================================
     // 17B. OUTSTANDING, OVER-LIMIT & AGING DEBTORS HUB LOGIC
     // ==============================================================================
     let paymentReceipts = [];
@@ -8609,6 +9313,9 @@
             </button>
             <button type="button" onclick="openCustomerStatementModal('${cust.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer" title="View Full Account Statement Slip">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+            </button>
+            <button type="button" onclick="openCustomerLedgerModal('${cust.id}')" class="p-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 cursor-pointer" title="View Customer Account Ledger & Concurrent Bills">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
             </button>
             <button type="button" onclick="openCustomerModal('${cust.id}')" class="p-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer" title="Edit Customer Limit or Records">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
