@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pradhish - Sales Portal | Sri Govinda Food Products</title>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      .printable-card, .printable-card * { visibility: visible; }
+      .printable-card { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased select-none pb-24 md:pb-6">
+
+  <!-- ==============================================================================
+       TOP APP BAR: AGENT IDENTITY & CLOUD STATUS
+       ============================================================================== -->
+  <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 px-3 py-2.5 sm:px-6">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+      <!-- Agent Name & Beat -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center text-sm shadow-md shrink-0">
+          <i data-lucide="user-check" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h1 class="font-extrabold text-sm sm:text-base text-white truncate" id="agent-display-name">Pradhish</h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 truncate" id="agent-display-route">
+              east bangalore
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 truncate">Sri Govinda Field Terminal • <span class="font-mono text-[10px] text-slate-300" id="agent-display-id">SP-325</span></p>
+        </div>
+      </div>
+
+      <!-- Cloud Status & Target Pill -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs">
+          <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot"></span>
+          <span class="text-[11px] text-slate-300 font-medium" id="portal-cloud-text">Connecting...</span>
+        </div>
+        <button onclick="refreshData()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Refresh Live Data">
+          <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Cloud Pill & Quick Progress -->
+    <div class="max-w-5xl mx-auto mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs sm:hidden">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot-mobile"></span>
+        <span class="text-[10px] text-slate-400" id="portal-cloud-text-mobile">Connecting...</span>
+      </div>
+      <div class="text-[11px] text-slate-300 font-mono">
+        Today: <b class="text-emerald-400 font-bold" id="bar-today-sales">₹0</b> (<span id="bar-today-orders">0</span> bills)
+      </div>
+    </div>
+  </header>
+
+  <!-- ==============================================================================
+       NAVIGATION TABS (Sticky Mobile Bottom Bar + Desktop Header)
+       ============================================================================== -->
+  <div class="bg-slate-950/80 border-b border-slate-800 hidden md:block">
+    <div class="max-w-5xl mx-auto px-4 flex items-center gap-1 overflow-x-auto py-2">
+      <button onclick="switchTab('order')" id="tab-btn-order" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i> Book Order
+      </button>
+      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> My Dashboard
+      </button>
+      <button onclick="switchTab('history')" id="tab-btn-history" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="receipt" class="w-4 h-4"></i> My Orders (<span id="tab-orders-count">0</span>)
+      </button>
+      <button onclick="switchTab('samples')" id="tab-btn-samples" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="gift" class="w-4 h-4"></i> Log Sample
+      </button>
+      <button onclick="switchTab('shops')" id="tab-btn-shops" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="store" class="w-4 h-4"></i> Route Shops (<span id="tab-shops-count">0</span>)
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Nav Bar -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+    <button onclick="switchTab('order')" id="m-tab-order" class="flex flex-col items-center gap-1 text-[10px] font-bold text-emerald-400">
+      <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+      <span>Order</span>
+    </button>
+    <button onclick="switchTab('dashboard')" id="m-tab-dashboard" class="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span>Target</span>
+    </button>
+    <button onclick="switchTab('history')" id="m-tab-history" class="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400">
+      <i data-lucide="receipt" class="w-5 h-5"></i>
+      <span>Bills</span>
+    </button>
+    <button onclick="switchTab('samples')" id="m-tab-samples" class="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400">
+      <i data-lucide="gift" class="w-5 h-5"></i>
+      <span>Samples</span>
+    </button>
+    <button onclick="switchTab('shops')" id="m-tab-shops" class="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400">
+      <i data-lucide="store" class="w-5 h-5"></i>
+      <span>Shops</span>
+    </button>
+  </nav>
+
+  <!-- ==============================================================================
+       MAIN WORKSPACE CONTAINER
+       ============================================================================== -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 space-y-5">
+
+    <!-- 1. TAB: BOOK ORDER -->
+    <section id="view-order" class="space-y-4">
+      
+      <!-- Customer Selection Card -->
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <i data-lucide="store" class="w-4 h-4"></i> Step 1: Select Retailer / Shop
+          </label>
+          <span class="text-[11px] text-slate-400" id="route-indicator-badge">Route: east bangalore</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+          <div class="sm:col-span-8">
+            <select id="order-customer-select" onchange="onCustomerSelected()" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="">-- Choose Customer Store --</option>
+            </select>
+          </div>
+          <div class="sm:col-span-4 flex items-center gap-2">
+            <input type="text" id="cust-filter-input" oninput="filterCustomerDropdown()" placeholder="Quick search shop name..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Selected Customer Quick Info Strip -->
+        <div id="selected-cust-info" class="hidden pt-2 border-t border-slate-700/60 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div>
+            <span class="text-[10px] text-slate-400 block">Phone</span>
+            <a id="cust-info-phone-link" href="#" class="font-mono text-emerald-400 font-bold hover:underline flex items-center gap-1">
+              <i data-lucide="phone" class="w-3 h-3"></i> <span id="cust-info-phone">-</span>
+            </a>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Address</span>
+            <span id="cust-info-address" class="text-slate-200 truncate block">-</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">GST Number</span>
+            <span id="cust-info-gstin" class="font-mono text-slate-300">-</span>
+          </div>
+          <div class="text-right sm:text-left">
+            <span class="text-[10px] text-slate-400 block">Previous Udhaar</span>
+            <span id="cust-info-udhaar" class="font-mono font-black text-amber-400">₹0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Catalog & Quantities Grid -->
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="package" class="w-4 h-4"></i> Step 2: Select Sri Govinda Products
+            </h2>
+            <p class="text-[11px] text-slate-400">Adjust pack quantities below to prepare order bill</p>
+          </div>
+          <div class="w-full sm:w-auto">
+            <input type="text" id="prod-search-input" oninput="filterProductCards()" placeholder="Search product / SKU..." class="w-full sm:w-64 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Products Dynamic Grid -->
+        <div id="products-catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Order Summary & Checkout Card -->
+      <div class="bg-slate-950 border-2 border-emerald-500/50 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h3 class="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i> Order Booking Summary
+          </h3>
+          <span class="text-xs font-mono text-emerald-400 font-bold" id="summary-total-items-badge">0 items selected</span>
+        </div>
+
+        <!-- Compact Selected Line Items Preview -->
+        <div id="order-selected-items-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
+          <p class="text-slate-500 text-center py-3 italic">No items selected yet. Click (+) on any product above.</p>
+        </div>
+
+        <!-- Calculations & Options Form -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800 text-xs">
+          <div>
+            <label class="block text-slate-400 font-bold text-[11px] mb-1">Payment Mode</label>
+            <select id="order-pay-mode" onchange="onOrderPaymentModeChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="Cash on Delivery">Cash on Delivery</option>
+              <option value="UPI Transfer">UPI Transfer</option>
+              <option value="Part Payment">Part Payment (Advance / Split)</option>
+              <option value="Credit / Udhaar">Credit / Udhaar</option>
+              <option value="Cheque">Cheque</option>
+              <option value="NEFT / Bank Transfer">NEFT / Bank Transfer</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-400 font-bold text-[11px] mb-1">Special Rebate / Discount (₹)</label>
+            <input type="number" id="order-rebate" min="0" step="1" value="0" oninput="calculateOrderTotals()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-slate-400 font-bold text-[11px] mb-1">Delivery / Order Notes</label>
+            <input type="text" id="order-notes" placeholder="Optional notes for manager/dispatch" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Part Payment & Ledger Breakdown -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <label class="block text-slate-300 font-bold text-[11px] mb-1 flex items-center justify-between">
+              <span>Amount Paid Now (₹)</span>
+              <span id="order-paid-status-badge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Full Paid</span>
+            </label>
+            <input type="number" id="order-amount-paid" min="0" step="any" oninput="onOrderAmountPaidChange()" placeholder="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-black text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+          <div class="flex flex-col justify-center">
+            <span class="text-slate-400 font-bold text-[10px] uppercase">Balance Added to Customer Ledger (Udhaar)</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="order-balance-due" class="font-mono font-black text-rose-400 text-base">₹0</span>
+              <span id="order-ledger-impact-note" class="text-[10px] text-slate-400 font-semibold">(No Udhaar added)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totals & Submit Action -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between flex-wrap gap-3">
+          <div class="font-mono space-y-0.5">
+            <div class="text-xs text-slate-400">Total Units: <b class="text-white" id="summary-total-units">0</b></div>
+            <div class="text-xs text-slate-400">Subtotal: <b class="text-white" id="summary-subtotal">₹0</b></div>
+            <div class="text-base sm:text-lg font-black text-emerald-400">Net Payable: <span id="summary-net-payable">₹0</span></div>
+          </div>
+
+          <button type="button" onclick="submitOrder()" id="btn-submit-order" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-sm shadow-lg shadow-emerald-950 transition flex items-center gap-2 cursor-pointer">
+            <i data-lucide="check" class="w-5 h-5"></i> Book & Generate Bill
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TAB: MY DASHBOARD & TARGETS -->
+    <section id="view-dashboard" class="space-y-4 hidden">
+      <!-- Target Achievement Banner -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 border border-indigo-500/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <span class="text-[10px] uppercase font-black tracking-widest text-indigo-400 block">Monthly Target Performance</span>
+            <h2 class="text-xl sm:text-2xl font-black text-white" id="dash-agent-name">Pradhish</h2>
+            <p class="text-xs text-slate-400">Assigned Beat: <b class="text-slate-200">east bangalore</b> • Vehicle: <span class="text-slate-300">Two-Wheeler</span></p>
+          </div>
+          <div class="text-right font-mono">
+            <span class="text-xs text-slate-400 block">Target Quota</span>
+            <span class="text-lg font-black text-indigo-300" id="dash-monthly-target">₹30000</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs font-mono">
+            <span class="text-slate-300">Booked This Month: <b class="text-emerald-400 font-bold" id="dash-month-booked">₹0</b></span>
+            <span class="text-indigo-400 font-bold" id="dash-target-pct">0%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-700">
+            <div id="dash-target-bar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4">
+          <span class="text-[10px] font-bold text-slate-400 uppercase block">Today's Sales</span>
+          <span class="text-lg sm:text-xl font-black font-mono text-emerald-400 mt-1 block" id="dash-today-sales">₹0</span>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4">
+          <span class="text-[10px] font-bold text-slate-400 uppercase block">Today's Orders</span>
+          <span class="text-lg sm:text-xl font-black font-mono text-white mt-1 block" id="dash-today-orders-count">0</span>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4">
+          <span class="text-[10px] font-bold text-slate-400 uppercase block">Units Sold Today</span>
+          <span class="text-lg sm:text-xl font-black font-mono text-indigo-400 mt-1 block" id="dash-today-units">0</span>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4">
+          <span class="text-[10px] font-bold text-slate-400 uppercase block">Samples Logged</span>
+          <span class="text-lg sm:text-xl font-black font-mono text-amber-400 mt-1 block" id="dash-samples-count">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TAB: MY ORDERS HISTORY -->
+    <section id="view-history" class="space-y-4 hidden">
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <i data-lucide="receipt" class="w-4 h-4"></i> My Order Booking History
+          </h2>
+          <span class="text-xs text-slate-400 font-mono" id="orders-count-indicator">Showing your recent bookings</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-200">
+            <thead class="bg-slate-900/80 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="p-2.5">Bill #</th>
+                <th class="p-2.5">Date / Time</th>
+                <th class="p-2.5">Retailer Name</th>
+                <th class="p-2.5 text-right">Units</th>
+                <th class="p-2.5 text-right">Amount (₹)</th>
+                <th class="p-2.5">Payment</th>
+                <th class="p-2.5 text-center">Status</th>
+                <th class="p-2.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="agent-orders-tbody" class="divide-y divide-slate-700/60 font-mono">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TAB: LOG FREE SAMPLE -->
+    <section id="view-samples" class="space-y-4 hidden">
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-md max-w-xl mx-auto space-y-4">
+        <div>
+          <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i data-lucide="gift" class="w-4 h-4"></i> Record Free Sample Tasting
+          </h2>
+          <p class="text-xs text-slate-400">Log tasting samples given to prospective retailers</p>
+        </div>
+
+        <form id="sample-form" onsubmit="handleSampleSubmit(event)" class="space-y-3 text-xs">
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Store / Retailer Name</label>
+            <input type="text" id="sample-store-name" required placeholder="e.g. SLN Provision Store" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-400 font-bold mb-1">Retailer Phone</label>
+              <input type="tel" id="sample-phone" placeholder="10-digit mobile" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+            </div>
+            <div>
+              <label class="block text-slate-400 font-bold mb-1">Location / Beat</label>
+              <input type="text" id="sample-location" value="east bangalore" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-400 font-bold mb-1">Product Sampled</label>
+              <select id="sample-product-select" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 font-bold mb-1">Quantity Given (Packs)</label>
+              <input type="number" id="sample-qty" min="1" value="1" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold">
+            </div>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Retailer Feedback / Taste Notes</label>
+            <textarea id="sample-feedback" rows="2" placeholder="e.g. Liked aroma of Sambar powder, will order 10kg next week" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea>
+          </div>
+          <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+            <i data-lucide="check" class="w-4 h-4"></i> Submit Sample Log
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 5. TAB: ROUTE SHOPS DIRECTORY -->
+    <section id="view-shops" class="space-y-4 hidden">
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="store" class="w-4 h-4"></i> Retailers on Your Beat: east bangalore
+            </h2>
+            <p class="text-[11px] text-slate-400">Direct contact dialer & outstanding balance tracker</p>
+          </div>
+          <input type="text" id="route-shops-search" oninput="filterRouteShops()" placeholder="Search route shop..." class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
+        </div>
+
+        <div id="route-shops-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==============================================================================
+       MODAL: OFFICIAL BILL OF SUPPLY POPUP (WITHOUT PAYMENT OPTIONS OR QR)
+       ============================================================================== -->
+  <div id="modal-invoice" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 hidden">
+    <div class="bg-white text-black rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Toolbar -->
+      <div class="p-3 bg-slate-950 text-white flex items-center justify-between gap-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+          <span class="font-extrabold text-xs">Official Bill of Supply</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="shareActiveInvoiceWhatsApp()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 transition">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp Bill
+          </button>
+          <button onclick="window.print()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="closeInvoiceModal()" class="p-1 text-slate-400 hover:text-white transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Document -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
+        <div id="bill-printable-card" class="bg-white text-black font-sans w-full max-w-xl p-6 border-2 border-black space-y-3 text-xs shadow-sm printable-card">
+          <!-- Header -->
+          <div class="flex justify-between items-start border-b-2 border-black pb-2">
+            <div>
+              <div class="text-[10px] font-black uppercase underline tracking-wider">Bill of Supply</div>
+              <h3 class="text-lg font-black uppercase text-black" id="bill-company-name">Sri Govinda Food Products</h3>
+              <p class="text-[10px] text-black leading-tight max-w-xs" id="bill-company-address">17, Jai Layout, Gantiganahalli post, Yelahanka, Bengaluru - 560064</p>
+              <div class="text-[10px] font-bold text-black">GST No: <span id="bill-company-gstin" class="font-mono font-black">29AFVPD7658B1Z1</span></div>
+            </div>
+            <div class="border border-black p-2 min-w-[130px] text-right font-mono text-[11px] space-y-0.5">
+              <div>Date: <b id="bill-date">-</b></div>
+              <div>Bill No: <b id="bill-ref">-</b></div>
+              <div class="text-[9px] text-slate-600">Executive: Pradhish</div>
+            </div>
+          </div>
+
+          <!-- Notice Strip -->
+          <div class="border-y border-black py-0.5 text-center text-[9px] font-black uppercase tracking-wider text-black">
+            composition taxable person, not eligible to collect tax on supplies
+          </div>
+
+          <!-- Purchaser Info -->
+          <div class="border border-black p-2 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-[9px] uppercase font-bold text-slate-600 block">Purchaser:</span>
+              <b class="text-sm font-black text-black block" id="bill-cust-name">-</b>
+              <span class="text-[10px] text-slate-700 block" id="bill-cust-phone">-</span>
+              <span class="text-[9px] text-slate-600 block truncate" id="bill-cust-address">-</span>
+            </div>
+            <div class="text-right font-mono text-xs space-y-0.5">
+              <span class="text-[9px] uppercase font-bold text-slate-600 block">GST / Route:</span>
+              <div id="bill-cust-gstin" class="font-bold text-black">Unregistered / Retail</div>
+              <div id="bill-cust-route" class="text-slate-700">east bangalore</div>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <table class="w-full text-left text-xs border-collapse border border-black text-black">
+            <thead>
+              <tr class="border-b border-black font-black uppercase text-[10px] bg-slate-50">
+                <th class="p-1 border-r border-black text-center w-8">#</th>
+                <th class="p-1 border-r border-black">Description of Goods</th>
+                <th class="p-1 border-r border-black text-center w-16">Qty</th>
+                <th class="p-1 border-r border-black text-right w-16">Rate (₹)</th>
+                <th class="p-1 text-right w-20">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="bill-items-tbody" class="divide-y divide-black font-mono text-xs">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+
+          <!-- Bottom: Terms & Conditions and Totals (ZERO PAYMENT OPTIONS OR QR) -->
+          <div class="border border-black p-2.5 grid grid-cols-2 gap-3 text-xs">
+            <div class="flex flex-col justify-between border-r border-black pr-2">
+              <div>
+                <span class="text-[9px] font-black uppercase tracking-wider block mb-1">Terms & Conditions:</span>
+                <div class="text-[9px] font-bold text-black uppercase space-y-0.5 leading-tight">
+                  <div>• Dispute if any, subject to Bangalore Jurisdiction</div>
+                  <div>• Goods once sold will not be taken back / or exchange</div>
+                  <div>• Composition taxable person, not eligible to collect tax</div>
+                </div>
+              </div>
+              <div class="text-[8px] text-slate-500 font-mono pt-2">E. & O.E.</div>
+            </div>
+
+            <div class="space-y-1.5 text-right font-mono">
+              <div class="flex justify-between text-xs text-black">
+                <span>Subtotal:</span> <span id="bill-subtotal" class="font-bold">₹0</span>
+              </div>
+              <div id="bill-rebate-row" class="flex justify-between text-xs text-black hidden">
+                <span>Rebate:</span> <span id="bill-rebate" class="font-bold">-₹0</span>
+              </div>
+              <div class="flex justify-between text-sm font-black border-t border-black pt-1 text-black">
+                <span>Net Total:</span> <span id="bill-net-payable">₹0</span>
+              </div>
+              <div class="flex justify-between text-xs text-black" id="bill-paid-row">
+                <span>Amount Paid:</span> <span id="bill-amount-paid" class="font-bold text-emerald-800">₹0</span>
+              </div>
+              <div class="flex justify-between text-xs font-bold text-black" id="bill-balance-row">
+                <span>Balance Due (Udhaar):</span> <span id="bill-balance-due" class="font-bold text-rose-800">₹0</span>
+              </div>
+              <div class="text-[9px] text-left pt-2 font-sans">
+                <span class="text-slate-500 uppercase block text-[8px]">In Words:</span>
+                <span id="bill-amount-words" class="font-bold italic block leading-tight text-black">-</span>
+              </div>
+              <div class="pt-4 border-t border-black text-center">
+                <span class="text-[9px] font-black uppercase block">Proprietor Name & Signature</span>
+                <span class="text-[8px] text-black">Sri Govinda Food Products</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       APPLICATION LOGIC & DATA SYNCHRONIZATION
+       ============================================================================== -->
+  <script>
+    // 1. INJECTED SALESPERSON SPECIFIC IDENTITY
+    const AGENT = {
+      id: "SP-325",
+      name: "Pradhish",
+      slug: "pradhish",
+      phone: "11111111",
+      assignedRoute: "east bangalore",
+      monthlyTarget: Number("30000" || 150000),
+      commissionPct: Number("3" || 3.0),
+      dailyOrderTarget: Number("6" || 6)
+    };
+
+    // 2. STATE REPOSITORY
+    let supabaseClient = null;
+    let products = [];
+    let customers = [];
+    let orders = [];
+    let activeCart = {}; // { [productId]: qty }
+    let activeCustomer = null;
+    let currentViewingOrder = null;
+
+    // 3. BOOTSTRAP
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (window.lucide) lucide.createIcons();
+      initSupabase();
+      loadCachedData();
+      renderAllViews();
+    });
+
+    function initSupabase() {
+      const cfg = window.SRI_GOVINDA_CONFIG;
+      if (!cfg || !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) {
+        updateCloudStatus(false);
+        return;
+      }
+      try {
+        supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+        updateCloudStatus(true);
+        fetchCloudData();
+
+        // Realtime sync for orders and customers
+        supabaseClient.channel('agent-portal-sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchCloudData())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, () => fetchCloudData())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchCloudData())
+          .subscribe();
+      } catch (err) {
+        console.warn("Supabase init note:", err);
+        updateCloudStatus(false);
+      }
+    }
+
+    function updateCloudStatus(isLive) {
+      const dot = document.getElementById('portal-cloud-dot');
+      const text = document.getElementById('portal-cloud-text');
+      const dotM = document.getElementById('portal-cloud-dot-mobile');
+      const textM = document.getElementById('portal-cloud-text-mobile');
+
+      const cls = isLive ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse' : 'w-2 h-2 rounded-full bg-amber-400';
+      const label = isLive ? 'Live Cloud Synced' : 'Offline Mode';
+
+      if (dot) dot.className = cls;
+      if (text) text.innerText = label;
+      if (dotM) dotM.className = cls;
+      if (textM) textM.innerText = label;
+    }
+
+    function loadCachedData() {
+      try {
+        const p = localStorage.getItem('sg_products');
+        if (p) products = JSON.parse(p);
+        const c = localStorage.getItem('sg_customers');
+        if (c) customers = JSON.parse(c);
+        const o = localStorage.getItem(`sg_orders_${AGENT.slug}`);
+        if (o) orders = JSON.parse(o);
+      } catch (e) {}
+    }
+
+    async function fetchCloudData() {
+      if (!supabaseClient) return;
+      try {
+        const { data: dbProducts } = await supabaseClient.from('products').select('*');
+        if (dbProducts && dbProducts.length > 0) {
+          products = dbProducts;
+          localStorage.setItem('sg_products', JSON.stringify(products));
+        }
+
+        const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
+        if (dbBuyers && dbBuyers.length > 0) {
+          customers = dbBuyers;
+          localStorage.setItem('sg_customers', JSON.stringify(customers));
+        }
+
+        const { data: dbOrders } = await supabaseClient.from('orders')
+          .select('*')
+          .or(`salespersonId.eq.${AGENT.id},salespersonName.ilike.%${AGENT.name}%`)
+          .order('created_at', { ascending: false });
+
+        if (dbOrders) {
+          orders = dbOrders;
+          localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
+        }
+
+        renderAllViews();
+      } catch (err) {
+        console.warn("Cloud data fetch note:", err);
+      }
+    }
+
+    function refreshData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      fetchCloudData().finally(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+        }, 600);
+      });
+    }
+
+    // 4. TAB NAVIGATION
+    function switchTab(tabId) {
+      ['order', 'dashboard', 'history', 'samples', 'shops'].forEach(id => {
+        const sec = document.getElementById(`view-${id}`);
+        if (sec) sec.classList.toggle('hidden', id !== tabId);
+
+        const btn = document.getElementById(`tab-btn-${id}`);
+        if (btn) {
+          if (id === tabId) {
+            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white";
+          } else {
+            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800";
+          }
+        }
+
+        const mBtn = document.getElementById(`m-tab-${id}`);
+        if (mBtn) {
+          mBtn.className = id === tabId 
+            ? "flex flex-col items-center gap-1 text-[10px] font-bold text-emerald-400" 
+            : "flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400";
+        }
+      });
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 5. RENDER ALL VIEWS
+    function renderAllViews() {
+      populateCustomerDropdown();
+      renderProductCatalog();
+      renderDashboard();
+      renderOrdersHistory();
+      renderSampleProductDropdown();
+      renderRouteShops();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 6. CUSTOMER SELECTION LOGIC
+    function populateCustomerDropdown() {
+      const select = document.getElementById('order-customer-select');
+      if (!select) return;
+
+      const currentVal = select.value;
+      const beat = (AGENT.assignedRoute || '').toLowerCase().trim();
+
+      // Separate customers on agent's assigned beat vs other beats
+      const routeCusts = customers.filter(c => (c.homeRoute || '').toLowerCase().includes(beat));
+      const otherCusts = customers.filter(c => !(c.homeRoute || '').toLowerCase().includes(beat));
+
+      let html = `<option value="">-- Choose Customer Store --</option>`;
+      if (routeCusts.length > 0) {
+        html += `<optgroup label="⭐ Stores on Your Beat (${AGENT.assignedRoute})">`;
+        routeCusts.forEach(c => {
+          html += `<option value="${c.id}">${escapeHtml(c.name)} - ${escapeHtml(c.area || c.address || 'Local')}</option>`;
+        });
+        html += `</optgroup>`;
+      }
+      if (otherCusts.length > 0) {
+        html += `<optgroup label="Other Routes">`;
+        otherCusts.forEach(c => {
+          html += `<option value="${c.id}">${escapeHtml(c.name)} - ${escapeHtml(c.homeRoute || 'General')}</option>`;
+        });
+        html += `</optgroup>`;
+      }
+
+      select.innerHTML = html;
+      if (currentVal) select.value = currentVal;
+    }
+
+    function filterCustomerDropdown() {
+      const q = (document.getElementById('cust-filter-input')?.value || '').toLowerCase().trim();
+      const select = document.getElementById('order-customer-select');
+      if (!select) return;
+
+      if (!q) {
+        populateCustomerDropdown();
+        return;
+      }
+
+      const matches = customers.filter(c => 
+        (c.name || '').toLowerCase().includes(q) || 
+        (c.phone || '').includes(q) || 
+        (c.address || '').toLowerCase().includes(q)
+      );
+
+      let html = `<option value="">-- ${matches.length} Stores Found --</option>`;
+      matches.forEach(c => {
+        html += `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.phone || c.homeRoute || '')})</option>`;
+      });
+      select.innerHTML = html;
+      if (matches.length === 1) {
+        select.value = matches[0].id;
+        onCustomerSelected();
+      }
+    }
+
+    function onCustomerSelected() {
+      const custId = document.getElementById('order-customer-select')?.value;
+      const infoBox = document.getElementById('selected-cust-info');
+      if (!custId) {
+        activeCustomer = null;
+        if (infoBox) infoBox.classList.add('hidden');
+        renderProductCatalog();
+        return;
+      }
+
+      activeCustomer = customers.find(c => c.id === custId) || null;
+      if (!activeCustomer) return;
+
+      if (infoBox) infoBox.classList.remove('hidden');
+      const phoneEl = document.getElementById('cust-info-phone');
+      const phoneLink = document.getElementById('cust-info-phone-link');
+      if (phoneEl) phoneEl.innerText = activeCustomer.phone || 'No phone';
+      if (phoneLink) phoneLink.href = activeCustomer.phone ? `tel:${activeCustomer.phone}` : '#';
+
+      const addrEl = document.getElementById('cust-info-address');
+      if (addrEl) addrEl.innerText = activeCustomer.address || 'Store delivery address as registered';
+
+      const gstinEl = document.getElementById('cust-info-gstin');
+      if (gstinEl) gstinEl.innerText = activeCustomer.gstin || 'Unregistered / Retail';
+
+      const udhaarEl = document.getElementById('cust-info-udhaar');
+      if (udhaarEl) udhaarEl.innerText = formatINR(activeCustomer.pendingUdhaar || 0);
+
+      renderProductCatalog();
+    }
+
+    // 7. PRODUCT CATALOG & ORDER CART
+    function renderProductCatalog() {
+      const grid = document.getElementById('products-catalog-grid');
+      if (!grid) return;
+
+      const q = (document.getElementById('prod-search-input')?.value || '').toLowerCase().trim();
+      const filtered = products.filter(p => !q || p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">No products match your search.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => {
+        const qty = activeCart[p.id] || 0;
+        const rate = p.baseRate || 0;
+        const isOutOfStock = (p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0);
+
+        return `
+          <div class="bg-slate-900/90 border ${qty > 0 ? 'border-emerald-500/80 bg-emerald-950/20' : 'border-slate-700/70'} rounded-2xl p-3 flex flex-col justify-between transition-all">
+            <div class="space-y-1">
+              <div class="flex items-start justify-between gap-1">
+                <h4 class="font-extrabold text-white text-xs sm:text-sm leading-tight">${escapeHtml(p.name)}</h4>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-bold shrink-0">${escapeHtml(p.sku || '-')}</span>
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                <span>Pack: <b class="text-slate-200">${escapeHtml(p.unitSize || '-')}</b></span>
+                <span>•</span>
+                <span>Rate: <b class="text-emerald-400">${formatINR(rate)}</b></span>
+              </div>
+              ${isOutOfStock ? `<span class="inline-block text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-800/40">Out of Stock</span>` : ''}
+            </div>
+
+            <!-- Quantity Counter Controls -->
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+              <span class="text-[10px] text-slate-400 font-mono font-bold">${qty > 0 ? `Sub: ${formatINR(qty * rate)}` : 'Qty:'}</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="updateItemQty('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer">-</button>
+                <input type="number" min="0" value="${qty}" onchange="setItemQtyDirect('${p.id}', this.value)" class="w-12 h-7 bg-slate-950 border border-slate-700 rounded-lg text-center font-mono font-black text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <button type="button" onclick="updateItemQty('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      calculateOrderTotals();
+    }
+
+    function filterProductCards() {
+      renderProductCatalog();
+    }
+
+    function updateItemQty(productId, delta) {
+      const current = activeCart[productId] || 0;
+      const next = Math.max(0, current + delta);
+      if (next === 0) {
+        delete activeCart[productId];
+      } else {
+        activeCart[productId] = next;
+      }
+      renderProductCatalog();
+    }
+
+    function setItemQtyDirect(productId, val) {
+      const next = Math.max(0, parseInt(val, 10) || 0);
+      if (next === 0) {
+        delete activeCart[productId];
+      } else {
+        activeCart[productId] = next;
+      }
+      renderProductCatalog();
+    }
+
+    function calculateOrderTotals() {
+      let subtotal = 0;
+      let totalUnits = 0;
+      let selectedCount = 0;
+      const itemsListEl = document.getElementById('order-selected-items-list');
+
+      const selectedItems = [];
+      for (const [prodId, qty] of Object.entries(activeCart)) {
+        if (qty > 0) {
+          const prod = products.find(p => String(p.id) === String(prodId));
+          if (prod) {
+            const lineTotal = qty * (prod.baseRate || 0);
+            subtotal += lineTotal;
+            totalUnits += qty;
+            selectedCount++;
+            selectedItems.push({ ...prod, qty, total: lineTotal });
+          }
+        }
+      }
+
+      const rebate = Math.max(0, parseFloat(document.getElementById('order-rebate')?.value) || 0);
+      const netPayable = Math.max(0, subtotal - rebate);
+
+      document.getElementById('summary-total-items-badge').innerText = `${selectedCount} items selected`;
+      document.getElementById('summary-total-units').innerText = totalUnits;
+      document.getElementById('summary-subtotal').innerText = formatINR(subtotal);
+      document.getElementById('summary-net-payable').innerText = formatINR(netPayable);
+
+      // Live update Amount Paid input and Ledger Impact
+      if (!isManualAmountPaidSet) {
+        const mode = document.getElementById('order-pay-mode')?.value || 'Cash on Delivery';
+        const paidInput = document.getElementById('order-amount-paid');
+        if (paidInput) {
+          paidInput.value = (mode === 'Credit / Udhaar') ? 0 : netPayable;
+        }
+      }
+      updateOrderPaymentUI(netPayable);
+
+      // Render items summary list
+      if (itemsListEl) {
+        if (selectedItems.length === 0) {
+          itemsListEl.innerHTML = `<p class="text-slate-500 text-center py-3 italic">No items selected yet. Click (+) on any product above.</p>`;
+        } else {
+          itemsListEl.innerHTML = selectedItems.map(it => `
+            <div class="flex items-center justify-between py-1 border-b border-slate-900 last:border-0 font-mono">
+              <span class="truncate max-w-[200px] text-slate-200">• ${escapeHtml(it.name)} (${escapeHtml(it.unitSize)}) x${it.qty}</span>
+              <span class="font-bold text-emerald-400">${formatINR(it.total)}</span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    function getOrderPaymentBreakdown(order) {
+      if (!order) return { amountPaid: 0, balanceDue: 0, isPartPayment: false };
+      const net = Number(order.netPayable || 0);
+
+      if (order.amountPaid !== undefined && order.amountPaid !== null && !isNaN(Number(order.amountPaid))) {
+        const paid = Math.min(net, Math.max(0, Number(order.amountPaid)));
+        const bal = Math.max(0, net - paid);
+        return { amountPaid: paid, balanceDue: bal, isPartPayment: (paid > 0 && bal > 0) };
+      }
+
+      const notes = order.notes || '';
+      const match = notes.match(/\[PAID:([0-9.]+)\]/);
+      if (match) {
+        const paid = Math.min(net, Math.max(0, parseFloat(match[1])));
+        const bal = Math.max(0, net - paid);
+        return { amountPaid: paid, balanceDue: bal, isPartPayment: (paid > 0 && bal > 0) };
+      }
+
+      const mode = (order.paymentMode || '').toLowerCase();
+      if (mode.includes('credit') || mode.includes('udhaar')) {
+        return { amountPaid: 0, balanceDue: net, isPartPayment: false };
+      }
+
+      return { amountPaid: net, balanceDue: 0, isPartPayment: false };
+    }
+
+    let isManualAmountPaidSet = false;
+
+    function onOrderPaymentModeChange() {
+      const mode = document.getElementById('order-pay-mode')?.value || 'Cash on Delivery';
+      const netText = (document.getElementById('summary-net-payable')?.innerText || '₹0').replace(/[^\d.]/g, '');
+      const net = parseFloat(netText) || 0;
+      const paidInput = document.getElementById('order-amount-paid');
+      if (!paidInput) return;
+
+      if (mode === 'Credit / Udhaar') {
+        paidInput.value = 0;
+        isManualAmountPaidSet = true;
+      } else if (mode === 'Part Payment') {
+        if (!isManualAmountPaidSet || parseFloat(paidInput.value) >= net || parseFloat(paidInput.value) <= 0) {
+          paidInput.value = Math.round(net / 2);
+        }
+        isManualAmountPaidSet = true;
+      } else {
+        paidInput.value = net;
+        isManualAmountPaidSet = false;
+      }
+
+      updateOrderPaymentUI(net);
+    }
+
+    function onOrderAmountPaidChange() {
+      isManualAmountPaidSet = true;
+      const netText = (document.getElementById('summary-net-payable')?.innerText || '₹0').replace(/[^\d.]/g, '');
+      const net = parseFloat(netText) || 0;
+      const paidInput = document.getElementById('order-amount-paid');
+      const modeSelect = document.getElementById('order-pay-mode');
+      const val = parseFloat(paidInput?.value) || 0;
+
+      if (val <= 0 && net > 0) {
+        if (modeSelect) modeSelect.value = 'Credit / Udhaar';
+      } else if (val < net) {
+        if (modeSelect) modeSelect.value = 'Part Payment';
+      } else if (val >= net && modeSelect?.value === 'Part Payment') {
+        if (modeSelect) modeSelect.value = 'Cash on Delivery';
+      }
+
+      updateOrderPaymentUI(net);
+    }
+
+    function updateOrderPaymentUI(net) {
+      const paidInput = document.getElementById('order-amount-paid');
+      const badge = document.getElementById('order-paid-status-badge');
+      const balEl = document.getElementById('order-balance-due');
+      const noteEl = document.getElementById('order-ledger-impact-note');
+      if (!paidInput) return;
+
+      const rawVal = paidInput.value;
+      const paid = (rawVal === '' || isNaN(parseFloat(rawVal))) ? 0 : Math.max(0, parseFloat(rawVal));
+      const bal = Math.max(0, net - paid);
+
+      if (balEl) balEl.innerText = formatINR(bal);
+
+      if (bal === 0 && net > 0) {
+        if (badge) {
+          badge.innerText = 'Full Paid';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800';
+        }
+        if (noteEl) noteEl.innerText = '(No Udhaar added)';
+      } else if (paid > 0 && bal > 0) {
+        if (badge) {
+          badge.innerText = `Part Paid (₹${paid})`;
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800';
+        }
+        if (noteEl) noteEl.innerText = `(+${formatINR(bal)} added to Ledger Udhaar)`;
+      } else if (net > 0 && paid === 0) {
+        if (badge) {
+          badge.innerText = '100% Credit';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800';
+        }
+        if (noteEl) noteEl.innerText = `(+${formatINR(bal)} added to Ledger Udhaar)`;
+      } else {
+        if (badge) {
+          badge.innerText = 'Ready';
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400';
+        }
+        if (noteEl) noteEl.innerText = '(No Udhaar added)';
+      }
+    }
+
+    function sanitizeOrderForSupabase(ord) {
+      if (!ord) return null;
+      return {
+        id: ord.id,
+        repId: ord.salespersonId || ord.repId || null,
+        repName: ord.salespersonName || ord.repName || 'Sales Rep',
+        buyerId: ord.buyerId || null,
+        buyerName: ord.buyerName || '',
+        buyerPhone: ord.buyerPhone || '',
+        buyerTier: ord.buyerTier || null,
+        buyerHomeRoute: ord.buyerHomeRoute || null,
+        dispatchRoute: ord.dispatchRoute || '',
+        date: ord.date,
+        time: ord.time || '',
+        items: ord.items || [],
+        totalUnits: Number(ord.totalUnits || 0),
+        itemsSubtotal: Number(ord.itemsSubtotal || 0),
+        logisticsFee: Number(ord.logisticsFee || 0),
+        extraRebate: Number(ord.extraRebate || 0),
+        netPayable: Number(ord.netPayable || 0),
+        paymentMode: ord.paymentMode || 'Cash on Delivery',
+        notes: ord.notes || ''
+      };
+    }
+
+    // 8. SUBMIT & BOOK ORDER
+    async function submitOrder() {
+      if (!activeCustomer) {
+        alert("Please select a Retailer / Store in Step 1 before booking.");
+        document.getElementById('order-customer-select')?.focus();
+        return;
+      }
+
+      const items = [];
+      let subtotal = 0;
+      let totalUnits = 0;
+
+      for (const [prodId, qty] of Object.entries(activeCart)) {
+        if (qty > 0) {
+          const prod = products.find(p => String(p.id) === String(prodId));
+          if (prod) {
+            const total = qty * (prod.baseRate || 0);
+            items.push({
+              productId: prod.id,
+              name: prod.name,
+              sku: prod.sku,
+              unitSize: prod.unitSize,
+              rate: prod.baseRate,
+              qty,
+              total
+            });
+            subtotal += total;
+            totalUnits += qty;
+          }
+        }
+      }
+
+      if (items.length === 0) {
+        alert("Please select at least 1 product quantity to book an order.");
+        return;
+      }
+
+      const rebate = Math.max(0, parseFloat(document.getElementById('order-rebate')?.value) || 0);
+      const netPayable = Math.max(0, subtotal - rebate);
+      const payMode = document.getElementById('order-pay-mode')?.value || 'Cash on Delivery';
+      const notes = (document.getElementById('order-notes')?.value || '').trim();
+
+      // Calculate Amount Paid & Balance Due
+      const rawPaidInput = document.getElementById('order-amount-paid')?.value;
+      let amountPaid = (rawPaidInput === '' || isNaN(parseFloat(rawPaidInput)))
+        ? (payMode === 'Credit / Udhaar' ? 0 : netPayable)
+        : Math.max(0, parseFloat(rawPaidInput));
+      amountPaid = Math.min(netPayable, amountPaid);
+      const balanceDue = Math.max(0, netPayable - amountPaid);
+
+      let effectivePayMode = payMode;
+      if (amountPaid > 0 && balanceDue > 0) {
+        effectivePayMode = `Part Payment (₹${amountPaid} Paid, ₹${balanceDue} Udhaar)`;
+      } else if (amountPaid === 0 && netPayable > 0) {
+        effectivePayMode = 'Credit / Udhaar';
+      } else if (amountPaid >= netPayable && payMode === 'Part Payment') {
+        effectivePayMode = 'Cash on Delivery';
+      }
+
+      const btn = document.getElementById('btn-submit-order');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Booking Order...`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+      const payTag = `[PAID:${amountPaid}] [BAL:${balanceDue}]`;
+      const fullNotes = notes ? `Field booking by ${AGENT.name} | ${notes} ${payTag}` : `Field booking by ${AGENT.name} ${payTag}`;
+
+      const newOrder = {
+        id: orderId,
+        date: dateStr,
+        time: timeStr,
+        buyerId: activeCustomer.id,
+        buyerName: activeCustomer.name,
+        buyerPhone: activeCustomer.phone || '',
+        buyerAddress: activeCustomer.address || '',
+        buyerGstin: activeCustomer.gstin || '',
+        salespersonId: AGENT.id,
+        salespersonName: AGENT.name,
+        dispatchRoute: AGENT.assignedRoute,
+        items,
+        itemsSubtotal: subtotal,
+        totalUnits,
+        extraRebate: rebate,
+        netPayable,
+        amountPaid,
+        balanceDue,
+        paymentMode: effectivePayMode,
+        status: 'Pending Delivery',
+        notes: fullNotes
+      };
+
+      // 1. Optimistic local storage update
+      orders.unshift(newOrder);
+      localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
+
+      // Dual-sync to global manager orders repository
+      try {
+        let allOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
+        const existIdx = allOrders.findIndex(x => x.id === newOrder.id);
+        if (existIdx >= 0) allOrders[existIdx] = newOrder;
+        else allOrders.unshift(newOrder);
+        localStorage.setItem('sg_orders', JSON.stringify(allOrders));
+      } catch (e) {}
+
+      // Broadcast channel for instant cross-tab sync to Manager Hub
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ORDER_CREATED', repId: AGENT.id, repName: AGENT.name, order: newOrder });
+        }
+      } catch (e) {}
+
+      // 2. Adjust local customer udhaar if unpaid balance exists
+      if (balanceDue > 0) {
+        activeCustomer.pendingUdhaar = Number(activeCustomer.pendingUdhaar || 0) + balanceDue;
+        localStorage.setItem('sg_customers', JSON.stringify(customers));
+      }
+
+      // 3. Sync to Supabase
+      if (supabaseClient) {
+        try {
+          const payload = sanitizeOrderForSupabase(newOrder);
+          await supabaseClient.from('orders').insert([payload]);
+          if (balanceDue > 0) {
+            await supabaseClient.from('buyers').update({ pendingUdhaar: activeCustomer.pendingUdhaar }).eq('id', activeCustomer.id);
+          }
+        } catch (err) {
+          console.warn("Cloud sync note (saved locally):", err);
+        }
+      }
+
+      // Reset cart & payment inputs
+      activeCart = {};
+      isManualAmountPaidSet = false;
+      document.getElementById('order-rebate').value = 0;
+      document.getElementById('order-notes').value = '';
+      const paidInput = document.getElementById('order-amount-paid');
+      if (paidInput) paidInput.value = 0;
+      const payModeSelect = document.getElementById('order-pay-mode');
+      if (payModeSelect) payModeSelect.value = 'Cash on Delivery';
+      updateOrderPaymentUI(0);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> Book & Generate Bill`;
+      }
+
+      renderAllViews();
+
+      // Show Official Bill of Supply popup!
+      showInvoiceModal(newOrder);
+    }
+
+    // 9. OFFICIAL BILL OF SUPPLY MODAL (ZERO PAYMENT OPTIONS OR QR)
+    function showInvoiceModal(order) {
+      currentViewingOrder = order;
+      const modal = document.getElementById('modal-invoice');
+      if (!modal) return;
+
+      document.getElementById('bill-date').innerText = `${order.date} ${order.time || ''}`;
+      document.getElementById('bill-ref').innerText = '#' + order.id;
+      document.getElementById('bill-cust-name').innerText = order.buyerName;
+      document.getElementById('bill-cust-phone').innerText = order.buyerPhone ? `Phone: ${order.buyerPhone}` : 'No phone listed';
+      document.getElementById('bill-cust-address').innerText = order.buyerAddress || 'Store Address as registered';
+      document.getElementById('bill-cust-gstin').innerText = order.buyerGstin || 'Unregistered / Retail';
+      document.getElementById('bill-cust-route').innerText = (order.dispatchRoute || AGENT.assignedRoute || '-').split(':')[0];
+
+      const tbody = document.getElementById('bill-items-tbody');
+      tbody.innerHTML = (order.items || []).map((it, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-1 border-r border-black text-center font-sans">${idx + 1}</td>
+          <td class="p-1 border-r border-black font-sans">
+            <span class="font-bold text-black">${escapeHtml(it.name)}</span>
+            <div class="text-[9px] text-slate-500 font-mono">Pack: <b>${escapeHtml(it.unitSize || '-')}</b></div>
+          </td>
+          <td class="p-1 border-r border-black text-center font-bold font-mono">${it.qty}</td>
+          <td class="p-1 border-r border-black text-right font-mono">${formatINR(it.rate)}</td>
+          <td class="p-1 text-right font-black font-mono">${formatINR(it.total)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('bill-subtotal').innerText = formatINR(order.itemsSubtotal || order.netPayable);
+      const rebateRow = document.getElementById('bill-rebate-row');
+      if (order.extraRebate && Number(order.extraRebate) > 0) {
+        rebateRow.classList.remove('hidden');
+        document.getElementById('bill-rebate').innerText = '-' + formatINR(order.extraRebate);
+      } else {
+        rebateRow.classList.add('hidden');
+      }
+
+      document.getElementById('bill-net-payable').innerText = formatINR(order.netPayable);
+      document.getElementById('bill-amount-words').innerText = numberToWordsINR(order.netPayable);
+
+      // Amount Paid & Balance Due
+      const payInfo = getOrderPaymentBreakdown(order);
+      const paidRow = document.getElementById('bill-paid-row');
+      const balRow = document.getElementById('bill-balance-row');
+      if (paidRow) {
+        document.getElementById('bill-amount-paid').innerText = payInfo.amountPaid > 0 
+          ? `${formatINR(payInfo.amountPaid)} (${order.paymentMode || 'Paid'})`
+          : '₹0 (Pending / Credit)';
+      }
+      if (balRow) {
+        if (payInfo.balanceDue > 0) {
+          balRow.classList.remove('hidden');
+          document.getElementById('bill-balance-due').innerText = formatINR(payInfo.balanceDue);
+        } else {
+          balRow.classList.add('hidden');
+        }
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeInvoiceModal() {
+      document.getElementById('modal-invoice')?.classList.add('hidden');
+    }
+
+    function shareActiveInvoiceWhatsApp() {
+      if (!currentViewingOrder) return;
+      const o = currentViewingOrder;
+      const lines = (o.items || []).map(i => `• ${i.name} (${i.unitSize}) x${i.qty} = ${formatINR(i.total)}`).join('\n');
+      const cleanPhone = (o.buyerPhone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+
+      const payInfo = getOrderPaymentBreakdown(o);
+      let payLine = `Payment: *${o.paymentMode || 'Cash'}* (Fully Paid)\n`;
+      if (payInfo.isPartPayment) {
+        payLine = `Amount Paid: *${formatINR(payInfo.amountPaid)}* (${o.paymentMode})\nBalance Added to Udhaar: *${formatINR(payInfo.balanceDue)}*\n`;
+      } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+        payLine = `Payment: *Credit / Udhaar* (Balance Due: *${formatINR(payInfo.balanceDue)}*)\n`;
+      }
+
+      const text = `*SRI GOVINDA FOOD PRODUCTS*\n` +
+        `*BILL OF SUPPLY / ORDER SLIP*\n` +
+        `--------------------------------\n` +
+        `Bill Ref: *#${o.id}*\n` +
+        `Date: ${o.date} ${o.time}\n` +
+        `Customer: *${o.buyerName}*\n` +
+        `Executive: *${AGENT.name}* [${AGENT.assignedRoute}]\n` +
+        `--------------------------------\n` +
+        `*ORDERED ITEMS:*\n${lines}\n` +
+        `--------------------------------\n` +
+        `Total Units: *${o.totalUnits}*\n` +
+        (o.extraRebate > 0 ? `Special Rebate: -${formatINR(o.extraRebate)}\n` : '') +
+        `*TOTAL AMOUNT: ${formatINR(o.netPayable)}*\n` +
+        payLine +
+        `(${numberToWordsINR(o.netPayable)})\n` +
+        `--------------------------------\n` +
+        `Thank you for your business! Sri Govinda Food Products`;
+
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // 10. DASHBOARD & METRICS CALCULATION
+    function renderDashboard() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayOrders = orders.filter(o => o.date === today);
+      const todaySales = todayOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const todayUnits = todayOrders.reduce((sum, o) => sum + Number(o.totalUnits || 0), 0);
+
+      // Top mobile bar
+      const barSales = document.getElementById('bar-today-sales');
+      if (barSales) barSales.innerText = formatINR(todaySales);
+      const barOrders = document.getElementById('bar-today-orders');
+      if (barOrders) barOrders.innerText = todayOrders.length;
+
+      // Dashboard cards
+      const dSales = document.getElementById('dash-today-sales');
+      if (dSales) dSales.innerText = formatINR(todaySales);
+      const dOrders = document.getElementById('dash-today-orders-count');
+      if (dOrders) dOrders.innerText = todayOrders.length;
+      const dUnits = document.getElementById('dash-today-units');
+      if (dUnits) dUnits.innerText = todayUnits;
+
+      // Month Target
+      const currentYearMonth = today.substring(0, 7);
+      const monthOrders = orders.filter(o => (o.date || '').startsWith(currentYearMonth));
+      const monthSales = monthOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const target = AGENT.monthlyTarget || 150000;
+      const pct = Math.min(100, Math.round((monthSales / target) * 100));
+
+      const mBooked = document.getElementById('dash-month-booked');
+      if (mBooked) mBooked.innerText = formatINR(monthSales);
+      const targetPct = document.getElementById('dash-target-pct');
+      if (targetPct) targetPct.innerText = `${pct}%`;
+      const targetBar = document.getElementById('dash-target-bar');
+      if (targetBar) targetBar.style.width = `${pct}%`;
+    }
+
+    // 11. ORDERS HISTORY VIEW
+    function renderOrdersHistory() {
+      const tbody = document.getElementById('agent-orders-tbody');
+      if (!tbody) return;
+
+      const tabCount = document.getElementById('tab-orders-count');
+      if (tabCount) tabCount.innerText = orders.length;
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 italic">No orders logged yet. Book your first order!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => {
+        const isDelivered = (o.status === 'Delivered');
+        return `
+          <tr class="hover:bg-slate-800/50 transition">
+            <td class="p-2.5 font-bold text-white">#${o.id}</td>
+            <td class="p-2.5 text-[11px] text-slate-400">${o.date} ${o.time || ''}</td>
+            <td class="p-2.5 font-sans font-bold text-slate-200 truncate max-w-[140px]">${escapeHtml(o.buyerName)}</td>
+            <td class="p-2.5 text-right font-bold text-slate-300">${o.totalUnits || 0}</td>
+            <td class="p-2.5 text-right font-black text-emerald-400">${formatINR(o.netPayable)}</td>
+            <td class="p-2.5 text-[10px] text-slate-400">${escapeHtml(o.paymentMode || 'COD')}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isDelivered ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'}">
+                ${isDelivered ? 'Delivered' : 'Pending'}
+              </span>
+            </td>
+            <td class="p-2.5 text-right">
+              <button onclick="viewHistoricalOrder('${o.id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-[11px] transition">
+                View Bill
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function viewHistoricalOrder(orderId) {
+      const o = orders.find(x => x.id === orderId);
+      if (o) showInvoiceModal(o);
+    }
+
+    // 12. SAMPLE LOGGING
+    function renderSampleProductDropdown() {
+      const select = document.getElementById('sample-product-select');
+      if (!select) return;
+      select.innerHTML = products.map(p => `
+        <option value="${p.name} (${p.unitSize})">${escapeHtml(p.name)} (${escapeHtml(p.unitSize)})</option>
+      `).join('');
+    }
+
+    async function handleSampleSubmit(e) {
+      e.preventDefault();
+      const storeName = document.getElementById('sample-store-name')?.value.trim();
+      const phone = document.getElementById('sample-phone')?.value.trim();
+      const location = document.getElementById('sample-location')?.value.trim() || AGENT.assignedRoute;
+      const product = document.getElementById('sample-product-select')?.value;
+      const qty = parseInt(document.getElementById('sample-qty')?.value, 10) || 1;
+      const feedback = document.getElementById('sample-feedback')?.value.trim();
+
+      const sampleEntry = {
+        id: 'SMPL-' + Math.floor(1000 + Math.random() * 9000),
+        date: new Date().toISOString().split('T')[0],
+        salespersonId: AGENT.id,
+        salespersonName: AGENT.name,
+        buyerName: storeName,
+        buyerPhone: phone,
+        route: location,
+        productName: product,
+        quantity: qty,
+        feedback: feedback || 'Sample given for tasting',
+        created_at: new Date().toISOString()
+      };
+
+      // Dual-sync to global manager samples repository
+      try {
+        let allSamples = JSON.parse(localStorage.getItem('sg_samples') || '[]');
+        const existIdx = allSamples.findIndex(x => x.id === sampleEntry.id);
+        if (existIdx >= 0) allSamples[existIdx] = sampleEntry;
+        else allSamples.unshift(sampleEntry);
+        localStorage.setItem('sg_samples', JSON.stringify(allSamples));
+      } catch (e) {}
+
+      // Broadcast channel for instant cross-tab sync to Manager Hub
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'SAMPLE_CREATED', repId: AGENT.id, repName: AGENT.name, sample: sampleEntry });
+        }
+      } catch (e) {}
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('sample_giveaways').insert([sampleEntry]);
+        } catch(err) {
+          console.warn("Sample log note:", err);
+        }
+      }
+
+      alert(`✅ Sample tasting logged for ${storeName}!`);
+      document.getElementById('sample-form').reset();
+      switchTab('dashboard');
+    }
+
+    // 13. ROUTE SHOPS DIRECTORY
+    function renderRouteShops() {
+      const list = document.getElementById('route-shops-list');
+      if (!list) return;
+
+      const beat = (AGENT.assignedRoute || '').toLowerCase().trim();
+      const q = (document.getElementById('route-shops-search')?.value || '').toLowerCase().trim();
+
+      const routeCusts = customers.filter(c => {
+        const matchesBeat = (c.homeRoute || '').toLowerCase().includes(beat);
+        const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q));
+        return matchesBeat && matchesSearch;
+      });
+
+      const tabCount = document.getElementById('tab-shops-count');
+      if (tabCount) tabCount.innerText = routeCusts.length;
+
+      if (routeCusts.length === 0) {
+        list.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs italic">No retailer shops found matching this beat.</div>`;
+        return;
+      }
+
+      list.innerHTML = routeCusts.map(c => `
+        <div class="bg-slate-900/90 border border-slate-700/70 rounded-2xl p-3.5 flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-start justify-between gap-1">
+              <h4 class="font-extrabold text-white text-sm leading-tight">${escapeHtml(c.name)}</h4>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">${escapeHtml(c.tier || 'Retail')}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-snug">${escapeHtml(c.address || 'Address not listed')}</p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[9px] text-slate-500 block uppercase">Udhaar Due</span>
+              <span class="font-mono font-bold ${c.pendingUdhaar > 0 ? 'text-amber-400' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              ${c.phone ? `
+                <a href="tel:${c.phone}" class="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1 text-xs font-bold">
+                  <i data-lucide="phone-call" class="w-3.5 h-3.5"></i> Call
+                </a>
+              ` : ''}
+              <button onclick="startOrderForCustomer('${c.id}')" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition">
+                Book Order
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterRouteShops() {
+      renderRouteShops();
+    }
+
+    function startOrderForCustomer(custId) {
+      switchTab('order');
+      const select = document.getElementById('order-customer-select');
+      if (select) {
+        select.value = custId;
+        onCustomerSelected();
+      }
+    }
+
+    // 14. HELPERS
+    function formatINR(amount) {
+      const num = Number(amount) || 0;
+      return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function numberToWordsINR(amount) {
+      const num = Math.round(Number(amount) || 0);
+      if (num === 0) return "Rupees Zero Only";
+      const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      function numToWordsUnderThousand(n) {
+        let str = '';
+        if (n >= 100) { str += a[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+        if (n >= 20) { str += b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : ''); }
+        else if (n > 0) { str += a[n]; }
+        return str.trim();
+      }
+      let crore = Math.floor(num / 10000000); let rem = num % 10000000;
+      let lakh = Math.floor(rem / 100000); rem %= 100000;
+      let thousand = Math.floor(rem / 1000); rem %= 1000;
+      let parts = [];
+      if (crore) parts.push(numToWordsUnderThousand(crore) + ' Crore');
+      if (lakh) parts.push(numToWordsUnderThousand(lakh) + ' Lakh');
+      if (thousand) parts.push(numToWordsUnderThousand(thousand) + ' Thousand');
+      if (rem) parts.push(numToWordsUnderThousand(rem));
+      return 'Rupees ' + parts.join(' ') + ' Only';
+    }
+  </script>
+</body>
+</html>

@@ -111,6 +111,11 @@
           <span>Outstanding</span>
           <span id="nav-outstanding-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white">0</span>
         </button>
+        <button onclick="setTab('salespersonnel')" id="nav-salespersonnel" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Sales Personnel Live Activity, Stock, Bills & Field Performance">
+          <i data-lucide="badge-percent" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Sales Personnel</span>
+          <span id="nav-salespersonnel-badge" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white">5</span>
+        </button>
         <button onclick="setTab('orders')" id="nav-orders" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0">
           <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
           <span>History</span>
@@ -988,6 +993,418 @@
       <div id="routes-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <!-- Populated by JS -->
       </div>
+    </section>
+
+    <!-- ==============================================================================
+         9. SALES PERSONNEL HUB & FIELD INTELLIGENCE VIEW (MANAGER)
+         ============================================================================== -->
+    <section id="view-salespersonnel" class="hidden space-y-5">
+      
+      <!-- Top Header & Filter Toolbar -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">FIELD INTELLIGENCE</span>
+              <h2 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                <i data-lucide="badge-percent" class="w-5 h-5 text-emerald-600"></i> Sales Personnel Hub
+              </h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Real-time visibility over sales officials: live stock in hand, stock received, sales bills, sample giveaways & performance targets.</p>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openManageSalespersonModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Add Sales Official
+            </button>
+            <button onclick="exportSalesPersonnelCsv()" class="px-3 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Export Rep Performance & Ledger (CSV)">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> Export CSV
+            </button>
+            <button onclick="shareSalesPersonnelReportWhatsApp()" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Share Performance Digest via WhatsApp">
+              <i data-lucide="share-2" class="w-4 h-4"></i> WhatsApp Digest
+            </button>
+            <button onclick="refreshSalesPersonnelData()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer" title="Refresh Live Data">
+              <i data-lucide="refresh-cw" class="w-4 h-4" id="sp-refresh-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+          <!-- Salesperson Dropdown Selector -->
+          <div class="lg:col-span-4">
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Filter Official:</label>
+            <select id="sp-filter-rep" onchange="onSalespersonFilterChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="ALL">🌟 All Sales Personnel (Team View)</option>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <!-- Timeframe Selector -->
+          <div class="lg:col-span-3">
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Timeframe:</label>
+            <select id="sp-filter-timeframe" onchange="onSalespersonFilterChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="month" selected>📅 This Month (MTD)</option>
+              <option value="today">☀️ Today Only</option>
+              <option value="week">📆 Last 7 Days</option>
+              <option value="all">♾️ All Time</option>
+            </select>
+          </div>
+
+          <!-- Search Query Input -->
+          <div class="lg:col-span-5">
+            <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Quick Search Activity:</label>
+            <div class="relative">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              <input type="text" id="sp-search-query" oninput="onSalespersonFilterChange()" placeholder="Search bill #, store name, SKU, rep name, phone..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Executive Team KPIs Bar (6 Live Metrics Cards) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- 1. Active Reps -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Active Force</span>
+            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-active-reps" class="font-mono font-black text-xl text-slate-900">5</div>
+            <div id="sp-kpi-active-routes" class="text-[10px] text-slate-500 font-medium truncate">5 Beats Covered</div>
+          </div>
+        </div>
+
+        <!-- 2. Revenue Achieved vs Target -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Sales Achieved</span>
+            <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-achieved-sales" class="font-mono font-black text-xl text-emerald-600">₹0</div>
+            <div class="flex items-center gap-1.5 mt-1">
+              <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div id="sp-kpi-target-bar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 0%"></div>
+              </div>
+              <span id="sp-kpi-target-pct" class="font-mono text-[10px] font-bold text-slate-700">0%</span>
+            </div>
+            <div class="text-[9px] text-slate-400 font-mono mt-0.5">Target: <span id="sp-kpi-target-sales">₹0</span></div>
+          </div>
+        </div>
+
+        <!-- 3. Total Orders Booked & AOV -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Orders Booked</span>
+            <i data-lucide="shopping-cart" class="w-4 h-4 text-indigo-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-total-orders" class="font-mono font-black text-xl text-slate-900">0</div>
+            <div class="text-[10px] text-slate-500 font-mono truncate">AOV: <b id="sp-kpi-aov" class="text-indigo-600 font-bold">₹0</b></div>
+          </div>
+        </div>
+
+        <!-- 4. Stock Units Sold -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Stock Sold</span>
+            <i data-lucide="package-minus" class="w-4 h-4 text-blue-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-units-sold" class="font-mono font-black text-xl text-blue-600">0</div>
+            <div class="text-[10px] text-slate-500 font-medium">Commercial Retail Units</div>
+          </div>
+        </div>
+
+        <!-- 5. Sample Giveaways -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Free Samples</span>
+            <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-total-samples" class="font-mono font-black text-xl text-amber-600">0</div>
+            <div class="text-[10px] text-slate-500 font-mono truncate"><span id="sp-kpi-sample-units">0</span> sample units</div>
+          </div>
+        </div>
+
+        <!-- 6. Collections vs Udhaar -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-slate-500 text-xs">
+            <span class="font-bold">Collections</span>
+            <i data-lucide="badge-indian-rupee" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div class="mt-2">
+            <div id="sp-kpi-collected" class="font-mono font-black text-base text-emerald-600 leading-tight">₹0</div>
+            <div class="text-[10px] text-rose-600 font-mono font-bold truncate">Udhaar: <span id="sp-kpi-udhaar">₹0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Sub-Tabs within Sales Personnel Hub -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <button onclick="setSalespersonSubtab('performance')" id="sp-subtab-btn-performance" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shrink-0">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>Performance & Leaderboard</span>
+        </button>
+        <button onclick="setSalespersonSubtab('transactions')" id="sp-subtab-btn-transactions" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0">
+          <i data-lucide="receipt" class="w-4 h-4"></i>
+          <span>Sales & Bills Ledger</span>
+          <span id="sp-subtab-badge-orders" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
+        </button>
+        <button onclick="setSalespersonSubtab('samples')" id="sp-subtab-btn-samples" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0">
+          <i data-lucide="gift" class="w-4 h-4"></i>
+          <span>Sample Giveaways</span>
+          <span id="sp-subtab-badge-samples" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
+        </button>
+        <button onclick="setSalespersonSubtab('stock')" id="sp-subtab-btn-stock" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0">
+          <i data-lucide="boxes" class="w-4 h-4"></i>
+          <span>Stock in Hand & Movement</span>
+        </button>
+      </div>
+
+      <!-- ====================================================================
+           SUB-VIEW 1: PERFORMANCE REPORT & TARGETS LEADERBOARD
+           ==================================================================== -->
+      <div id="sp-subview-performance" class="space-y-5">
+        <!-- Sales Personnel Interactive Cards Grid -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="id-card" class="w-4 h-4 text-emerald-600"></i> Field Sales Personnel Scorecards
+            </h3>
+            <span class="text-xs text-slate-500">Click <b>Launch Portal</b> to open dedicated agent app</span>
+          </div>
+          <div id="sp-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+
+        <!-- Executive Performance Leaderboard Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-3 p-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i> Executive Performance Leaderboard & Commission
+              </h3>
+              <p class="text-[11px] text-slate-500">Comparative ranking of all sales officials across revenue, targets, orders, and commission earnings.</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5 text-center">Rank</th>
+                  <th class="p-2.5">Sales Official</th>
+                  <th class="p-2.5">Assigned Route</th>
+                  <th class="p-2.5 text-right">Target (₹)</th>
+                  <th class="p-2.5 text-right font-black text-emerald-700">Achieved (₹)</th>
+                  <th class="p-2.5 text-center">Progress %</th>
+                  <th class="p-2.5 text-right">Bills</th>
+                  <th class="p-2.5 text-right">AOV (₹)</th>
+                  <th class="p-2.5 text-right">Units Sold</th>
+                  <th class="p-2.5 text-right">Samples</th>
+                  <th class="p-2.5 text-right text-emerald-700">Collections (₹)</th>
+                  <th class="p-2.5 text-right text-rose-700">Udhaar (₹)</th>
+                  <th class="p-2.5 text-right font-bold text-indigo-700">Commission (₹)</th>
+                  <th class="p-2.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="sp-leaderboard-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           SUB-VIEW 2: SALES & TRANSACTION BILLS LEDGER (DRILL-DOWN TO BILL)
+           ==================================================================== -->
+      <div id="sp-subview-transactions" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="receipt" class="w-4 h-4 text-emerald-600"></i> Sales Bills & Concurrent Transactions
+              </h3>
+              <p class="text-[11px] text-slate-500">Every commercial order logged by sales officials. Click <b>Items Dropdown</b> on any row to expand concurrent bill line items.</p>
+            </div>
+            
+            <div class="flex items-center gap-2 flex-wrap">
+              <select id="sp-trans-filter-payment" onchange="renderSalespersonTransactionsTable()" class="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none">
+                <option value="ALL">All Payment Types</option>
+                <option value="PAID">Full Paid (Cash / UPI)</option>
+                <option value="PART">Part Payment</option>
+                <option value="UDHAAR">100% Credit / Udhaar</option>
+              </select>
+
+              <select id="sp-trans-filter-status" onchange="renderSalespersonTransactionsTable()" class="bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none">
+                <option value="ALL">All Delivery Status</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Pending Delivery">Pending Delivery</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5 w-8 text-center">Items</th>
+                  <th class="p-2.5">Date & Time</th>
+                  <th class="p-2.5">Bill Ref #</th>
+                  <th class="p-2.5">Sales Official</th>
+                  <th class="p-2.5">Customer / Store</th>
+                  <th class="p-2.5 text-right">Units</th>
+                  <th class="p-2.5 text-right font-black text-slate-900">Total Amount</th>
+                  <th class="p-2.5">Payment Details</th>
+                  <th class="p-2.5 text-center">Status</th>
+                  <th class="p-2.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="sp-transactions-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           SUB-VIEW 3: SAMPLE GIVEAWAYS LOGGED BY SALES OFFICIALS
+           ==================================================================== -->
+      <div id="sp-subview-samples" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="gift" class="w-4 h-4 text-amber-600"></i> Free Sample Giveaways & Chef Tastings
+              </h3>
+              <p class="text-[11px] text-slate-500">All sample distributions logged by sales officials on field for store acquisition and trials.</p>
+            </div>
+            <button onclick="openSampleModal()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Log Sample Entry
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Date</th>
+                  <th class="p-2.5">Sales Official</th>
+                  <th class="p-2.5">Retailer / Prospect Store</th>
+                  <th class="p-2.5">Beat / Location</th>
+                  <th class="p-2.5">Product Sampled</th>
+                  <th class="p-2.5 text-right">Units</th>
+                  <th class="p-2.5">Chef Feedback & Notes</th>
+                </tr>
+              </thead>
+              <tbody id="sp-samples-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           SUB-VIEW 4: STOCK MOVEMENT & STOCK IN HAND
+           ==================================================================== -->
+      <div id="sp-subview-stock" class="hidden space-y-5">
+        
+        <!-- Live Warehouse Stock in Hand Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="warehouse" class="w-4 h-4 text-indigo-600"></i> Live Stock in Hand & Warehouse Balance
+              </h3>
+              <p class="text-[11px] text-slate-500">Reconciled real-time inventory: Initial + Inward Receipts - Commercial Rep Sales - Free Samples.</p>
+            </div>
+            <button onclick="openInwardModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Receive Factory Stock
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">SKU</th>
+                  <th class="p-2.5">Product Name</th>
+                  <th class="p-2.5">Packaging</th>
+                  <th class="p-2.5 text-right">Initial</th>
+                  <th class="p-2.5 text-right font-bold text-indigo-700">Inward (+)</th>
+                  <th class="p-2.5 text-right font-bold text-rose-700">Rep Sales (-)</th>
+                  <th class="p-2.5 text-right font-bold text-amber-700">Samples (-)</th>
+                  <th class="p-2.5 text-right font-black text-slate-900">Stock in Hand</th>
+                  <th class="p-2.5 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="sp-stock-in-hand-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rep SKU Sales Outflow Matrix -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div>
+            <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-600"></i> SKU Outflow by Sales Official
+            </h3>
+            <p class="text-[11px] text-slate-500">Breakdown of commercial units booked by each sales official per product SKU.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse" id="sp-sku-movement-table">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200" id="sp-sku-movement-thead">
+                <!-- Populated dynamically by JS -->
+              </thead>
+              <tbody id="sp-sku-movement-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Factory Inward Stock Receipts -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+              <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-indigo-600"></i> Recent Factory Stock Received
+            </h3>
+            <button onclick="setTab('inward')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+              Manage All Inwards →
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Date</th>
+                  <th class="p-2.5">Batch / Inward Ref</th>
+                  <th class="p-2.5">Product SKU</th>
+                  <th class="p-2.5">Product Name</th>
+                  <th class="p-2.5 text-right">Units Received</th>
+                  <th class="p-2.5">Supplier / Factory Note</th>
+                </tr>
+              </thead>
+              <tbody id="sp-inward-recent-tbody" class="divide-y divide-slate-100">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
     </section>
 
 
@@ -2999,6 +3416,96 @@
     </div>
   </div>
 
+  <!-- MODAL: ADD / EDIT SALES OFFICIAL & REGENERATE PORTAL -->
+  <div id="modal-manage-salesperson" class="fixed inset-0 z-[95] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto" style="z-index: 9999;" onclick="if(event.target === this) closeManageSalespersonModal();">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-5 space-y-4 border border-slate-200 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <i data-lucide="user-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900" id="sp-modal-title">Add Sales Official</h3>
+            <p class="text-[11px] text-slate-500">Configures field targets, commission & auto-generates dedicated portal file</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeManageSalespersonModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form id="sp-manage-form" onsubmit="saveSalespersonForm(event)" class="space-y-3.5">
+        <input type="hidden" id="sp-form-is-edit" value="false">
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Official ID *</label>
+            <input type="text" id="sp-form-id" required placeholder="SP-106" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">URL Slug *</label>
+            <input type="text" id="sp-form-slug" required placeholder="e.g. suresh" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Full Name *</label>
+          <input type="text" id="sp-form-name" required placeholder="e.g. Suresh Gowda" oninput="onSalespersonNameInput(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Mobile Phone *</label>
+            <input type="text" id="sp-form-phone" required placeholder="+91 98XXXXXXXX" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Vehicle Type</label>
+            <select id="sp-form-vehicle" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="Two-Wheeler">Two-Wheeler</option>
+              <option value="Three-Wheeler">Three-Wheeler</option>
+              <option value="Commercial Van">Commercial Van</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Assigned Route / Beat *</label>
+          <input type="text" id="sp-form-route" required placeholder="e.g. Yelahanka Beat 1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Monthly Target (₹)</label>
+            <input type="number" id="sp-form-target" min="0" step="5000" required value="150000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Daily Bills</label>
+            <input type="number" id="sp-form-daily-target" min="1" required value="6" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Commission %</label>
+            <input type="number" id="sp-form-commission" min="0" max="25" step="0.5" required value="3.0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="sp-form-active" checked class="w-4 h-4 text-emerald-600 rounded">
+          <label for="sp-form-active" class="text-xs font-bold text-slate-700">Official is Currently Active on Field</label>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeManageSalespersonModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" id="btn-save-salesperson" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ==============================================================================
        FOOTER (ADMIN LINK & BANK DETAILS AT BOTTOM)
        ============================================================================== -->
@@ -3056,12 +3563,13 @@
     // 1. STATE MANAGEMENT (PURE MANAGERIAL APP - NO PIN/SECURITY BARRIERS)
     const isManager = true;
 
-    // Sales Personnel Accounts Roster (Neutral until official forms are uploaded)
+    // Sales Personnel Accounts Roster
     const DEFAULT_SALESPEOPLE = [
-      { id: 'SP-101', name: 'Sales Official 1', slug: 'salesOfficial1', phone: '', email: '', assignedRoute: 'Beat 1', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
-      { id: 'SP-102', name: 'Sales Official 2', slug: 'salesOfficial2', phone: '', email: '', assignedRoute: 'Beat 2', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
-      { id: 'SP-103', name: 'Sales Official 3', slug: 'salesOfficial3', phone: '', email: '', assignedRoute: 'Beat 3', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
-      { id: 'SP-104', name: 'Sales Official 4', slug: 'salesOfficial4', phone: '', email: '', assignedRoute: 'Beat 4', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true }
+      { id: 'SP-101', name: 'Ramesh Kumar', slug: 'ramesh', phone: '+91 9731988411', email: '', assignedRoute: 'Yelahanka Beat 1', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-325', name: 'Pradhish', slug: 'pradhish', phone: '11111111', email: '', assignedRoute: 'east bangalore', monthlyTarget: 30000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2026-09-29', address: 'Bengaluru', active: true },
+      { id: 'SP-103', name: 'Nagaraju', slug: 'nagaraju', phone: '+91 9845012345', email: '', assignedRoute: 'Vidyaranyapura Beat 3', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-104', name: 'Sales Official 4', slug: 'salesofficial4', phone: '', email: '', assignedRoute: 'Jakkur Beat 4', monthlyTarget: 150000, commissionPct: 3.0, vehicleType: 'Two-Wheeler', dailyOrderTarget: 6, joiningDate: '2025-01-01', address: 'Bengaluru', active: true },
+      { id: 'SP-105', name: 'Kavitha', slug: 'kavitha', phone: '+91 9123456780', email: '', assignedRoute: 'Yelahanka Beat 5', monthlyTarget: 180000, commissionPct: 3.5, vehicleType: 'Two-Wheeler', dailyOrderTarget: 8, joiningDate: '2025-01-01', address: 'Bengaluru', active: true }
     ];
 
     let salespeople = [];
@@ -3070,18 +3578,6 @@
       if (savedSp) salespeople = JSON.parse(savedSp);
       if (!Array.isArray(salespeople) || salespeople.length === 0) {
         salespeople = DEFAULT_SALESPEOPLE;
-      } else {
-        const legacyNames = ['pradhish', 'nagaraju', 'ramesh kumar', 'ramesh', 'arvind swamy', 'arvind', 'kavitha'];
-        let updated = false;
-        salespeople.forEach((sp, idx) => {
-          if (!sp.name || legacyNames.includes(sp.name.trim().toLowerCase())) {
-            sp.name = `Sales Official ${idx + 1}`;
-            sp.slug = `salesOfficial${idx + 1}`;
-            sp.assignedRoute = `Beat ${idx + 1}`;
-            updated = true;
-          }
-        });
-        if (updated) localStorage.setItem('sg_salespeople', JSON.stringify(salespeople));
       }
     } catch (e) {
       salespeople = DEFAULT_SALESPEOPLE;
@@ -3095,8 +3591,27 @@
       }
     }
 
-    let currentSalesperson = null;
-    let currentSalesTeamTimeframe = 'month';
+    async function fetchSalespeopleFromServer() {
+      try {
+        const res = await fetch('/api/salespeople');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            salespeople = data;
+            saveSalespeopleLocally();
+            if (typeof populateSalespersonDropdowns === 'function') populateSalespersonDropdowns();
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch salespeople from server:", e);
+      }
+    }
+
+    // Sales Personnel Hub View State
+    let currentSalespersonFilter = 'ALL';
+    let currentSalespersonTimeframe = 'month';
+    let currentSalespersonSubtab = 'performance';
+    let expandedSalespersonBills = new Set();
 
     let products = [];
     let customers = [];
@@ -3484,6 +3999,7 @@
       }
       if (tabId === 'customers') renderCustomersTable();
       if (tabId === 'outstanding') renderOutstandingDashboard();
+      if (tabId === 'salespersonnel') renderSalesPersonnelHub();
       if (tabId === 'orders') renderOrdersHistoryTable();
       if (tabId === 'inward') renderInwardTables();
       if (tabId === 'samples') renderSamplesTable();
@@ -3499,6 +4015,12 @@
       renderOutstandingDashboard();
       renderSamplesTable();
       renderOrdersHistoryTable();
+      if (typeof populateSalespersonDropdowns === 'function') populateSalespersonDropdowns();
+      const spBadge = document.getElementById('nav-salespersonnel-badge');
+      if (spBadge) spBadge.innerText = (salespeople || []).filter(s => s.active !== false).length;
+      if (typeof renderSalesPersonnelHub === 'function' && !document.getElementById('view-salespersonnel')?.classList.contains('hidden')) {
+        renderSalesPersonnelHub();
+      }
       if (window.lucide) lucide.createIcons();
     }
 
@@ -9604,6 +10126,1010 @@
     }
 
     // ==============================================================================
+    // 17B. SALES PERSONNEL HUB & FIELD INTELLIGENCE LOGIC
+    // ==============================================================================
+
+    function populateSalespersonDropdowns() {
+      const select = document.getElementById('sp-filter-rep');
+      if (!select) return;
+      const current = currentSalespersonFilter || 'ALL';
+      let html = `<option value="ALL">🌟 All Sales Personnel (Team View)</option>`;
+      (salespeople || []).forEach(sp => {
+        html += `<option value="${sp.id}">${escapeHtml(sp.name)} (${sp.id}) - ${escapeHtml(sp.assignedRoute || 'General Beat')}</option>`;
+      });
+      select.innerHTML = html;
+      select.value = current;
+    }
+
+    function onSalespersonFilterChange() {
+      const repSelect = document.getElementById('sp-filter-rep');
+      const timeSelect = document.getElementById('sp-filter-timeframe');
+      if (repSelect) currentSalespersonFilter = repSelect.value;
+      if (timeSelect) currentSalespersonTimeframe = timeSelect.value;
+      renderSalesPersonnelHub();
+    }
+
+    function setSalespersonSubtab(tabName) {
+      currentSalespersonSubtab = tabName;
+      ['performance', 'transactions', 'samples', 'stock'].forEach(t => {
+        const view = document.getElementById(`sp-subview-${t}`);
+        const btn = document.getElementById(`sp-subtab-btn-${t}`);
+        if (view) view.classList.toggle('hidden', t !== tabName);
+        if (btn) {
+          if (t === tabName) {
+            btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shrink-0 shadow-xs";
+          } else {
+            btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0";
+          }
+        }
+      });
+      renderSalesPersonnelHub();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function isOrderFromSalesperson(order, sp) {
+      if (!order || !sp) return false;
+      if (order.salespersonId && String(order.salespersonId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
+      if (order.repId && String(order.repId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
+      const oName = (order.salespersonName || order.repName || '').toLowerCase().trim();
+      const spName = (sp.name || '').toLowerCase().trim();
+      if (spName && oName && (oName === spName || oName.includes(spName) || spName.includes(oName))) return true;
+      if (sp.slug && (order.salespersonSlug === sp.slug || oName.includes(sp.slug.toLowerCase()))) return true;
+      return false;
+    }
+
+    function isSampleFromSalesperson(sample, sp) {
+      if (!sample || !sp) return false;
+      if (sample.salespersonId && String(sample.salespersonId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
+      if (sample.repId && String(sample.repId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
+      const sName = (sample.salespersonName || sample.rep_name || sample.repName || '').toLowerCase().trim();
+      const spName = (sp.name || '').toLowerCase().trim();
+      if (spName && sName && (sName === spName || sName.includes(spName) || spName.includes(sName))) return true;
+      if (sp.slug && sName.includes(sp.slug.toLowerCase())) return true;
+      return false;
+    }
+
+    function filterDateByTimeframe(dateStr, timeframe) {
+      if (!dateStr || timeframe === 'all') return true;
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      if (timeframe === 'today') return dateStr === today;
+      if (timeframe === 'month') {
+        const ym = today.substring(0, 7);
+        return dateStr.startsWith(ym);
+      }
+      if (timeframe === 'week') {
+        const d = new Date(dateStr);
+        const diffMs = now - d;
+        return diffMs >= 0 && diffMs <= (7 * 86400 * 1000);
+      }
+      return true;
+    }
+
+    function getSalespersonMetrics(sp, timeframe = currentSalespersonTimeframe) {
+      const repOrders = (orders || []).filter(o => isOrderFromSalesperson(o, sp) && filterDateByTimeframe(o.date, timeframe));
+      const repSamples = (sampleGiveaways || []).filter(s => isSampleFromSalesperson(s, sp) && filterDateByTimeframe(s.date || (s.created_at ? s.created_at.split('T')[0] : ''), timeframe));
+
+      const revenue = repOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const ordersCount = repOrders.length;
+      const unitsSold = repOrders.reduce((sum, o) => sum + Number(o.totalUnits || (Array.isArray(o.items) ? o.items.reduce((acc, i) => acc + Number(i.qty || 0), 0) : 0)), 0);
+      const aov = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
+
+      let collected = 0;
+      let udhaar = 0;
+      repOrders.forEach(o => {
+        const breakdown = getOrderPaymentBreakdown(o);
+        collected += Number(breakdown.amountPaid || 0);
+        udhaar += Number(breakdown.balanceDue || 0);
+      });
+
+      const sampleCount = repSamples.length;
+      const sampleUnits = repSamples.reduce((sum, s) => sum + Number(s.quantity_units || s.quantity || 0), 0);
+
+      const target = Number(sp.monthlyTarget || 150000);
+      const targetPct = target > 0 ? Math.min(100, Math.round((revenue / target) * 100)) : 0;
+      const commPct = Number(sp.commissionPct || 3.0);
+      const commission = Math.round(revenue * (commPct / 100));
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayOrders = (orders || []).filter(o => isOrderFromSalesperson(o, sp) && o.date === today).length;
+      const dailyTarget = Number(sp.dailyOrderTarget || 6);
+
+      return {
+        sp,
+        orders: repOrders,
+        samples: repSamples,
+        revenue,
+        ordersCount,
+        unitsSold,
+        aov,
+        collected,
+        udhaar,
+        sampleCount,
+        sampleUnits,
+        target,
+        targetPct,
+        commission,
+        commPct,
+        todayOrders,
+        dailyTarget
+      };
+    }
+
+    function renderSalesPersonnelHub() {
+      populateSalespersonDropdowns();
+
+      // Determine active reps based on filter
+      const activeOfficialFilter = currentSalespersonFilter || 'ALL';
+      const visibleReps = activeOfficialFilter === 'ALL'
+        ? (salespeople || [])
+        : (salespeople || []).filter(s => s.id === activeOfficialFilter);
+
+      // Compute Team-wide KPIs
+      let teamActiveCount = (salespeople || []).filter(s => s.active !== false).length;
+      let teamRoutesCount = new Set((salespeople || []).map(s => s.assignedRoute).filter(Boolean)).size;
+
+      // Filtered orders and samples for the selected rep & timeframe
+      const filteredOrders = (orders || []).filter(o => {
+        const matchesRep = activeOfficialFilter === 'ALL' || (salespeople || []).some(sp => sp.id === activeOfficialFilter && isOrderFromSalesperson(o, sp));
+        const matchesTime = filterDateByTimeframe(o.date, currentSalespersonTimeframe);
+        const q = (document.getElementById('sp-search-query')?.value || '').toLowerCase().trim();
+        const matchesQ = !q || o.id.toLowerCase().includes(q) || (o.buyerName && o.buyerName.toLowerCase().includes(q)) || (o.salespersonName && o.salespersonName.toLowerCase().includes(q)) || (o.repName && o.repName.toLowerCase().includes(q));
+        return matchesRep && matchesTime && matchesQ;
+      });
+
+      const filteredSamples = (sampleGiveaways || []).filter(s => {
+        const matchesRep = activeOfficialFilter === 'ALL' || (salespeople || []).some(sp => sp.id === activeOfficialFilter && isSampleFromSalesperson(s, sp));
+        const sDate = s.date || (s.created_at ? s.created_at.split('T')[0] : '');
+        const matchesTime = filterDateByTimeframe(sDate, currentSalespersonTimeframe);
+        const q = (document.getElementById('sp-search-query')?.value || '').toLowerCase().trim();
+        const matchesQ = !q || (s.buyerName && s.buyerName.toLowerCase().includes(q)) || (s.store_name && s.store_name.toLowerCase().includes(q)) || (s.product_name && s.product_name.toLowerCase().includes(q)) || (s.salespersonName && s.salespersonName.toLowerCase().includes(q));
+        return matchesRep && matchesTime && matchesQ;
+      });
+
+      const teamRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.netPayable || 0), 0);
+      const teamOrdersCount = filteredOrders.length;
+      const teamUnits = filteredOrders.reduce((sum, o) => sum + Number(o.totalUnits || (Array.isArray(o.items) ? o.items.reduce((acc, i) => acc + Number(i.qty || 0), 0) : 0)), 0);
+      const teamAov = teamOrdersCount > 0 ? Math.round(teamRevenue / teamOrdersCount) : 0;
+
+      let teamCollected = 0;
+      let teamUdhaar = 0;
+      filteredOrders.forEach(o => {
+        const breakdown = getOrderPaymentBreakdown(o);
+        teamCollected += Number(breakdown.amountPaid || 0);
+        teamUdhaar += Number(breakdown.balanceDue || 0);
+      });
+
+      const teamSampleCount = filteredSamples.length;
+      const teamSampleUnits = filteredSamples.reduce((sum, s) => sum + Number(s.quantity_units || s.quantity || 0), 0);
+
+      const teamTarget = (activeOfficialFilter === 'ALL' ? (salespeople || []) : visibleReps)
+        .reduce((sum, sp) => sum + Number(sp.monthlyTarget || 150000), 0);
+      const teamTargetPct = teamTarget > 0 ? Math.min(100, Math.round((teamRevenue / teamTarget) * 100)) : 0;
+
+      // Update Top KPIs
+      const kpiActive = document.getElementById('sp-kpi-active-reps');
+      if (kpiActive) kpiActive.innerText = teamActiveCount;
+      const kpiRoutes = document.getElementById('sp-kpi-active-routes');
+      if (kpiRoutes) kpiRoutes.innerText = `${teamRoutesCount} Beats Covered`;
+
+      const kpiAchieved = document.getElementById('sp-kpi-achieved-sales');
+      if (kpiAchieved) kpiAchieved.innerText = formatINR(teamRevenue);
+      const kpiTarget = document.getElementById('sp-kpi-target-sales');
+      if (kpiTarget) kpiTarget.innerText = formatINR(teamTarget);
+      const kpiBar = document.getElementById('sp-kpi-target-bar');
+      if (kpiBar) kpiBar.style.width = `${teamTargetPct}%`;
+      const kpiPct = document.getElementById('sp-kpi-target-pct');
+      if (kpiPct) kpiPct.innerText = `${teamTargetPct}%`;
+
+      const kpiOrders = document.getElementById('sp-kpi-total-orders');
+      if (kpiOrders) kpiOrders.innerText = teamOrdersCount;
+      const kpiAov = document.getElementById('sp-kpi-aov');
+      if (kpiAov) kpiAov.innerText = formatINR(teamAov);
+
+      const kpiUnits = document.getElementById('sp-kpi-units-sold');
+      if (kpiUnits) kpiUnits.innerText = teamUnits;
+
+      const kpiSamples = document.getElementById('sp-kpi-total-samples');
+      if (kpiSamples) kpiSamples.innerText = teamSampleCount;
+      const kpiSampleUnits = document.getElementById('sp-kpi-sample-units');
+      if (kpiSampleUnits) kpiSampleUnits.innerText = teamSampleUnits;
+
+      const kpiCollected = document.getElementById('sp-kpi-collected');
+      if (kpiCollected) kpiCollected.innerText = formatINR(teamCollected);
+      const kpiUdhaar = document.getElementById('sp-kpi-udhaar');
+      if (kpiUdhaar) kpiUdhaar.innerText = formatINR(teamUdhaar);
+
+      // Sub-tab badges
+      const bOrders = document.getElementById('sp-subtab-badge-orders');
+      if (bOrders) bOrders.innerText = teamOrdersCount;
+      const bSamples = document.getElementById('sp-subtab-badge-samples');
+      if (bSamples) bSamples.innerText = teamSampleCount;
+
+      // Render Active Sub-View Content
+      if (currentSalespersonSubtab === 'performance') {
+        renderSalespersonCards(visibleReps);
+        renderSalespersonLeaderboard();
+      } else if (currentSalespersonSubtab === 'transactions') {
+        renderSalespersonTransactionsTable(filteredOrders);
+      } else if (currentSalespersonSubtab === 'samples') {
+        renderSalespersonSamplesTable(filteredSamples);
+      } else if (currentSalespersonSubtab === 'stock') {
+        renderSalespersonStockTable();
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 1. PERFORMANCE: REPS CARDS
+    function renderSalespersonCards(repsList = salespeople) {
+      const grid = document.getElementById('sp-cards-grid');
+      if (!grid) return;
+
+      if (!repsList || repsList.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-xs italic">No sales personnel registered. Click <b>Add Sales Official</b> above.</div>`;
+        return;
+      }
+
+      grid.innerHTML = repsList.map(sp => {
+        const m = getSalespersonMetrics(sp, currentSalespersonTimeframe);
+        const slug = sp.slug || sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const portalUrl = `/sales_${slug}.html`;
+
+        const initials = sp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const isOnline = sp.active !== false;
+
+        // Progress color
+        let barColor = 'bg-rose-500';
+        let badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+        if (m.targetPct >= 100) {
+          barColor = 'bg-emerald-500';
+          badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold';
+        } else if (m.targetPct >= 70) {
+          barColor = 'bg-teal-500';
+          badgeColor = 'bg-teal-50 text-teal-800 border-teal-200 font-bold';
+        } else if (m.targetPct >= 40) {
+          barColor = 'bg-amber-500';
+          badgeColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold';
+        }
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 flex flex-col justify-between hover:shadow-md transition space-y-3.5">
+            <!-- Top Header & Identity -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-2xl bg-slate-900 text-emerald-400 font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                  ${initials}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <h4 class="font-extrabold text-sm text-slate-900 truncate">${escapeHtml(sp.name)}</h4>
+                    <span class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">${escapeHtml(sp.id)}</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 text-[11px] text-slate-500 truncate mt-0.5">
+                    <i data-lucide="map-pin" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                    <span class="truncate font-medium">${escapeHtml(sp.assignedRoute || 'General Beat')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status Badge -->
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
+                ${isOnline ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+
+            <!-- Target Progress & Revenue Achieved -->
+            <div class="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-[10px] uppercase font-extrabold text-slate-500">Target Progress</span>
+                <span class="font-mono text-xs px-1.5 py-0.2 rounded border ${badgeColor}">${m.targetPct}%</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${m.targetPct}%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px] font-mono">
+                <span class="text-slate-600">Achieved: <b class="text-emerald-700 font-bold">${formatINR(m.revenue)}</b></span>
+                <span class="text-slate-400">Target: ${formatINR(m.target)}</span>
+              </div>
+            </div>
+
+            <!-- Financials Grid -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-emerald-50/60 p-2 rounded-xl border border-emerald-100">
+                <span class="text-[9px] font-bold uppercase text-emerald-700 block">Orders Booked</span>
+                <div class="font-mono font-black text-sm text-emerald-900">${m.ordersCount} bills</div>
+                <div class="text-[10px] text-emerald-700 font-mono">Today: <b>${m.todayOrders}/${m.dailyTarget}</b></div>
+              </div>
+
+              <div class="bg-indigo-50/60 p-2 rounded-xl border border-indigo-100">
+                <span class="text-[9px] font-bold uppercase text-indigo-700 block">Commission (${m.commPct}%)</span>
+                <div class="font-mono font-black text-sm text-indigo-900">${formatINR(m.commission)}</div>
+                <div class="text-[10px] text-indigo-700 font-mono">AOV: ${formatINR(m.aov)}</div>
+              </div>
+            </div>
+
+            <!-- Collections vs Udhaar & Stock Movement -->
+            <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-100">
+              <div>
+                <span class="text-[9px] text-slate-400 uppercase block font-bold">Collections / Udhaar</span>
+                <div class="font-mono text-xs font-bold text-slate-800">
+                  <span class="text-emerald-700">${formatINR(m.collected)}</span> / <span class="text-rose-600">${formatINR(m.udhaar)}</span>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[9px] text-slate-400 uppercase block font-bold">Units / Samples</span>
+                <div class="font-mono text-xs font-bold text-slate-800">
+                  <span class="text-blue-700">${m.unitsSold} sold</span> • <span class="text-amber-600">${m.sampleCount} smpl</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 flex-wrap">
+              <a href="${portalUrl}" target="_blank" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-xs">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Launch Portal
+              </a>
+              <button onclick="filterToRepTransactions('${sp.id}')" class="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="View this official's orders">
+                <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Bills
+              </button>
+              <button onclick="openManageSalespersonModal('${sp.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs transition cursor-pointer" title="Edit official profile">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterToRepTransactions(repId) {
+      currentSalespersonFilter = repId;
+      const select = document.getElementById('sp-filter-rep');
+      if (select) select.value = repId;
+      setSalespersonSubtab('transactions');
+    }
+
+    // 2. PERFORMANCE: LEADERBOARD TABLE
+    function renderSalespersonLeaderboard() {
+      const tbody = document.getElementById('sp-leaderboard-tbody');
+      if (!tbody) return;
+
+      const ranked = (salespeople || []).map(sp => getSalespersonMetrics(sp, currentSalespersonTimeframe))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      if (ranked.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" class="p-6 text-center text-slate-400 italic">No sales performance data available.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = ranked.map((m, idx) => {
+        const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+        const slug = m.sp.slug || m.sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        let pctBadge = 'bg-rose-100 text-rose-800';
+        if (m.targetPct >= 100) pctBadge = 'bg-emerald-100 text-emerald-800 font-extrabold';
+        else if (m.targetPct >= 70) pctBadge = 'bg-teal-100 text-teal-800 font-bold';
+        else if (m.targetPct >= 40) pctBadge = 'bg-amber-100 text-amber-800 font-bold';
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-2.5 text-center font-bold text-sm">${medal}</td>
+            <td class="p-2.5">
+              <div class="font-extrabold text-slate-900">${escapeHtml(m.sp.name)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(m.sp.id)} • ${escapeHtml(m.sp.phone || 'No phone')}</div>
+            </td>
+            <td class="p-2.5 font-medium text-slate-600">${escapeHtml(m.sp.assignedRoute || 'General Beat')}</td>
+            <td class="p-2.5 text-right font-mono text-slate-500">${formatINR(m.target)}</td>
+            <td class="p-2.5 text-right font-mono font-black text-emerald-700 text-sm">${formatINR(m.revenue)}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono ${pctBadge}">${m.targetPct}%</span>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-800">${m.ordersCount}</td>
+            <td class="p-2.5 text-right font-mono text-slate-600">${formatINR(m.aov)}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-blue-700">${m.unitsSold}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-amber-600">${m.sampleCount}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-emerald-700">${formatINR(m.collected)}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-rose-600">${formatINR(m.udhaar)}</td>
+            <td class="p-2.5 text-right font-mono font-black text-indigo-700">${formatINR(m.commission)}</td>
+            <td class="p-2.5 text-right">
+              <a href="/sales_${slug}.html" target="_blank" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold inline-flex items-center gap-1 transition">
+                Portal <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 3. SALES & BILLS TABLE (WITH CONCURRENT BILL DROPDOWN)
+    function renderSalespersonTransactionsTable(ordersList) {
+      const tbody = document.getElementById('sp-transactions-tbody');
+      if (!tbody) return;
+
+      const list = ordersList || (orders || []).filter(o => {
+        const activeRep = currentSalespersonFilter || 'ALL';
+        const matchesRep = activeRep === 'ALL' || (salespeople || []).some(sp => sp.id === activeRep && isOrderFromSalesperson(o, sp));
+        const matchesTime = filterDateByTimeframe(o.date, currentSalespersonTimeframe);
+        return matchesRep && matchesTime;
+      });
+
+      // Filter by payment type dropdown
+      const payFilter = document.getElementById('sp-trans-filter-payment')?.value || 'ALL';
+      const statusFilter = document.getElementById('sp-trans-filter-status')?.value || 'ALL';
+
+      const filtered = list.filter(o => {
+        if (payFilter !== 'ALL') {
+          const breakdown = getOrderPaymentBreakdown(o);
+          if (payFilter === 'PAID' && breakdown.balanceDue > 0) return false;
+          if (payFilter === 'UDHAAR' && breakdown.amountPaid > 0) return false;
+          if (payFilter === 'PART' && (!breakdown.isPartPayment)) return false;
+        }
+        if (statusFilter !== 'ALL') {
+          const st = getOrderStatus(o);
+          if (st !== statusFilter) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400 italic">No sales transactions found matching criteria.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(o => {
+        const isExpanded = expandedSalespersonBills.has(o.id);
+        const breakdown = getOrderPaymentBreakdown(o);
+        const isDelivered = getOrderStatus(o) === 'Delivered';
+        const repName = o.salespersonName || o.repName || 'Sales Official';
+        const repId = o.salespersonId || o.repId || '';
+
+        // Payment badge
+        let payBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Full Paid (${escapeHtml(o.paymentMode || 'COD')})</span>`;
+        if (breakdown.balanceDue > 0 && breakdown.amountPaid === 0) {
+          payBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200">100% Udhaar (Due: ${formatINR(breakdown.balanceDue)})</span>`;
+        } else if (breakdown.isPartPayment) {
+          payBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Part: ${formatINR(breakdown.amountPaid)} Paid, ${formatINR(breakdown.balanceDue)} Due</span>`;
+        }
+
+        html += `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${isExpanded ? 'bg-slate-50/80' : ''}">
+            <td class="p-2.5 text-center">
+              <button onclick="toggleSalespersonBillDropdown('${o.id}')" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer" title="Click to view concurrent bill items">
+                <i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4"></i>
+              </button>
+            </td>
+            <td class="p-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+              ${o.date} <span class="text-slate-400">${o.time || ''}</span>
+            </td>
+            <td class="p-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">#${o.id}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900 text-xs flex items-center gap-1">
+                <i data-lucide="user" class="w-3 h-3 text-emerald-600"></i> ${escapeHtml(repName)}
+              </div>
+              ${repId ? `<div class="text-[10px] font-mono text-slate-400">${escapeHtml(repId)}</div>` : ''}
+            </td>
+            <td class="p-2.5">
+              <div class="font-extrabold text-slate-900">${escapeHtml(o.buyerName)}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(o.buyerPhone || o.dispatchRoute || '-')}</div>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-700">${o.totalUnits || 0}</td>
+            <td class="p-2.5 text-right font-mono font-black text-slate-900 text-sm">${formatINR(o.netPayable)}</td>
+            <td class="p-2.5">${payBadge}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isDelivered ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${isDelivered ? 'Delivered' : 'Pending'}
+              </span>
+            </td>
+            <td class="p-2.5 text-right whitespace-nowrap">
+              <button onclick="openInvoiceModal('${o.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Bill Slip
+              </button>
+            </td>
+          </tr>
+        `;
+
+        // Expandable Concurrent Bill Accordion
+        if (isExpanded) {
+          const items = Array.isArray(o.items) ? o.items : [];
+          html += `
+            <tr class="bg-slate-50/90 border-b border-slate-200">
+              <td colspan="10" class="p-3 sm:p-4">
+                <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 space-y-3 shadow-xs">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-800">CONCURRENT BILL DETAILS</span>
+                      <span class="font-mono text-xs font-bold text-slate-700">Order #${o.id} • ${o.date}</span>
+                    </div>
+                    <button onclick="openInvoiceModal('${o.id}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Printable Bill of Supply
+                    </button>
+                  </div>
+
+                  <!-- Line Items Table -->
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                      <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-[9px]">
+                        <tr>
+                          <th class="p-2 text-center w-8">#</th>
+                          <th class="p-2">Item Name</th>
+                          <th class="p-2">SKU</th>
+                          <th class="p-2">Pack Size</th>
+                          <th class="p-2 text-right">Rate (₹)</th>
+                          <th class="p-2 text-right">Quantity</th>
+                          <th class="p-2 text-right">Line Total (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        ${items.length === 0 ? `<tr><td colspan="7" class="p-3 text-center text-slate-400 italic">No item details stored for this bill.</td></tr>` : items.map((it, i) => `
+                          <tr class="hover:bg-slate-50">
+                            <td class="p-2 text-center font-mono text-slate-400">${i + 1}</td>
+                            <td class="p-2 font-bold text-slate-800">${escapeHtml(it.name || 'Product')}</td>
+                            <td class="p-2 font-mono text-slate-500">${escapeHtml(it.sku || '-')}</td>
+                            <td class="p-2 text-slate-600">${escapeHtml(it.unitSize || '-')}</td>
+                            <td class="p-2 text-right font-mono">${formatINR(it.rate || 0)}</td>
+                            <td class="p-2 text-right font-mono font-bold text-slate-900">${it.qty || 0}</td>
+                            <td class="p-2 text-right font-mono font-bold text-emerald-700">${formatINR(it.total || (it.qty * it.rate))}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Bill Financial Breakdown -->
+                  <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+                    <div class="text-[11px] text-slate-500">
+                      ${o.notes ? `<span><b>Notes:</b> ${escapeHtml(o.notes)}</span>` : '<span class="italic">No special booking instructions</span>'}
+                    </div>
+                    <div class="flex items-center gap-3 font-mono">
+                      <span>Items Subtotal: <b>${formatINR(o.itemsSubtotal || o.netPayable)}</b></span>
+                      ${o.extraRebate > 0 ? `<span class="text-rose-600">Rebate: -${formatINR(o.extraRebate)}</span>` : ''}
+                      <span class="text-sm font-black text-slate-900">Net: ${formatINR(o.netPayable)}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+      });
+
+      tbody.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleSalespersonBillDropdown(orderId) {
+      if (expandedSalespersonBills.has(orderId)) {
+        expandedSalespersonBills.delete(orderId);
+      } else {
+        expandedSalespersonBills.add(orderId);
+      }
+      renderSalespersonTransactionsTable();
+    }
+
+    // 4. SAMPLE GIVEAWAYS TABLE
+    function renderSalespersonSamplesTable(samplesList) {
+      const tbody = document.getElementById('sp-samples-tbody');
+      if (!tbody) return;
+
+      const list = samplesList || (sampleGiveaways || []).filter(s => {
+        const activeRep = currentSalespersonFilter || 'ALL';
+        const matchesRep = activeRep === 'ALL' || (salespeople || []).some(sp => sp.id === activeRep && isSampleFromSalesperson(s, sp));
+        const sDate = s.date || (s.created_at ? s.created_at.split('T')[0] : '');
+        return matchesRep && filterDateByTimeframe(sDate, currentSalespersonTimeframe);
+      });
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No free sample tastings logged for this selection.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(s => {
+        const repName = s.salespersonName || s.rep_name || s.repName || 'Field Sales';
+        const storeName = s.buyerName || s.store_name || 'Prospect Retailer';
+        const storePhone = s.buyerPhone || s.store_phone || '';
+        const prod = s.product_name || s.productName || s.product_sku || 'Product Sample';
+        const qty = Number(s.quantity_units || s.quantity || 1);
+        const dateStr = s.date || (s.created_at ? s.created_at.split('T')[0] : '');
+        const feedback = s.feedback || s.sample_reason || s.notes || 'Tasting sample given';
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">${dateStr}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900 text-xs flex items-center gap-1">
+                <i data-lucide="user" class="w-3 h-3 text-amber-600"></i> ${escapeHtml(repName)}
+              </div>
+            </td>
+            <td class="p-2.5">
+              <div class="font-extrabold text-slate-900">${escapeHtml(storeName)}</div>
+              ${storePhone ? `<div class="text-[10px] text-slate-400 font-mono">${escapeHtml(storePhone)}</div>` : ''}
+            </td>
+            <td class="p-2.5 text-slate-600 text-xs">${escapeHtml(s.route || '-')}</td>
+            <td class="p-2.5 font-bold text-slate-800">${escapeHtml(prod)}</td>
+            <td class="p-2.5 text-right font-mono font-black text-amber-700">${qty}</td>
+            <td class="p-2.5 text-xs text-slate-600 italic max-w-xs truncate">${escapeHtml(feedback)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 5. STOCK MOVEMENT & STOCK IN HAND TABLE
+    function renderSalespersonStockTable() {
+      // 5A. Warehouse Live Stock in Hand Table
+      const handTbody = document.getElementById('sp-stock-in-hand-tbody');
+      if (handTbody) {
+        if (!products || products.length === 0) {
+          handTbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 italic">No products registered in catalog.</td></tr>`;
+        } else {
+          handTbody.innerHTML = products.map(prod => {
+            const stock = getProductStock(prod);
+            let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">In Stock</span>';
+            if (stock.balance <= 0) {
+              statusBadge = '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-800">Out of Stock</span>';
+            } else if (stock.balance <= 10) {
+              statusBadge = '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">Low Stock</span>';
+            }
+
+            return `
+              <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <td class="p-2.5 font-mono font-bold text-slate-900">${escapeHtml(prod.sku || '-')}</td>
+                <td class="p-2.5 font-bold text-slate-800">${escapeHtml(prod.name)}</td>
+                <td class="p-2.5 text-slate-500 font-mono text-[11px]">${escapeHtml(prod.unitSize || '-')}</td>
+                <td class="p-2.5 text-right font-mono text-slate-500">${stock.initial}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-indigo-700">+${stock.inward}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-rose-600">-${stock.sold}</td>
+                <td class="p-2.5 text-right font-mono font-bold text-amber-600">-${stock.samples}</td>
+                <td class="p-2.5 text-right font-mono font-black text-base text-slate-900">${stock.balance}</td>
+                <td class="p-2.5 text-center">${statusBadge}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 5B. Rep SKU Movement Breakdown Matrix
+      const thead = document.getElementById('sp-sku-movement-thead');
+      const tbody = document.getElementById('sp-sku-movement-tbody');
+      if (thead && tbody && products.length > 0) {
+        const reps = salespeople || [];
+        thead.innerHTML = `
+          <tr>
+            <th class="p-2.5">SKU</th>
+            <th class="p-2.5">Product Name</th>
+            ${reps.map(r => `<th class="p-2.5 text-right">${escapeHtml(r.name)}</th>`).join('')}
+            <th class="p-2.5 text-right font-black text-slate-900">Total Moved</th>
+          </tr>
+        `;
+
+        tbody.innerHTML = products.map(prod => {
+          let rowTotal = 0;
+          const repCols = reps.map(r => {
+            let count = 0;
+            (orders || []).forEach(o => {
+              if (isOrderFromSalesperson(o, r) && Array.isArray(o.items)) {
+                o.items.forEach(it => {
+                  if (it.sku === prod.sku || it.productId === prod.id) {
+                    count += Number(it.qty || 0);
+                  }
+                });
+              }
+            });
+            rowTotal += count;
+            return `<td class="p-2.5 text-right font-mono ${count > 0 ? 'font-bold text-slate-800' : 'text-slate-300'}">${count}</td>`;
+          }).join('');
+
+          return `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-2.5 font-mono font-bold text-slate-700">${escapeHtml(prod.sku || '-')}</td>
+              <td class="p-2.5 font-bold text-slate-900">${escapeHtml(prod.name)}</td>
+              ${repCols}
+              <td class="p-2.5 text-right font-mono font-black text-indigo-700">${rowTotal}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 5C. Recent Factory Inward Arrivals
+      const inTbody = document.getElementById('sp-inward-recent-tbody');
+      if (inTbody) {
+        if (!inwardEntries || inwardEntries.length === 0) {
+          inTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No factory stock receipts recorded yet.</td></tr>`;
+        } else {
+          inTbody.innerHTML = inwardEntries.slice(0, 8).map(e => `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">${e.date || '-'}</td>
+              <td class="p-2.5 font-mono font-bold text-slate-700">#${e.id || '-'}</td>
+              <td class="p-2.5 font-mono text-slate-600">${escapeHtml(e.product_sku || '-')}</td>
+              <td class="p-2.5 font-bold text-slate-900">${escapeHtml(e.product_name || '-')}</td>
+              <td class="p-2.5 text-right font-mono font-black text-indigo-700">+${e.quantity_units || 0}</td>
+              <td class="p-2.5 text-xs text-slate-500 truncate max-w-xs">${escapeHtml(e.supplier_notes || 'Factory arrival')}</td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+
+    // 6. ADD / EDIT SALES OFFICIAL MODAL
+    function openManageSalespersonModal(spId = null) {
+      const modal = document.getElementById('modal-manage-salesperson');
+      const form = document.getElementById('sp-manage-form');
+      const title = document.getElementById('sp-modal-title');
+      const isEditInput = document.getElementById('sp-form-is-edit');
+      if (!modal || !form) return;
+
+      form.reset();
+
+      if (spId) {
+        const sp = (salespeople || []).find(s => s.id === spId);
+        if (sp) {
+          if (title) title.innerText = `Edit: ${sp.name}`;
+          if (isEditInput) isEditInput.value = "true";
+          document.getElementById('sp-form-id').value = sp.id || '';
+          document.getElementById('sp-form-id').readOnly = true;
+          document.getElementById('sp-form-slug').value = sp.slug || '';
+          document.getElementById('sp-form-name').value = sp.name || '';
+          document.getElementById('sp-form-phone').value = sp.phone || '';
+          document.getElementById('sp-form-route').value = sp.assignedRoute || '';
+          document.getElementById('sp-form-target').value = sp.monthlyTarget || 150000;
+          document.getElementById('sp-form-daily-target').value = sp.dailyOrderTarget || 6;
+          document.getElementById('sp-form-commission').value = sp.commissionPct || 3.0;
+          document.getElementById('sp-form-vehicle').value = sp.vehicleType || 'Two-Wheeler';
+          document.getElementById('sp-form-active').checked = sp.active !== false;
+        }
+      } else {
+        if (title) title.innerText = "Add New Sales Official";
+        if (isEditInput) isEditInput.value = "false";
+        document.getElementById('sp-form-id').value = `SP-${100 + (salespeople ? salespeople.length + 1 : 1)}`;
+        document.getElementById('sp-form-id').readOnly = false;
+        document.getElementById('sp-form-target').value = 150000;
+        document.getElementById('sp-form-daily-target').value = 6;
+        document.getElementById('sp-form-commission').value = 3.0;
+        document.getElementById('sp-form-active').checked = true;
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeManageSalespersonModal() {
+      document.getElementById('modal-manage-salesperson')?.classList.add('hidden');
+    }
+
+    function onSalespersonNameInput(val) {
+      const isEdit = document.getElementById('sp-form-is-edit')?.value === "true";
+      if (!isEdit) {
+        const slugInput = document.getElementById('sp-form-slug');
+        if (slugInput) {
+          slugInput.value = val.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+      }
+    }
+
+    async function saveSalespersonForm(event) {
+      event.preventDefault();
+      const id = document.getElementById('sp-form-id').value.trim();
+      const name = document.getElementById('sp-form-name').value.trim();
+      let slug = document.getElementById('sp-form-slug').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const phone = document.getElementById('sp-form-phone').value.trim();
+      const assignedRoute = document.getElementById('sp-form-route').value.trim();
+      const monthlyTarget = parseFloat(document.getElementById('sp-form-target').value) || 150000;
+      const dailyOrderTarget = parseInt(document.getElementById('sp-form-daily-target').value, 10) || 6;
+      const commissionPct = parseFloat(document.getElementById('sp-form-commission').value) || 3.0;
+      const vehicleType = document.getElementById('sp-form-vehicle').value;
+      const active = document.getElementById('sp-form-active').checked;
+
+      const spObj = {
+        id,
+        name,
+        slug,
+        phone,
+        email: '',
+        assignedRoute,
+        monthlyTarget,
+        commissionPct,
+        vehicleType,
+        dailyOrderTarget,
+        joiningDate: new Date().toISOString().split('T')[0],
+        address: 'Bengaluru',
+        active
+      };
+
+      const existIdx = salespeople.findIndex(s => s.id === id || s.slug === slug);
+      if (existIdx >= 0) {
+        salespeople[existIdx] = { ...salespeople[existIdx], ...spObj };
+      } else {
+        salespeople.push(spObj);
+      }
+      saveSalespeopleLocally();
+
+      // POST to server.js on port 3005 to write salespeople.json and auto-generate sales_<slug>.html!
+      const saveBtn = document.getElementById('btn-save-salesperson');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating Portal...`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      try {
+        const res = await fetch('/api/salespeople', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(salespeople)
+        });
+        if (res.ok) {
+          showToast(`✅ Sales official ${name} saved! Dedicated portal ready.`);
+        }
+      } catch (err) {
+        console.warn("Could not sync salesperson to server:", err);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal`;
+          if (window.lucide) lucide.createIcons();
+        }
+        closeManageSalespersonModal();
+        populateSalespersonDropdowns();
+        renderSalesPersonnelHub();
+      }
+    }
+
+    // 7. EXPORT CSV
+    function exportSalesPersonnelCsv() {
+      const headers = [
+        "Sales Official ID",
+        "Name",
+        "Assigned Route",
+        "Phone",
+        "Vehicle Type",
+        "Monthly Target (INR)",
+        "Achieved Revenue (INR)",
+        "Progress Pct (%)",
+        "Orders Booked",
+        "Average Order Value (INR)",
+        "Stock Units Sold",
+        "Sample Tastings Given",
+        "Collections (INR)",
+        "Udhaar Balance (INR)",
+        "Commission Pct (%)",
+        "Earned Commission (INR)",
+        "Status"
+      ];
+
+      const rows = (salespeople || []).map(sp => {
+        const m = getSalespersonMetrics(sp, currentSalespersonTimeframe);
+        return [
+          `"${sp.id}"`,
+          `"${sp.name}"`,
+          `"${sp.assignedRoute || ''}"`,
+          `"${sp.phone || ''}"`,
+          `"${sp.vehicleType || ''}"`,
+          m.target,
+          m.revenue,
+          m.targetPct,
+          m.ordersCount,
+          m.aov,
+          m.unitsSold,
+          m.sampleCount,
+          m.collected,
+          m.udhaar,
+          m.commPct,
+          m.commission,
+          `"${sp.active !== false ? 'Active' : 'Inactive'}"`
+        ];
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Sri_Govinda_Sales_Personnel_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("📊 Sales personnel performance report exported to CSV!");
+    }
+
+    // 8. SHARE WHATSAPP DIGEST
+    function shareSalesPersonnelReportWhatsApp() {
+      const today = new Date().toISOString().split('T')[0];
+      let msg = `*SRI GOVINDA FOOD PRODUCTS*\n` +
+        `*EXECUTIVE SALES TEAM PERFORMANCE REPORT*\n` +
+        `Date: ${today} | Timeframe: ${currentSalespersonTimeframe.toUpperCase()}\n` +
+        `----------------------------------------\n`;
+
+      (salespeople || []).forEach((sp, idx) => {
+        const m = getSalespersonMetrics(sp, currentSalespersonTimeframe);
+        msg += `${idx + 1}. *${sp.name}* [${sp.assignedRoute || 'Beat'}]\n` +
+          `   • Revenue: *${formatINR(m.revenue)}* / Target: ${formatINR(m.target)} (${m.targetPct}%)\n` +
+          `   • Orders: *${m.ordersCount}* bills (Today: ${m.todayOrders}/${m.dailyTarget})\n` +
+          `   • Units Moved: *${m.unitsSold}* pkts | Samples: *${m.sampleCount}*\n` +
+          `   • Collected: *${formatINR(m.collected)}* | Udhaar: *${formatINR(m.udhaar)}*\n` +
+          `   • Commission: *${formatINR(m.commission)}* (${m.commPct}%)\n\n`;
+      });
+
+      msg += `----------------------------------------\n` +
+        `*Sri Govinda Sales Intelligence Hub (Port 3005)*`;
+
+      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    // 9. REFRESH & REALTIME SYNC
+    function refreshSalesPersonnelData() {
+      const icon = document.getElementById('sp-refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      fetchSalespeopleFromServer().finally(() => {
+        refreshAllUI();
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+          showToast("⚡ Sales personnel data refreshed live!");
+        }, 500);
+      });
+    }
+
+    function setupSalespersonRealtimeListeners() {
+      // 1. Cross-Tab Real-time Broadcast Bus
+      if (window.BroadcastChannel) {
+        try {
+          const bus = new BroadcastChannel('sg_sales_bus');
+          bus.onmessage = (event) => {
+            const data = event.data;
+            if (!data) return;
+            if (data.type === 'ORDER_CREATED') {
+              const ord = data.order;
+              if (ord && !orders.some(o => o.id === ord.id)) {
+                orders.unshift(ord);
+                try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+                showToast(`⚡ Real-time: New Order #${ord.id} logged by ${data.repName || 'Sales Official'}!`);
+                refreshAllUI();
+              }
+            } else if (data.type === 'SAMPLE_CREATED') {
+              const smpl = data.sample;
+              if (smpl && !sampleGiveaways.some(s => s.id === smpl.id)) {
+                sampleGiveaways.unshift(smpl);
+                try { localStorage.setItem('sg_samples', JSON.stringify(sampleGiveaways)); } catch(e) {}
+                showToast(`🎁 Real-time: Sample logged by ${data.repName || 'Sales Official'}!`);
+                refreshAllUI();
+              }
+            }
+          };
+        } catch (e) {}
+      }
+
+      // 2. Storage event listener (fallback for other tabs)
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'sg_orders') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              orders = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_samples') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              sampleGiveaways = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_salespeople') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              salespeople = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        }
+      });
+    }
+
+    // ==============================================================================
     // 18. INITIALIZATION & STUBS (PURE MANAGERIAL ACCESS)
     // ==============================================================================
     function initUserSessionFromUrlOrStorage() {
@@ -9627,6 +11153,9 @@
       if (window.lucide) lucide.createIcons();
       await fetchCompanySettingsFromServer();
       updateCompanyBrandingUI();
+      await fetchSalespeopleFromServer();
+      setupSalespersonRealtimeListeners();
+      populateSalespersonDropdowns();
       await initSupabase();
     });
   </script>

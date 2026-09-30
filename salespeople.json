@@ -1,0 +1,73 @@
+[
+  {
+    "id": "SP-101",
+    "name": "Ramesh Kumar",
+    "slug": "ramesh",
+    "phone": "+91 9731988411",
+    "email": "",
+    "assignedRoute": "Yelahanka Beat 1",
+    "monthlyTarget": 150000,
+    "commissionPct": 3,
+    "vehicleType": "Two-Wheeler",
+    "dailyOrderTarget": 6,
+    "joiningDate": "2025-01-01",
+    "address": "Bengaluru",
+    "active": true
+  },
+  {
+    "id": "SP-325",
+    "name": "Pradhish",
+    "slug": "pradhish",
+    "phone": "11111111",
+    "email": "",
+    "assignedRoute": "east bangalore",
+    "monthlyTarget": 30000,
+    "commissionPct": 3,
+    "vehicleType": "Two-Wheeler",
+    "dailyOrderTarget": 6,
+    "joiningDate": "2026-09-29",
+    "address": "Bengaluru",
+    "active": true
+  },
+  {
+    "id": "SP-103",
+    "name": "Nagaraju",
+    "slug": "nagaraju",
+    "phone": "+91 9845012345",
+    "email": "",
+    "assignedRoute": "Vidyaranyapura Beat 3",
+    "monthlyTarget": 150000,
+    "commissionPct": 3,
+    "vehicleType": "Two-Wheeler",
+    "dailyOrderTarget": 6,
+    "joiningDate": "2025-01-01",
+    "address": "Bengaluru",
+    "active": true
+  },
+  {
+    "id": "SP-104",
+    "name": "Sales Official 4",
+    "slug": "salesofficial4",
+    "phone": "",
+    "email": "",
+    "assignedRoute": "Jakkur Beat 4",
+    "monthlyTarget": 150000,
+    "commissionPct": 3,
+    "vehicleType": "Two-Wheeler",
+    "dailyOrderTarget": 6,
+    "joiningDate": "2025-01-01",
+    "address": "Bengaluru",
+    "active": true
+  },
+  {
+    "assignedRoute": "Yelahanka Beat 5",
+    "slug": "kavitha",
+    "id": "SP-105",
+    "dailyOrderTarget": 8,
+    "commissionPct": 3.5,
+    "vehicleType": "Two-Wheeler",
+    "name": "Kavitha",
+    "monthlyTarget": 180000,
+    "phone": "+91 9123456780"
+  }
+]
