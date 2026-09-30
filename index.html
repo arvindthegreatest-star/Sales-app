@@ -3564,15 +3564,94 @@
           <label for="sp-form-active" class="text-xs font-bold text-slate-700">Official is Currently Active on Field</label>
         </div>
 
-        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-          <button type="button" onclick="closeManageSalespersonModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
-            Cancel
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+          <button type="button" id="btn-share-modal-sp" onclick="shareSalesPersonnelFile(document.getElementById('sp-form-id').value)" class="hidden px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i> Share File via WhatsApp
           </button>
-          <button type="submit" id="btn-save-salesperson" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer">
-            <i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal
-          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeManageSalespersonModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" id="btn-save-salesperson" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+              <i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal
+            </button>
+          </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: WhatsApp File Sharing Guide for Sales Representative -->
+  <div id="modal-share-file-guide" class="fixed inset-0 z-[96] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto" style="z-index: 10000;" onclick="if(event.target === this) closeShareFileModal();">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation();">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
+            <i data-lucide="share-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base text-slate-900" id="share-modal-title">Share Sales Portal File</h3>
+            <p class="text-xs text-slate-500" id="share-modal-subtitle">Sending offline app file to phone on WhatsApp</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeShareFileModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl cursor-pointer">✕</button>
+      </div>
+
+      <!-- File info badge -->
+      <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 font-mono font-black text-xs shrink-0 shadow-xs">
+            HTML
+          </div>
+          <div class="min-w-0">
+            <span class="font-mono font-black text-xs text-emerald-950 block truncate" id="share-modal-filename">sales_ramesh.html</span>
+            <span class="text-[10px] text-emerald-700">Self-contained offline app with direct Supabase real-time sync</span>
+          </div>
+        </div>
+        <button type="button" onclick="triggerDownloadFromModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1 shadow-xs transition cursor-pointer">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Download
+        </button>
+      </div>
+
+      <!-- Step by step guidance -->
+      <div class="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 font-medium">
+        <div class="flex items-start gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">1</div>
+          <p><b class="text-slate-900">File is ready:</b> The file <code class="font-mono text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded" id="share-modal-code-fn">sales_ramesh.html</code> has been downloaded to your computer.</p>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">2</div>
+          <p><b class="text-slate-900">WhatsApp Chat:</b> WhatsApp has been opened for <span class="font-bold text-slate-900" id="share-modal-rep-name">Ramesh Kumar</span>.</p>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <div class="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">3</div>
+          <p><b class="text-slate-900">Attach & Send:</b> In WhatsApp, click <b class="text-slate-900">📎 (Attach)</b> ➔ <b class="text-slate-900">Document (📄)</b>, choose this downloaded file, and hit send! You can also simply <b class="text-slate-900">drag-and-drop</b> the file into WhatsApp!</p>
+        </div>
+      </div>
+
+      <!-- Note for Salesman on their phone -->
+      <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 text-xs text-indigo-900">
+        <b class="text-indigo-950 flex items-center gap-1.5 mb-0.5 font-bold">
+          <i data-lucide="smartphone" class="w-4 h-4 text-indigo-600"></i> What the salesman does on their phone:
+        </b>
+        When the rep receives the file on WhatsApp, they simply tap it to open in Chrome or Safari. It works immediately without any installation!
+      </div>
+
+      <!-- Action buttons -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+        <button type="button" onclick="copyShareTextFromModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Instructions
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="openWhatsAppFromModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition cursor-pointer">
+            <i data-lucide="external-link" class="w-4 h-4"></i> Open WhatsApp Web
+          </button>
+          <button type="button" onclick="closeShareFileModal()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
+            Done
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -10691,16 +10770,16 @@
 
             <!-- Action Buttons Footer -->
             <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 flex-wrap">
-              <a href="${portalUrl}" target="_blank" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-xs">
+              <a href="${portalUrl}" target="_blank" class="flex-1 min-w-[70px] py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-xs cursor-pointer">
                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Launch
               </a>
-              <button onclick="shareSalesPortalWhatsApp('${sp.id}')" class="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="Send Portal to Rep on WhatsApp">
-                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Send
+              <button onclick="shareSalesPersonnelFile('${sp.id}')" class="py-1.5 px-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Share HTML file to phone on WhatsApp">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i> WhatsApp File
               </button>
-              <button onclick="filterToRepTransactions('${sp.id}')" class="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="View this official's orders">
+              <button onclick="filterToRepTransactions('${sp.id}')" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="View this official's orders">
                 <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Bills
               </button>
-              <button onclick="openManageSalespersonModal('${sp.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs transition cursor-pointer" title="Edit official profile">
+              <button onclick="openManageSalespersonModal('${sp.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 rounded-xl text-xs transition cursor-pointer" title="Edit official profile">
                 <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
@@ -10709,29 +10788,176 @@
       }).join('');
     }
 
-    function shareSalesPortalWhatsApp(spId) {
+    let currentShareSp = null;
+    let currentShareFileName = '';
+    let currentShareWaUrl = '';
+    let currentShareHtmlContent = '';
+
+    async function shareSalesPersonnelFile(spId) {
       const sp = (salespeople || []).find(s => s.id === spId);
       if (!sp) return;
-      const slug = sp.slug || sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const fullUrl = window.location.protocol.startsWith('http') 
-        ? `${window.location.origin}/sales_${slug}.html` 
-        : `sales_${slug}.html`;
+      const slug = (sp.slug || sp.name || 'rep').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fileName = `sales_${slug}.html`;
 
-      const text = `*SRI GOVINDA FIELD SALES PORTAL*\n` +
-        `Hello *${sp.name}*!\n` +
-        `Your personalized digital order booking terminal is ready:\n` +
-        `👉 ${fullUrl}\n\n` +
-        `Assigned Beat: *${sp.assignedRoute || 'General Beat'}*\n` +
-        `Monthly Target: ₹${sp.monthlyTarget || 150000}\n` +
-        `Daily Goal: ${sp.dailyOrderTarget || 6} orders\n\n` +
-        `Open this link or HTML file on your mobile phone to book orders, record chef tastings, and sync live with manager!`;
+      currentShareSp = sp;
+      currentShareFileName = fileName;
+
+      // 1. Fetch the exact standalone portal file
+      let htmlContent = '';
+      try {
+        const res = await fetch(fileName);
+        if (res.ok) {
+          htmlContent = await res.text();
+        }
+      } catch (e) {}
+
+      // Fallback: fetch template and inject rep parameters
+      if (!htmlContent) {
+        try {
+          const tRes = await fetch('sales_portal_template.html');
+          if (tRes.ok) {
+            let tpl = await tRes.text();
+            htmlContent = tpl
+              .replace(/{{ID}}/g, sp.id || 'SP-101')
+              .replace(/{{NAME}}/g, sp.name || 'Sales Official')
+              .replace(/{{SLUG}}/g, slug)
+              .replace(/{{PHONE}}/g, sp.phone || '')
+              .replace(/{{ROUTE}}/g, sp.assignedRoute || 'General Beat')
+              .replace(/{{MONTHLY_TARGET}}/g, String(sp.monthlyTarget || 150000))
+              .replace(/{{COMMISSION_PCT}}/g, String(sp.commissionPct || 3.0))
+              .replace(/{{DAILY_TARGET}}/g, String(sp.dailyOrderTarget || 6))
+              .replace(/{{VEHICLE}}/g, sp.vehicleType || 'Two-Wheeler');
+          }
+        } catch (e) {}
+      }
+
+      currentShareHtmlContent = htmlContent;
 
       const cleanPhone = (sp.phone || '').replace(/\D/g, '');
       const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
-      const waUrl = phoneToUse 
-        ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` 
-        : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const waMsg = `*SRI GOVINDA FIELD SALES PORTAL FILE*\n` +
+        `Hello *${sp.name}*!\n` +
+        `Here is your offline order booking file (*${fileName}*).\n\n` +
+        `Beat: *${sp.assignedRoute || 'General Beat'}*\n` +
+        `Monthly Target: ₹${sp.monthlyTarget || 150000}\n\n` +
+        `📱 *Instructions for Phone:*\n` +
+        `1. Save this file to your phone.\n` +
+        `2. Tap the file to open in Chrome or Safari.\n` +
+        `3. It works directly on your phone with live real-time cloud sync!`;
+
+      // 2. Check if mobile Web Share API with Files is supported (e.g. mobile phones)
+      if (htmlContent && navigator.canShare) {
+        try {
+          const file = new File([htmlContent], fileName, { type: 'text/html' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Sri Govinda Portal - ${sp.name}`,
+              text: waMsg
+            });
+            showToast(`✅ ${fileName} shared successfully!`);
+            return;
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') return; // User tapped cancel on share sheet
+          console.warn("Native file share fallback:", err);
+        }
+      }
+
+      // 3. Fallback for Desktop PC & WhatsApp Web:
+      // Download the file immediately to user's device
+      downloadSalesPortalFile(spId, htmlContent);
+
+      // Construct WhatsApp URL
+      const waUrl = phoneToUse
+        ? `https://web.whatsapp.com/send?phone=${phoneToUse}&text=${encodeURIComponent(waMsg)}`
+        : `https://web.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`;
+      currentShareWaUrl = waUrl;
+
+      // Try window.open for WhatsApp Web
       window.open(waUrl, '_blank');
+
+      // 4. Show the visual modal guide
+      openShareFileModal(sp, fileName, waUrl);
+    }
+
+    function downloadSalesPortalFile(spId, content) {
+      const sp = (salespeople || []).find(s => s.id === spId);
+      if (!sp) return;
+      const slug = (sp.slug || sp.name || 'rep').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fileName = `sales_${slug}.html`;
+
+      if (content) {
+        const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } else {
+        const a = document.createElement('a');
+        a.href = fileName;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+
+    function openShareFileModal(sp, fileName, waUrl) {
+      const modal = document.getElementById('modal-share-file-guide');
+      if (!modal) return;
+      document.getElementById('share-modal-title').innerText = `Share File with ${sp.name}`;
+      document.getElementById('share-modal-subtitle').innerText = `Sending ${fileName} to ${sp.phone || 'phone'} on WhatsApp`;
+      document.getElementById('share-modal-filename').innerText = fileName;
+      document.getElementById('share-modal-code-fn').innerText = fileName;
+      document.getElementById('share-modal-rep-name').innerText = `${sp.name} (${sp.phone || 'No phone'})`;
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeShareFileModal() {
+      document.getElementById('modal-share-file-guide')?.classList.add('hidden');
+    }
+
+    function triggerDownloadFromModal() {
+      if (currentShareSp) {
+        downloadSalesPortalFile(currentShareSp.id, currentShareHtmlContent);
+        showToast(`⬇️ Downloaded ${currentShareFileName}!`);
+      }
+    }
+
+    function openWhatsAppFromModal() {
+      if (currentShareWaUrl) {
+        window.open(currentShareWaUrl, '_blank');
+      }
+    }
+
+    function copyShareTextFromModal() {
+      if (!currentShareSp) return;
+      const sp = currentShareSp;
+      const text = `*SRI GOVINDA FIELD SALES PORTAL FILE*\n` +
+        `Hello *${sp.name}*!\n` +
+        `Here is your offline order booking file (*${currentShareFileName}*).\n\n` +
+        `Beat: *${sp.assignedRoute || 'General Beat'}*\n` +
+        `Monthly Target: ₹${sp.monthlyTarget || 150000}\n\n` +
+        `📱 *Instructions for Phone:*\n` +
+        `1. Save this file to your phone.\n` +
+        `2. Tap the file to open in Chrome or Safari.\n` +
+        `3. It works directly on your phone with live real-time cloud sync!`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("📋 WhatsApp text copied to clipboard!");
+      }).catch(() => {
+        showToast("Instructions ready.");
+      });
+    }
+
+    function shareSalesPortalWhatsApp(spId) {
+      shareSalesPersonnelFile(spId);
     }
 
     function filterToRepTransactions(repId) {
@@ -11128,6 +11354,7 @@
           document.getElementById('sp-form-commission').value = sp.commissionPct || 3.0;
           document.getElementById('sp-form-vehicle').value = sp.vehicleType || 'Two-Wheeler';
           document.getElementById('sp-form-active').checked = sp.active !== false;
+          document.getElementById('btn-share-modal-sp')?.classList.remove('hidden');
         }
       } else {
         if (title) title.innerText = "Add New Sales Official";
@@ -11138,6 +11365,7 @@
         document.getElementById('sp-form-daily-target').value = 6;
         document.getElementById('sp-form-commission').value = 3.0;
         document.getElementById('sp-form-active').checked = true;
+        document.getElementById('btn-share-modal-sp')?.classList.add('hidden');
       }
 
       modal.classList.remove('hidden');
