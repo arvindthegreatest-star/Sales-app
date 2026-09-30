@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SG Sales">
+  <meta name="theme-color" content="#020617">
   <title>Ramesh Kumar - Sales Portal | Sri Govinda Food Products</title>
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
@@ -62,6 +67,9 @@
           <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot"></span>
           <span class="text-[11px] text-slate-300 font-medium" id="portal-cloud-text">Connecting...</span>
         </div>
+        <button onclick="toggleFullscreen()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" id="btn-fullscreen-toggle" title="Toggle Fullscreen Mode">
+          <i data-lucide="maximize" class="w-4 h-4" id="fullscreen-icon"></i>
+        </button>
         <button onclick="refreshData()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Refresh Live Data">
           <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
         </button>
@@ -70,15 +78,28 @@
 
     <!-- Mobile Cloud Pill & Quick Progress -->
     <div class="max-w-5xl mx-auto mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs sm:hidden">
-      <div class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot-mobile"></span>
-        <span class="text-[10px] text-slate-400" id="portal-cloud-text-mobile">Connecting...</span>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleFullscreen()" class="px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-semibold flex items-center gap-1" id="btn-fullscreen-toggle-mobile" title="Toggle Fullscreen">
+          <i data-lucide="maximize" class="w-3 h-3" id="fullscreen-icon-mobile"></i>
+          <span id="fullscreen-label-mobile">Fullscreen</span>
+        </button>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot-mobile"></span>
+          <span class="text-[10px] text-slate-400" id="portal-cloud-text-mobile">Connecting...</span>
+        </div>
       </div>
       <div class="text-[11px] text-slate-300 font-mono">
         Today: <b class="text-emerald-400 font-bold" id="bar-today-sales">₹0</b> (<span id="bar-today-orders">0</span> bills)
       </div>
     </div>
   </header>
+
+  <!-- Automatic Fullscreen Activation Prompt Banner (Dismisses immediately upon fullscreen entry) -->
+  <div id="fullscreen-prompt" onclick="tryEnterFullscreen()" class="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border-b border-emerald-500/30 px-3 py-1.5 text-center text-[11px] text-emerald-300 font-bold flex items-center justify-center gap-2 cursor-pointer shadow-inner transition-all duration-300 select-none">
+    <i data-lucide="maximize" class="w-3.5 h-3.5 text-emerald-400 animate-pulse"></i>
+    <span>Tap anywhere to activate Fullscreen Field Terminal</span>
+    <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-200 uppercase font-mono">Expand ⛶</span>
+  </div>
 
   <!-- ==============================================================================
        NAVIGATION TABS (Sticky Mobile Bottom Bar + Desktop Header)
@@ -682,9 +703,107 @@
     let activeCustomer = null;
     let currentViewingOrder = null;
 
+    // 2B. AUTOMATIC FULLSCREEN ENGINE
+    function isFullscreenActive() {
+      return !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+    }
+
+    function updateFullscreenUI(active) {
+      const icon = document.getElementById('fullscreen-icon');
+      const iconM = document.getElementById('fullscreen-icon-mobile');
+      const labelM = document.getElementById('fullscreen-label-mobile');
+      const prompt = document.getElementById('fullscreen-prompt');
+
+      if (active) {
+        if (icon) icon.setAttribute('data-lucide', 'minimize');
+        if (iconM) iconM.setAttribute('data-lucide', 'minimize');
+        if (labelM) labelM.innerText = 'Exit';
+        if (prompt) prompt.classList.add('hidden');
+      } else {
+        if (icon) icon.setAttribute('data-lucide', 'maximize');
+        if (iconM) iconM.setAttribute('data-lucide', 'maximize');
+        if (labelM) labelM.innerText = 'Fullscreen';
+        if (prompt) prompt.classList.remove('hidden');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function tryEnterFullscreen() {
+      if (isFullscreenActive()) {
+        updateFullscreenUI(true);
+        return true;
+      }
+      const el = document.documentElement;
+      try {
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          await el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+          await el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+          await el.msRequestFullscreen();
+        }
+        updateFullscreenUI(true);
+        return true;
+      } catch (err) {
+        // Handled silently if browser awaits user gesture
+        return false;
+      }
+    }
+
+    async function toggleFullscreen() {
+      if (isFullscreenActive()) {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) {
+          try { await exit.call(document); } catch (e) {}
+        }
+        updateFullscreenUI(false);
+      } else {
+        await tryEnterFullscreen();
+      }
+    }
+
+    function setupAutomaticFullscreen() {
+      // 1. Attempt immediate fullscreen on boot
+      tryEnterFullscreen();
+
+      // 2. Automatically trigger on very first user interaction anywhere on the screen
+      const onUserInteraction = async () => {
+        if (!isFullscreenActive()) {
+          const success = await tryEnterFullscreen();
+          if (success) removeListeners();
+        } else {
+          removeListeners();
+        }
+      };
+
+      const events = ['click', 'touchend', 'pointerup', 'keydown'];
+      const removeListeners = () => {
+        events.forEach(evt => document.removeEventListener(evt, onUserInteraction, true));
+      };
+
+      events.forEach(evt => {
+        document.addEventListener(evt, onUserInteraction, { capture: true, passive: true });
+      });
+
+      // 3. Monitor browser fullscreen state changes
+      ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+        document.addEventListener(evt, () => {
+          updateFullscreenUI(isFullscreenActive());
+        });
+      });
+    }
+
     // 3. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
       if (window.lucide) lucide.createIcons();
+      setupAutomaticFullscreen();
       loadCachedData();
       renderAllViews();
       initSupabase();

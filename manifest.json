@@ -4,7 +4,7 @@
   "description": "Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#020617",
   "theme_color": "#020617",
