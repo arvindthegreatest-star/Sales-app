@@ -560,10 +560,14 @@
     };
 
     // 2. STATE REPOSITORY
+    const DEFAULT_SUPABASE_URL = "https://stpvzcicagcwxxpajhle.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0cHZ6Y2ljYWdjd3h4cGFqaGxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjYxMjgsImV4cCI6MjEwNTQwMjEyOH0.Je1EYtYcdo1v06Enp49EBgU7oQaadd8gS3e2Z4nUgAA";
+
     let supabaseClient = null;
     let products = [];
     let customers = [];
     let orders = [];
+    let contractPricing = [];
     let activeCart = {}; // { [productId]: qty }
     let activeCustomer = null;
     let currentViewingOrder = null;
@@ -571,30 +575,53 @@
     // 3. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
       if (window.lucide) lucide.createIcons();
-      initSupabase();
       loadCachedData();
       renderAllViews();
+      initSupabase();
     });
 
     function initSupabase() {
-      const cfg = window.SRI_GOVINDA_CONFIG;
-      if (!cfg || !cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) {
+      const cfg = window.SRI_GOVINDA_CONFIG || {};
+      const supabaseUrl = (cfg.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || DEFAULT_SUPABASE_URL;
+      const supabaseKey = (cfg.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || DEFAULT_SUPABASE_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
         updateCloudStatus(false);
         return;
       }
       try {
-        supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, {
-          auth: { persistSession: false, autoRefreshToken: false }
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
         });
         updateCloudStatus(true);
         fetchCloudData();
 
-        // Realtime sync for orders and customers
-        supabaseClient.channel('agent-portal-sync')
+        // Realtime sync for orders, buyers, products, sample giveaways, and contract pricing
+        const channelName = `agent-sync-${(AGENT.slug || 'rep')}-${Math.floor(Math.random() * 10000)}`;
+        supabaseClient.channel(channelName)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchCloudData())
           .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, () => fetchCloudData())
           .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchCloudData())
-          .subscribe();
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'sample_giveaways' }, () => fetchCloudData())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_pricing' }, () => fetchCloudData())
+          .subscribe(status => {
+            if (status === 'SUBSCRIBED') {
+              updateCloudStatus(true);
+            }
+          });
+
+        // Reconnect / sync when page becomes visible or phone screen unlocks
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && supabaseClient) fetchCloudData();
+        });
+        window.addEventListener('focus', () => {
+          if (supabaseClient) fetchCloudData();
+        });
+        // 15-second polling backup for backgrounded phones
+        setInterval(() => {
+          if (supabaseClient) fetchCloudData();
+        }, 15000);
+
       } catch (err) {
         console.warn("Supabase init note:", err);
         updateCloudStatus(false);
@@ -622,9 +649,24 @@
         if (p) products = JSON.parse(p);
         const c = localStorage.getItem('sg_customers');
         if (c) customers = JSON.parse(c);
+        const cp = localStorage.getItem('sg_contract_pricing');
+        if (cp) contractPricing = JSON.parse(cp);
         const o = localStorage.getItem(`sg_orders_${AGENT.slug}`);
         if (o) orders = JSON.parse(o);
       } catch (e) {}
+    }
+
+    function getCustomerProductRate(custId, prod) {
+      if (!prod) return 0;
+      const base = Number(prod.baseRate || 0);
+      if (!custId) return base;
+      const override = (contractPricing || []).find(cp => 
+        String(cp.buyerId) === String(custId) && (String(cp.productId) === String(prod.id) || cp.productId === prod.sku)
+      );
+      if (override && override.overrideRate !== undefined && !isNaN(Number(override.overrideRate))) {
+        return Number(override.overrideRate);
+      }
+      return base;
     }
 
     async function fetchCloudData() {
@@ -642,17 +684,56 @@
           localStorage.setItem('sg_customers', JSON.stringify(customers));
         }
 
-        const { data: dbOrders } = await supabaseClient.from('orders')
+        const { data: dbPricing } = await supabaseClient.from('contract_pricing').select('*');
+        if (dbPricing) {
+          contractPricing = dbPricing;
+          localStorage.setItem('sg_contract_pricing', JSON.stringify(contractPricing));
+        }
+
+        // Fetch all orders from Supabase
+        const { data: dbOrders, error: ordErr } = await supabaseClient
+          .from('orders')
           .select('*')
-          .or(`salespersonId.eq.${AGENT.id},salespersonName.ilike.%${AGENT.name}%`)
           .order('created_at', { ascending: false });
 
         if (dbOrders) {
-          orders = dbOrders;
+          const agentIdClean = (AGENT.id || '').trim().toLowerCase();
+          const agentNameClean = (AGENT.name || '').trim().toLowerCase();
+          const agentRouteClean = (AGENT.assignedRoute || '').trim().toLowerCase();
+
+          orders = dbOrders
+            .filter(o => {
+              const repId = (o.repId || '').trim().toLowerCase();
+              const repName = (o.repName || '').trim().toLowerCase();
+              const dispatchRoute = (o.dispatchRoute || '').trim().toLowerCase();
+              const notes = (o.notes || '').toLowerCase();
+
+              return (
+                repId === agentIdClean ||
+                (agentNameClean && (repName === agentNameClean || repName.includes(agentNameClean) || agentNameClean.includes(repName))) ||
+                (agentRouteClean && dispatchRoute === agentRouteClean) ||
+                (agentIdClean && notes.includes(agentIdClean)) ||
+                (agentNameClean && notes.includes(agentNameClean))
+              );
+            })
+            .map(o => {
+              const breakdown = getOrderPaymentBreakdown(o);
+              const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
+              return {
+                ...o,
+                salespersonId: o.repId || AGENT.id,
+                salespersonName: o.repName || AGENT.name,
+                status: isDelivered ? 'Delivered' : 'Pending Delivery',
+                amountPaid: breakdown.amountPaid,
+                balanceDue: breakdown.balanceDue
+              };
+            });
+
           localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
         }
 
         renderAllViews();
+        updateCloudStatus(true);
       } catch (err) {
         console.warn("Cloud data fetch note:", err);
       }
@@ -809,7 +890,8 @@
 
       grid.innerHTML = filtered.map(p => {
         const qty = activeCart[p.id] || 0;
-        const rate = p.baseRate || 0;
+        const rate = getCustomerProductRate(activeCustomer?.id, p);
+        const hasCustomRate = activeCustomer && (rate !== Number(p.baseRate || 0));
         const isOutOfStock = (p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0);
 
         return `
@@ -822,7 +904,8 @@
               <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
                 <span>Pack: <b class="text-slate-200">${escapeHtml(p.unitSize || '-')}</b></span>
                 <span>•</span>
-                <span>Rate: <b class="text-emerald-400">${formatINR(rate)}</b></span>
+                <span>Rate: <b class="${hasCustomRate ? 'text-indigo-400' : 'text-emerald-400'}">${formatINR(rate)}</b></span>
+                ${hasCustomRate ? `<span class="text-[9px] px-1 py-0.2 rounded bg-indigo-900/60 text-indigo-300 font-bold">Special Rate</span>` : ''}
               </div>
               ${isOutOfStock ? `<span class="inline-block text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-800/40">Out of Stock</span>` : ''}
             </div>
@@ -879,11 +962,12 @@
         if (qty > 0) {
           const prod = products.find(p => String(p.id) === String(prodId));
           if (prod) {
-            const lineTotal = qty * (prod.baseRate || 0);
+            const lineRate = getCustomerProductRate(activeCustomer?.id, prod);
+            const lineTotal = qty * lineRate;
             subtotal += lineTotal;
             totalUnits += qty;
             selectedCount++;
-            selectedItems.push({ ...prod, qty, total: lineTotal });
+            selectedItems.push({ ...prod, rate: lineRate, qty, total: lineTotal });
           }
         }
       }
@@ -1035,14 +1119,14 @@
       if (!ord) return null;
       return {
         id: ord.id,
-        repId: ord.salespersonId || ord.repId || null,
-        repName: ord.salespersonName || ord.repName || 'Sales Rep',
+        repId: ord.salespersonId || ord.repId || AGENT.id,
+        repName: ord.salespersonName || ord.repName || AGENT.name,
         buyerId: ord.buyerId || null,
         buyerName: ord.buyerName || '',
         buyerPhone: ord.buyerPhone || '',
         buyerTier: ord.buyerTier || null,
         buyerHomeRoute: ord.buyerHomeRoute || null,
-        dispatchRoute: ord.dispatchRoute || '',
+        dispatchRoute: ord.dispatchRoute || AGENT.assignedRoute || '',
         date: ord.date,
         time: ord.time || '',
         items: ord.items || [],
@@ -1072,13 +1156,14 @@
         if (qty > 0) {
           const prod = products.find(p => String(p.id) === String(prodId));
           if (prod) {
-            const total = qty * (prod.baseRate || 0);
+            const lineRate = getCustomerProductRate(activeCustomer.id, prod);
+            const total = qty * lineRate;
             items.push({
               productId: prod.id,
               name: prod.name,
               sku: prod.sku,
               unitSize: prod.unitSize,
-              rate: prod.baseRate,
+              rate: lineRate,
               qty,
               total
             });
@@ -1127,7 +1212,11 @@
       const dateStr = now.toISOString().split('T')[0];
       const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
       const payTag = `[PAID:${amountPaid}] [BAL:${balanceDue}]`;
-      const fullNotes = notes ? `Field booking by ${AGENT.name} | ${notes} ${payTag}` : `Field booking by ${AGENT.name} ${payTag}`;
+      const statusTag = `[STATUS:PENDING]`;
+      const repTag = `[REP_ID:${AGENT.id}] [REP_NAME:${AGENT.name}]`;
+      const fullNotes = notes 
+        ? `Field booking by ${AGENT.name} | ${notes} ${payTag} ${statusTag} ${repTag}` 
+        : `Field booking by ${AGENT.name} ${payTag} ${statusTag} ${repTag}`;
 
       const newOrder = {
         id: orderId,
@@ -1136,8 +1225,12 @@
         buyerId: activeCustomer.id,
         buyerName: activeCustomer.name,
         buyerPhone: activeCustomer.phone || '',
+        buyerTier: activeCustomer.tier || 'Retail',
+        buyerHomeRoute: activeCustomer.homeRoute || AGENT.assignedRoute || '',
         buyerAddress: activeCustomer.address || '',
         buyerGstin: activeCustomer.gstin || '',
+        repId: AGENT.id,
+        repName: AGENT.name,
         salespersonId: AGENT.id,
         salespersonName: AGENT.name,
         dispatchRoute: AGENT.assignedRoute,
@@ -1184,10 +1277,16 @@
       if (supabaseClient) {
         try {
           const payload = sanitizeOrderForSupabase(newOrder);
-          await supabaseClient.from('orders').insert([payload]);
+          const { error: insErr } = await supabaseClient.from('orders').insert([payload]);
+          if (insErr) {
+            console.error("Supabase order insert error:", insErr);
+          } else {
+            console.log("Order synced to Supabase successfully!", payload.id);
+          }
           if (balanceDue > 0) {
             await supabaseClient.from('buyers').update({ pendingUdhaar: activeCustomer.pendingUdhaar }).eq('id', activeCustomer.id);
           }
+          await fetchCloudData();
         } catch (err) {
           console.warn("Cloud sync note (saved locally):", err);
         }
@@ -1415,18 +1514,23 @@
       const qty = parseInt(document.getElementById('sample-qty')?.value, 10) || 1;
       const feedback = document.getElementById('sample-feedback')?.value.trim();
 
+      const prod = products.find(p => (p.name && product && product.includes(p.name)) || p.id === product);
+      const sku = prod ? prod.sku : 'PROD';
+      const prodName = prod ? prod.name : (product || 'Sample Product');
+      const uSize = prod ? prod.unitSize : '';
+
       const sampleEntry = {
-        id: 'SMPL-' + Math.floor(1000 + Math.random() * 9000),
+        id: 'smp_' + Date.now(),
         date: new Date().toISOString().split('T')[0],
-        salespersonId: AGENT.id,
-        salespersonName: AGENT.name,
-        buyerName: storeName,
-        buyerPhone: phone,
-        route: location,
-        productName: product,
-        quantity: qty,
-        feedback: feedback || 'Sample given for tasting',
-        created_at: new Date().toISOString()
+        product_sku: sku,
+        product_name: prodName,
+        unit_size: uSize,
+        quantity_units: qty,
+        store_name: storeName,
+        rep_name: AGENT.name,
+        sample_reason: feedback || 'Chef tasting / trial',
+        feedback_status: 'Pending Follow-up',
+        notes: `Route: ${location} | Phone: ${phone} | Rep: ${AGENT.name} (${AGENT.id}) | ${feedback || ''}`.trim()
       };
 
       // Dual-sync to global manager samples repository
@@ -1448,7 +1552,10 @@
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('sample_giveaways').insert([sampleEntry]);
+          const { error: smpErr } = await supabaseClient.from('sample_giveaways').insert([sampleEntry]);
+          if (smpErr) console.warn("Sample log note:", smpErr);
+          else console.log("Sample synced to Supabase successfully!", sampleEntry.id);
+          await fetchCloudData();
         } catch(err) {
           console.warn("Sample log note:", err);
         }

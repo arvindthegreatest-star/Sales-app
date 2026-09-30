@@ -3954,7 +3954,19 @@
           .channel('sg-sales-realtime-channel')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
             const { data } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
-            if (data) { orders = data; refreshAllUI(); }
+            if (data) { 
+              orders = data.map(o => {
+                const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
+                const breakdown = getOrderPaymentBreakdown(o);
+                return {
+                  ...o,
+                  status: isDelivered ? 'Delivered' : 'Pending Delivery',
+                  amountPaid: breakdown.amountPaid,
+                  balanceDue: breakdown.balanceDue
+                };
+              });
+              refreshAllUI(); 
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
             const { data } = await supabaseClient.from('buyers').select('*');
@@ -4002,6 +4014,18 @@
           })
           .subscribe();
 
+        // Auto-reconnect & sync immediately when tab becomes visible or phone screen unlocks
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && supabaseClient) loadAllData();
+        });
+        window.addEventListener('focus', () => {
+          if (supabaseClient) loadAllData();
+        });
+        // 15-second heartbeat poll to guarantee real-time sync across devices
+        setInterval(() => {
+          if (supabaseClient) loadAllData();
+        }, 15000);
+
       } catch (e) {
         console.error("Connection error:", e);
         document.getElementById('cloud-text').innerText = "Local Fallback";
@@ -4037,7 +4061,18 @@
         if (dbRoutes) routes = dbRoutes;
 
         const { data: dbOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
-        if (dbOrders) orders = dbOrders;
+        if (dbOrders) {
+          orders = dbOrders.map(o => {
+            const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
+            const breakdown = getOrderPaymentBreakdown(o);
+            return {
+              ...o,
+              status: isDelivered ? 'Delivered' : 'Pending Delivery',
+              amountPaid: breakdown.amountPaid,
+              balanceDue: breakdown.balanceDue
+            };
+          });
+        }
 
         const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
         if (dbInward && dbInward.length > 0) {
@@ -10361,6 +10396,7 @@
       const spName = (sp.name || '').toLowerCase().trim();
       if (spName && oName && (oName === spName || oName.includes(spName) || spName.includes(oName))) return true;
       if (sp.slug && (order.salespersonSlug === sp.slug || oName.includes(sp.slug.toLowerCase()))) return true;
+      if (order.notes && (order.notes.includes(sp.id) || (sp.name && order.notes.toLowerCase().includes(sp.name.toLowerCase())))) return true;
       return false;
     }
 
@@ -10372,6 +10408,7 @@
       const spName = (sp.name || '').toLowerCase().trim();
       if (spName && sName && (sName === spName || sName.includes(spName) || spName.includes(sName))) return true;
       if (sp.slug && sName.includes(sp.slug.toLowerCase())) return true;
+      if (sample.notes && (sample.notes.includes(sp.id) || (sp.name && sample.notes.toLowerCase().includes(sp.name.toLowerCase())))) return true;
       return false;
     }
 
@@ -10560,7 +10597,7 @@
       grid.innerHTML = repsList.map(sp => {
         const m = getSalespersonMetrics(sp, currentSalespersonTimeframe);
         const slug = sp.slug || sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const portalUrl = `/sales_${slug}.html`;
+        const portalUrl = `sales_${slug}.html`;
 
         const initials = sp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const isOnline = sp.active !== false;
@@ -10655,8 +10692,11 @@
             <!-- Action Buttons Footer -->
             <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 flex-wrap">
               <a href="${portalUrl}" target="_blank" class="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition shadow-xs">
-                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Launch Portal
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Launch
               </a>
+              <button onclick="shareSalesPortalWhatsApp('${sp.id}')" class="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="Send Portal to Rep on WhatsApp">
+                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Send
+              </button>
               <button onclick="filterToRepTransactions('${sp.id}')" class="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer" title="View this official's orders">
                 <i data-lucide="receipt" class="w-3.5 h-3.5"></i> Bills
               </button>
@@ -10667,6 +10707,31 @@
           </div>
         `;
       }).join('');
+    }
+
+    function shareSalesPortalWhatsApp(spId) {
+      const sp = (salespeople || []).find(s => s.id === spId);
+      if (!sp) return;
+      const slug = sp.slug || sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fullUrl = window.location.protocol.startsWith('http') 
+        ? `${window.location.origin}/sales_${slug}.html` 
+        : `sales_${slug}.html`;
+
+      const text = `*SRI GOVINDA FIELD SALES PORTAL*\n` +
+        `Hello *${sp.name}*!\n` +
+        `Your personalized digital order booking terminal is ready:\n` +
+        `👉 ${fullUrl}\n\n` +
+        `Assigned Beat: *${sp.assignedRoute || 'General Beat'}*\n` +
+        `Monthly Target: ₹${sp.monthlyTarget || 150000}\n` +
+        `Daily Goal: ${sp.dailyOrderTarget || 6} orders\n\n` +
+        `Open this link or HTML file on your mobile phone to book orders, record chef tastings, and sync live with manager!`;
+
+      const cleanPhone = (sp.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const waUrl = phoneToUse 
+        ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` 
+        : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, '_blank');
     }
 
     function filterToRepTransactions(repId) {
