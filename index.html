@@ -11573,6 +11573,14 @@
                 showToast(`🎁 Real-time: Sample logged by ${data.repName || 'Sales Official'}!`);
                 refreshAllUI();
               }
+            } else if (data.type === 'CUSTOMER_CREATED') {
+              const cust = data.customer;
+              if (cust && !customers.some(c => c.id === cust.id)) {
+                customers.unshift(cust);
+                try { localStorage.setItem('sg_customers', JSON.stringify(customers)); } catch(e) {}
+                showToast(`🏪 Real-time: New Customer "${cust.name}" added by ${data.repName || 'Sales Official'}!`);
+                refreshAllUI();
+              }
             }
           };
         } catch (e) {}
@@ -11593,6 +11601,14 @@
             const fresh = JSON.parse(e.newValue || '[]');
             if (Array.isArray(fresh)) {
               sampleGiveaways = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_customers') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              customers = fresh;
               refreshAllUI();
             }
           } catch(err) {}

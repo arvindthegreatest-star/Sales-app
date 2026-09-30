@@ -137,11 +137,16 @@
       
       <!-- Customer Selection Card -->
       <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-2">
           <label class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
             <i data-lucide="store" class="w-4 h-4"></i> Step 1: Select Retailer / Shop
           </label>
-          <span class="text-[11px] text-slate-400" id="route-indicator-badge">Route: {{ROUTE}}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-400" id="route-indicator-badge">Route: {{ROUTE}}</span>
+            <button type="button" onclick="openNewCustomerModal()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow transition cursor-pointer">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + New Shop
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
@@ -409,7 +414,12 @@
             </h2>
             <p class="text-[11px] text-slate-400">Direct contact dialer & outstanding balance tracker</p>
           </div>
-          <input type="text" id="route-shops-search" oninput="filterRouteShops()" placeholder="Search route shop..." class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
+          <div class="flex items-center gap-2">
+            <input type="text" id="route-shops-search" oninput="filterRouteShops()" placeholder="Search route shop..." class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
+            <button type="button" onclick="openNewCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition shrink-0 cursor-pointer">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + Add Shop
+            </button>
+          </div>
         </div>
 
         <div id="route-shops-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -544,6 +554,106 @@
   </div>
 
   <!-- ==============================================================================
+       MODAL: ADD NEW CUSTOMER / RETAIL SHOP
+       ============================================================================== -->
+  <div id="modal-new-customer" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white border border-slate-700 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="store" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm text-white">Add New Customer Store</h3>
+            <p class="text-[11px] text-slate-400">Register retail shop for orders & ledger</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeNewCustomerModal()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Form) -->
+      <form id="form-new-customer" onsubmit="saveNewCustomer(event)" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+            Store / Business Name <span class="text-rose-400">*</span>
+          </label>
+          <input type="text" id="cust-new-name" required placeholder="e.g. Balaji Provision Store" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              Contact Mobile No. <span class="text-rose-400">*</span>
+            </label>
+            <input type="tel" id="cust-new-phone" required maxlength="15" placeholder="10-digit mobile number" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+            <span class="text-[9px] text-slate-500 mt-0.5 block">10-digit primary contact</span>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              Customer Tier
+            </label>
+            <select id="cust-new-tier" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="Retail" selected>Retail Shop</option>
+              <option value="HoReCa">HoReCa (Hotel/Rest/Cafe)</option>
+              <option value="Wholesale">Wholesale Trader</option>
+              <option value="Caterer">Caterer / Bulk</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              Route / Beat <span class="text-rose-400">*</span>
+            </label>
+            <input type="text" id="cust-new-route" required placeholder="e.g. {{ROUTE}}" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <span class="text-[9px] text-slate-500 mt-0.5 block">Pre-filled with your assigned route</span>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              GST Number (Optional)
+            </label>
+            <input type="text" id="cust-new-gstin" maxlength="15" placeholder="e.g. 29AAAAA0000A1Z5" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono uppercase">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+            Delivery Address / Landmark <span class="text-rose-400">*</span>
+          </label>
+          <textarea id="cust-new-address" rows="2" required placeholder="Shop No., Street, Landmark, Area..." 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-start gap-2.5 text-[11px] text-slate-400">
+          <i data-lucide="info" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+          <span>This store will be saved to your device and synced with Sri Govinda cloud (Supabase) in real time. You can book an order immediately after saving.</span>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeNewCustomerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" id="btn-save-new-cust" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i> Save & Select Store
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
        APPLICATION LOGIC & DATA SYNCHRONIZATION
        ============================================================================== -->
   <script>
@@ -621,6 +731,42 @@
         setInterval(() => {
           if (supabaseClient) fetchCloudData();
         }, 15000);
+
+        // Instant cross-tab broadcast bus listener
+        if (window.BroadcastChannel) {
+          try {
+            const bc = new BroadcastChannel('sg_sales_bus');
+            bc.onmessage = (event) => {
+              const data = event.data;
+              if (!data) return;
+              if (data.type === 'CUSTOMER_CREATED') {
+                const c = data.customer;
+                if (c && !customers.some(x => x.id === c.id)) {
+                  customers.unshift(c);
+                  try { localStorage.setItem('sg_customers', JSON.stringify(customers)); } catch(e) {}
+                  populateCustomerDropdown();
+                  renderRouteShops();
+                }
+              } else if (data.type === 'ORDER_CREATED' || data.type === 'SAMPLE_CREATED') {
+                fetchCloudData();
+              }
+            };
+          } catch(e) {}
+        }
+
+        // Storage listener for cross-tab localStorage updates
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'sg_customers') {
+            try {
+              const fresh = JSON.parse(e.newValue || '[]');
+              if (Array.isArray(fresh)) {
+                customers = fresh;
+                populateCustomerDropdown();
+                renderRouteShops();
+              }
+            } catch(e) {}
+          }
+        });
 
       } catch (err) {
         console.warn("Supabase init note:", err);
@@ -873,6 +1019,149 @@
       if (udhaarEl) udhaarEl.innerText = formatINR(activeCustomer.pendingUdhaar || 0);
 
       renderProductCatalog();
+    }
+
+    // 6B. ADD NEW CUSTOMER MODAL & REALTIME SAVE
+    function openNewCustomerModal() {
+      const modal = document.getElementById('modal-new-customer');
+      if (!modal) return;
+      const form = document.getElementById('form-new-customer');
+      if (form) form.reset();
+
+      const routeInput = document.getElementById('cust-new-route');
+      if (routeInput) {
+        routeInput.value = AGENT.assignedRoute || '';
+      }
+      const tierSelect = document.getElementById('cust-new-tier');
+      if (tierSelect) {
+        tierSelect.value = 'Retail';
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => {
+        document.getElementById('cust-new-name')?.focus();
+      }, 100);
+    }
+
+    function closeNewCustomerModal() {
+      const modal = document.getElementById('modal-new-customer');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveNewCustomer(e) {
+      if (e) e.preventDefault();
+      const name = (document.getElementById('cust-new-name')?.value || '').trim();
+      const rawPhone = (document.getElementById('cust-new-phone')?.value || '').trim();
+      const phone = rawPhone.replace(/\D/g, '').slice(-10);
+      const tier = document.getElementById('cust-new-tier')?.value || 'Retail';
+      const route = (document.getElementById('cust-new-route')?.value || '').trim() || AGENT.assignedRoute || 'General Beat';
+      const gstin = (document.getElementById('cust-new-gstin')?.value || '').trim().toUpperCase();
+      const address = (document.getElementById('cust-new-address')?.value || '').trim();
+
+      if (!name) {
+        alert("Please enter the store name.");
+        document.getElementById('cust-new-name')?.focus();
+        return;
+      }
+      if (!phone || phone.length < 10) {
+        alert("Please enter a valid 10-digit mobile number.");
+        document.getElementById('cust-new-phone')?.focus();
+        return;
+      }
+      if (!address) {
+        alert("Please enter the delivery address / landmark.");
+        document.getElementById('cust-new-address')?.focus();
+        return;
+      }
+
+      const btn = document.getElementById('btn-save-new-cust');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving Store...`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      const custId = 'cust_' + Date.now();
+      const newCustomer = {
+        id: custId,
+        name: name,
+        tier: tier,
+        phone: phone,
+        homeRoute: route,
+        creditLimit: 25000,
+        pendingUdhaar: 0,
+        address: address,
+        gstin: gstin
+      };
+
+      // 1. Optimistic local update
+      customers.unshift(newCustomer);
+      try {
+        localStorage.setItem('sg_customers', JSON.stringify(customers));
+      } catch (err) {}
+
+      // 2. Broadcast to other open tabs / Manager Hub
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({
+            type: 'CUSTOMER_CREATED',
+            repId: AGENT.id,
+            repName: AGENT.name,
+            customer: newCustomer
+          });
+        }
+      } catch (err) {}
+
+      // 3. Persist directly to Supabase buyers table
+      if (supabaseClient) {
+        try {
+          const dbRecord = {
+            id: String(newCustomer.id),
+            name: String(newCustomer.name),
+            tier: String(newCustomer.tier || 'Retail'),
+            phone: String(newCustomer.phone || ''),
+            homeRoute: String(newCustomer.homeRoute || ''),
+            creditLimit: Number(newCustomer.creditLimit || 0),
+            pendingUdhaar: Number(newCustomer.pendingUdhaar || 0),
+            address: String(newCustomer.address || '')
+          };
+          const { error: insErr } = await supabaseClient.from('buyers').upsert([dbRecord]);
+          if (insErr) {
+            console.error("Supabase customer insert error:", insErr);
+          } else {
+            console.log("Customer synced to Supabase successfully!", dbRecord.name);
+          }
+        } catch (supaErr) {
+          console.warn("Supabase customer sync note (saved locally):", supaErr);
+        }
+      }
+
+      // 4. Update UI
+      const currentTabIsShops = !document.getElementById('view-shops')?.classList.contains('hidden');
+      populateCustomerDropdown();
+      renderRouteShops();
+
+      // 5. Auto-select newly created customer in order view
+      const select = document.getElementById('order-customer-select');
+      if (select) {
+        select.value = newCustomer.id;
+        onCustomerSelected();
+      }
+
+      // Close modal & restore button
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Select Store`;
+      }
+      closeNewCustomerModal();
+
+      if (!currentTabIsShops) {
+        switchTab('order');
+      }
+
+      alert(`✅ Store "${newCustomer.name}" added successfully!\nSelected and ready for booking.`);
     }
 
     // 7. PRODUCT CATALOG & ORDER CART
