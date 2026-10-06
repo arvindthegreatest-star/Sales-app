@@ -148,28 +148,32 @@ ALTER TABLE contract_pricing ENABLE ROW LEVEL SECURITY;
 ALTER TABLE salespeople ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public full access routes" ON routes;
-CREATE POLICY "Public full access routes" ON routes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read routes" ON routes FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Public full access buyers" ON buyers;
-CREATE POLICY "Public full access buyers" ON buyers FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read buyers" ON buyers FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert buyers" ON buyers FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Public update buyers" ON buyers FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public full access products" ON products;
-CREATE POLICY "Public full access products" ON products FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read products" ON products FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Public full access orders" ON orders;
-CREATE POLICY "Public full access orders" ON orders FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read orders" ON orders FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert orders" ON orders FOR INSERT TO anon, authenticated WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Public full access inventory_inward" ON inventory_inward FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access inventory_inward" ON inventory_inward FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public full access inventory_inward" ON inventory_inward;
+CREATE POLICY "Public read inventory_inward" ON inventory_inward FOR SELECT TO anon, authenticated USING (true);
 
-DROP POLICY IF EXISTS "Public full access sample_giveaways" ON sample_giveaways FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access sample_giveaways" ON sample_giveaways FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public full access sample_giveaways" ON sample_giveaways;
+CREATE POLICY "Public read sample_giveaways" ON sample_giveaways FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public insert sample_giveaways" ON sample_giveaways FOR INSERT TO anon, authenticated WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public full access contract_pricing" ON contract_pricing;
-CREATE POLICY "Public full access contract_pricing" ON contract_pricing FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read contract_pricing" ON contract_pricing FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Public full access salespeople" ON salespeople;
-CREATE POLICY "Public full access salespeople" ON salespeople FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public read salespeople" ON salespeople FOR SELECT TO anon, authenticated USING (true);
 
 -- 3. REALTIME REPLICATION (Instant Updates across all devices)
 ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople;
