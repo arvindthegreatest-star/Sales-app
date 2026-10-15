@@ -149,6 +149,11 @@
           <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i>
           <span>Inward</span>
         </button>
+        <button onclick="setTab('outward')" id="nav-outward" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Outward Stock Issue & Sales Rep Field Custody">
+          <i data-lucide="arrow-up-from-dot" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Outward</span>
+          <span id="nav-outward-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-white">0</span>
+        </button>
         <button onclick="setTab('products')" id="nav-products" class="tab-btn px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white shrink-0" title="Master Products, Packaging Units & Base MRP">
           <i data-lucide="tag" class="w-3.5 h-3.5"></i>
           <span>Products</span>
@@ -206,7 +211,7 @@
         </div>
 
         <!-- KPI Metric Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Today Sales</span>
             <div id="kpi-today-sales" class="font-mono font-black text-lg text-emerald-600">₹0</div>
@@ -242,6 +247,13 @@
               <i data-lucide="arrow-down-to-dot" class="w-3 h-3 text-indigo-600"></i>
             </span>
             <div id="kpi-total-inward" class="font-mono font-black text-lg text-indigo-600">0</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 border border-amber-100 hover:border-amber-300 bg-amber-50/20 hover:bg-amber-50/50 shadow-xs cursor-pointer transition" onclick="handleNavTabClick('outward')" title="Click to view Outward Stock Dispatches to Sales Reps">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-1 flex items-center justify-between">
+              <span>Rep Outward</span>
+              <i data-lucide="arrow-up-from-dot" class="w-3 h-3 text-amber-600"></i>
+            </span>
+            <div id="kpi-total-outward" class="font-mono font-black text-lg text-amber-600">0</div>
           </div>
           <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs cursor-pointer hover:bg-slate-50 transition" onclick="setTab('customers')" title="Click to view Customers Directory">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1 flex items-center justify-between">
@@ -996,6 +1008,277 @@
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- =========================================================================
+         6B. OUTWARD INVENTORY & FIELD DISPATCH (MANAGER HUB)
+         ========================================================================= -->
+    <section id="view-outward" class="hidden space-y-6">
+
+      <!-- Top Title & Quick Action Bar -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <span class="p-1.5 rounded-xl bg-amber-500 text-white shadow-xs">
+                <i data-lucide="arrow-up-from-dot" class="w-5 h-5"></i>
+              </span>
+              Outward Stock Issue & Sales Rep Field Custody
+            </h2>
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Depot Transfer</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Issue warehouse stock into sales personnel bags and vans. Sales reps make bills of supply which automatically deduct from their live in-hand stock.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="scrollToOutwardEntryCard()" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Issue Stock to Rep
+          </button>
+          <button onclick="scrollToRepStockTable()" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer" title="View all reps live in-hand stock">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i> Rep Custody Monitor
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Outward Metrics Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Total Outward Dispatched</span>
+          <div id="outward-kpi-total-dispatched" class="font-mono font-black text-lg text-amber-700">0 packs</div>
+          <span class="text-[10px] text-slate-400 font-semibold" id="outward-kpi-total-dispatches-count">0 dispatches</span>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Dispatched Valuation</span>
+          <div id="outward-kpi-total-val" class="font-mono font-black text-lg text-emerald-700">₹0</div>
+          <span class="text-[10px] text-slate-400 font-semibold">Cumulative stock issued</span>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Live In Field Custody</span>
+          <div id="outward-kpi-live-field-packs" class="font-mono font-black text-lg text-indigo-700">0 packs</div>
+          <span class="text-[10px] text-slate-400 font-semibold" id="outward-kpi-live-field-val">₹0 floating in field</span>
+        </div>
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Active Sales Reps</span>
+          <div id="outward-kpi-active-reps-count" class="font-mono font-black text-lg text-slate-900">0 reps</div>
+          <span class="text-[10px] text-slate-400 font-semibold">Holding van/bag inventory</span>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           PRIMARY SECTION: BULK OUTWARD DISPATCH TERMINAL
+           ========================================================================= -->
+      <div id="outward-entry-card" class="bg-white rounded-3xl border-2 border-amber-200 shadow-md overflow-hidden transition">
+        <!-- Card Top Bar -->
+        <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-950 via-amber-950 to-slate-950 text-white flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-200 border border-amber-400/30 text-[10px] font-black tracking-wider uppercase">
+                Stock Issue Terminal
+              </span>
+              <h3 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                Salesperson Field Stock Handover
+              </h3>
+              <span id="outward-page-summary-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                0 products staged (0 units • ₹0)
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1">
+              Select the sales representative, specify the issue quantities across products, and create an official delivery challan / van transfer note.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="clearAllOutwardQuantities()" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Clear Inputs
+            </button>
+          </div>
+        </div>
+
+        <!-- Dispatch Metadata (Salesperson, Date, Voucher #, Vehicle, Notes) -->
+        <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Receiving Sales Rep *</label>
+              <select id="outward-page-rep-select" onchange="onOutwardRepChanged()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs text-slate-900 outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 cursor-pointer">
+                <option value="">-- Choose Salesperson --</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Date of Supply *</label>
+              <input type="date" id="outward-page-date" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-semibold outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Challan / Voucher #</label>
+              <div class="flex items-center gap-1">
+                <input type="text" id="outward-page-voucher" placeholder="CHAL-1001" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-mono text-xs font-bold text-slate-800 outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+                <button type="button" onclick="generateOutwardVoucherNo()" class="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold cursor-pointer" title="Generate New Voucher #">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Delivery Mode / Vehicle</label>
+              <input type="text" id="outward-page-vehicle" placeholder="e.g. KA-04-AB-1234 / Two-Wheeler" class="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Beat / Dispatch Notes</label>
+              <input type="text" id="outward-page-notes" placeholder="e.g. Morning field run / Beat A" class="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+            </div>
+          </div>
+
+          <!-- Selected Rep In-Hand Status Banner -->
+          <div id="outward-rep-info-banner" class="hidden mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-amber-600 text-white font-black text-xs flex items-center justify-center shrink-0" id="outward-rep-avatar">R</span>
+              <div>
+                <span class="font-extrabold text-slate-900" id="outward-rep-banner-name">Ramesh Kumar</span>
+                <span class="text-slate-500 text-[11px] ml-1" id="outward-rep-banner-route">(Kammanahalli Route)</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 font-mono text-[11px]">
+              <span class="text-slate-600">Dispatched: <b id="outward-rep-banner-dispatched" class="text-amber-800">0</b></span>
+              <span class="text-slate-600">Sold: <b id="outward-rep-banner-sold" class="text-emerald-700">0</b></span>
+              <span class="text-slate-600">Samples: <b id="outward-rep-banner-samples" class="text-blue-700">0</b></span>
+              <span class="text-slate-900 font-bold bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200">Current In Hand: <b id="outward-rep-banner-inhand" class="text-amber-900">0 packs (₹0)</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search & Preset Quick Increment Bar -->
+        <div class="px-4 py-2.5 bg-slate-100/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-2 flex-1 max-w-sm">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+            <input type="text" id="outward-search-input" oninput="filterOutwardProductsTable()" placeholder="Quick filter product name or SKU..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-amber-600">
+          </div>
+          <div class="flex items-center gap-2 flex-wrap text-[11px]">
+            <span class="text-slate-500 font-bold uppercase text-[10px]">Quick Presets:</span>
+            <button type="button" onclick="bulkIncrementAllOutward(5)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 hover:bg-amber-50 text-slate-700 font-bold transition shadow-2xs cursor-pointer">+5 to All</button>
+            <button type="button" onclick="bulkIncrementAllOutward(10)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 hover:bg-amber-50 text-slate-700 font-bold transition shadow-2xs cursor-pointer">+10 to All</button>
+            <button type="button" onclick="bulkIncrementAllOutward(20)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 hover:bg-amber-50 text-slate-700 font-bold transition shadow-2xs cursor-pointer">+20 to All</button>
+          </div>
+        </div>
+
+        <!-- Products Matrix Table -->
+        <div class="overflow-x-auto max-h-[500px]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-10 shadow-2xs">
+              <tr>
+                <th class="p-2.5 pl-3 sm:pl-4">SKU & Product Name</th>
+                <th class="p-2.5">Pack Size</th>
+                <th class="p-2.5 text-right">Unit Rate</th>
+                <th class="p-2.5 text-right" title="Stock currently physically in factory/depot storage">Warehouse Depot</th>
+                <th class="p-2.5 text-right font-bold text-amber-800" title="Stock currently in this sales rep's van/bag">Rep In Hand</th>
+                <th class="p-2.5 text-center min-w-[190px]">Issue Quantity (Packs)</th>
+                <th class="p-2.5 text-right font-bold text-slate-900">Line Value (₹)</th>
+                <th class="p-2.5 pr-3 sm:pr-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="outward-products-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Sticky Footer Summary & Issue Stock Button -->
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+          <div class="text-xs text-slate-600 flex items-center gap-3 flex-wrap">
+            <span>Staged: <b id="outward-footer-skus" class="text-slate-900">0 SKUs</b></span>
+            <span>Total Units: <b id="outward-footer-units" class="text-amber-700 font-mono text-sm font-extrabold">0 packs</b></span>
+            <span>Total Valuation: <b id="outward-footer-value" class="text-emerald-700 font-mono text-sm font-black">₹0</b></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="clearAllOutwardQuantities()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+              Reset Form
+            </button>
+            <button type="button" onclick="saveOutwardDispatch()" id="btn-save-outward-dispatch" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Issue Stock & Print Challan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           SECTION 2: SALES REPRESENTATIVES LIVE STOCK IN HAND MONITOR
+           ========================================================================= -->
+      <div id="outward-reps-stock-card" class="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
+              <i data-lucide="badge-check" class="w-4 h-4 text-emerald-600"></i> Sales Representatives Live Stock Custody Monitor
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Live van & bag stock held by each sales representative across all catalog SKUs.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="shareAllRepsStockSummaryWa()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Share team stock summary on WhatsApp">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i> WhatsApp Summary
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Sales Representative</th>
+                <th class="p-3">Assigned Beat</th>
+                <th class="p-3 text-right text-amber-800 font-bold">Total Dispatched (+)</th>
+                <th class="p-3 text-right text-emerald-700 font-bold">Orders Billed (-)</th>
+                <th class="p-3 text-right text-blue-700 font-bold">Free Samples (-)</th>
+                <th class="p-3 text-right font-black text-slate-900">Current Stock In Hand</th>
+                <th class="p-3 text-right font-mono font-bold text-emerald-700">Stock Value (₹)</th>
+                <th class="p-3 text-center">Custody Status</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="outward-reps-monitor-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           SECTION 3: OUTWARD DISPATCHES JOURNAL (HISTORICAL LOGS)
+           ========================================================================= -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 class="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
+              <i data-lucide="file-text" class="w-4 h-4 text-amber-600"></i> Outward Dispatches Journal
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Historical ledger of all stock transfer notes and delivery challans issued to sales representatives.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="outward-journal-count-badge" class="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">0 dispatches</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3">Date & Time</th>
+                <th class="p-3">Challan / Voucher #</th>
+                <th class="p-3">Sales Representative</th>
+                <th class="p-3">Items & SKUs</th>
+                <th class="p-3 text-right font-black text-amber-800">Total Units</th>
+                <th class="p-3 text-right font-mono font-bold text-emerald-700">Total Value (₹)</th>
+                <th class="p-3">Vehicle / Mode</th>
+                <th class="p-3">Notes</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="outward-journal-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </section>
 
     <!-- 7. PRODUCTS DATABASE VIEW (MANAGER ONLY) -->
@@ -1759,6 +2042,192 @@
             <i data-lucide="check-check" class="w-4 h-4"></i> Credit All Inward Stock At Once
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+  <!-- =========================================================================
+       MODAL: OUTWARD STOCK DELIVERY CHALLAN / TRANSFER NOTE (PRINTABLE)
+       ========================================================================= -->
+  <div id="modal-outward-challan" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col">
+      <!-- Modal Header (Non-Printable) -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-2 border-b border-slate-800 no-print">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </span>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Stock Delivery Challan / Transfer Note</h3>
+            <p class="text-[11px] text-slate-400">Official field handover voucher for sales personnel custody</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="shareCurrentChallanWa()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Share Challan on WhatsApp">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i> WhatsApp
+          </button>
+          <button onclick="window.print()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Print Delivery Challan">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Challan
+          </button>
+          <button onclick="closeOutwardChallanModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Challan Document Paper -->
+      <div id="challan-printable-content" class="p-6 sm:p-8 bg-white overflow-y-auto flex-1 text-slate-900 printable-section">
+        <!-- Sri Govinda Header Letterhead -->
+        <div class="border-b-2 border-slate-900 pb-4 flex items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl sm:text-2xl font-black text-amber-700 tracking-tight">SRI GOVINDA SPICES & FOODS</span>
+            </div>
+            <p class="text-[11px] text-slate-600 font-medium mt-0.5">
+              Manufacturers & Wholesale Distributors of Premium Pure Spices & Blends
+            </p>
+            <p class="text-[10px] text-slate-500 font-mono mt-0.5" id="challan-company-contact">
+              Bangalore, Karnataka | Phone: +91 98450 12345 | FSSAI: 11223344000123
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-2.5 py-1 rounded bg-slate-900 text-white font-mono font-black text-xs uppercase tracking-wider">
+              DELIVERY CHALLAN
+            </span>
+            <div class="text-xs font-mono font-black text-slate-800 mt-1" id="challan-doc-voucher">CHAL-1001</div>
+            <div class="text-[11px] text-slate-500 font-mono" id="challan-doc-datetime">Date: 2026-10-06</div>
+          </div>
+        </div>
+
+        <!-- Dispatch & Representative Particulars -->
+        <div class="grid grid-cols-2 gap-4 py-4 border-b border-slate-200 text-xs">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Dispatched To (Sales Custodian)</span>
+            <div class="font-black text-sm text-slate-900" id="challan-doc-rep-name">Ramesh Kumar</div>
+            <div class="text-[11px] text-slate-600">Beat / Route: <b id="challan-doc-rep-route" class="text-slate-800">Kammanahalli Route</b></div>
+            <div class="text-[11px] text-slate-600">Phone: <span id="challan-doc-rep-phone" class="font-mono">9876543210</span></div>
+          </div>
+          <div class="space-y-1 text-right">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Dispatch Particulars</span>
+            <div class="text-[11px] text-slate-600">Vehicle / Transport: <b id="challan-doc-vehicle" class="text-slate-800">KA-04-AB-1234</b></div>
+            <div class="text-[11px] text-slate-600">Depot / Source: <b class="text-slate-800">Central Warehouse Depot</b></div>
+            <div class="text-[11px] text-slate-600">Purpose: <b class="text-slate-800">Field Order Supply & Retail Billing</b></div>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="py-4">
+          <table class="w-full text-left text-xs border border-slate-300 border-collapse">
+            <thead class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-300">
+              <tr>
+                <th class="p-2 border-r border-slate-300 text-center w-10">Sl.</th>
+                <th class="p-2 border-r border-slate-300">Item Description</th>
+                <th class="p-2 border-r border-slate-300 font-mono">SKU</th>
+                <th class="p-2 border-r border-slate-300">Pack</th>
+                <th class="p-2 border-r border-slate-300 text-right font-black">Qty (Packs)</th>
+                <th class="p-2 border-r border-slate-300 text-right">Unit Rate (₹)</th>
+                <th class="p-2 text-right font-black">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="challan-doc-items-tbody" class="divide-y divide-slate-200 font-mono text-[11px]">
+              <!-- Populated by JS -->
+            </tbody>
+            <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-900 text-xs">
+              <tr>
+                <td colspan="4" class="p-2.5 text-right font-black text-slate-800 uppercase">Total Dispatched:</td>
+                <td class="p-2.5 text-right font-black text-amber-800 font-mono" id="challan-doc-total-units">0 packs</td>
+                <td class="p-2.5 text-right text-slate-500 font-mono">Total Value:</td>
+                <td class="p-2.5 text-right font-black text-emerald-800 font-mono text-sm" id="challan-doc-total-val">₹0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Total in Words & Notes -->
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 mb-6">
+          <div class="text-[11px] text-slate-700">
+            <b>Amount in Words:</b> <span id="challan-doc-amount-words" class="italic capitalize">Zero Rupees Only</span>
+          </div>
+          <div class="text-[11px] text-slate-500" id="challan-doc-notes-block">
+            <b>Remarks:</b> <span id="challan-doc-notes">-</span>
+          </div>
+        </div>
+
+        <!-- Terms & Declaration -->
+        <div class="border-t border-slate-200 pt-3 text-[10px] text-slate-500 space-y-1">
+          <p class="font-bold text-slate-700 uppercase tracking-wider">Custody Terms & Acknowledgement:</p>
+          <p>1. The goods listed above have been verified, counted, and handed over in sealed, intact retail packaging for field supply and customer delivery.</p>
+          <p>2. The receiving sales representative is the custodian of the stock and is accountable for either accounting through official Sri Govinda Bills of Supply or returning unsold stock back to depot.</p>
+        </div>
+
+        <!-- Dual Signature Blocks -->
+        <div class="grid grid-cols-2 gap-8 pt-12 text-center text-xs">
+          <div>
+            <div class="border-t border-slate-800 pt-1 font-bold text-slate-800">Authorized Signatory / Store In-Charge</div>
+            <div class="text-[10px] text-slate-500">Sri Govinda Central Depot</div>
+          </div>
+          <div>
+            <div class="border-t border-slate-800 pt-1 font-bold text-slate-800">Receiver's Signature</div>
+            <div class="text-[10px] text-slate-500" id="challan-doc-sign-rep">Sales Representative</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: ITEMISED SALES REPRESENTATIVE STOCK SHEET
+       ========================================================================= -->
+  <div id="modal-rep-stock-sheet" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-auto max-h-[90vh] flex flex-col">
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between gap-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black" id="rep-sheet-avatar">R</span>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white" id="rep-sheet-title">Ramesh Kumar - Live Stock Sheet</h3>
+            <p class="text-[11px] text-slate-400" id="rep-sheet-subtitle">Custody breakdown: Dispatched - Sold - Samples</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="copyRepStockSheetWa()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Copy Stock Sheet for WhatsApp">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i> WhatsApp
+          </button>
+          <button onclick="closeRepStockSheetModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2 text-xs">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+        <input type="text" id="rep-sheet-search" oninput="filterRepStockSheetRows()" placeholder="Search product or SKU in this rep's custody..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-emerald-600">
+      </div>
+
+      <!-- Itemized Table -->
+      <div class="overflow-y-auto flex-1">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0">
+            <tr>
+              <th class="p-2.5 pl-4">SKU & Product Name</th>
+              <th class="p-2.5">Pack</th>
+              <th class="p-2.5 text-right text-amber-800">Recv (+)</th>
+              <th class="p-2.5 text-right text-rose-700">Sold (-)</th>
+              <th class="p-2.5 text-right text-blue-700">Smpl (-)</th>
+              <th class="p-2.5 text-right font-black text-slate-900">In Hand</th>
+              <th class="p-2.5 pr-4 text-right font-bold text-emerald-700">Value (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="rep-sheet-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
+            <!-- Rendered dynamically by JS -->
+          </tbody>
+          <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-900 text-xs">
+            <tr>
+              <td colspan="5" class="p-2.5 pl-4 text-right font-black text-slate-900">Current Field Holding:</td>
+              <td class="p-2.5 text-right font-black text-slate-900 font-mono text-sm" id="rep-sheet-total-packs">0 packs</td>
+              <td class="p-2.5 pr-4 text-right font-black text-emerald-700 font-mono text-sm" id="rep-sheet-total-val">₹0</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   </div>
@@ -3568,6 +4037,9 @@
           <button type="button" id="btn-share-modal-sp" onclick="shareSalesPersonnelFile(document.getElementById('sp-form-id').value)" class="hidden px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
             <i data-lucide="share-2" class="w-4 h-4 text-emerald-600"></i> Share File via WhatsApp
           </button>
+          <button type="button" id="btn-delete-modal-sp" onclick="deleteSalespersonConfirm(document.getElementById('sp-form-id').value)" class="hidden px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Remove official from roster">
+            <i data-lucide="trash-2" class="w-4 h-4 text-rose-600"></i> Remove Official
+          </button>
           <div class="flex items-center gap-2 ml-auto">
             <button type="button" onclick="closeManageSalespersonModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
               Cancel
@@ -3726,6 +4198,10 @@
           <i data-lucide="arrow-down-to-dot" class="w-5 h-5 text-indigo-600"></i>
           <span>Inward</span>
         </button>
+        <button type="button" onclick="setTab('outward'); toggleMobileMoreMenu();" class="p-3 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl flex flex-col items-center gap-1.5 border border-slate-200 transition cursor-pointer">
+          <i data-lucide="arrow-up-from-dot" class="w-5 h-5 text-amber-600"></i>
+          <span>Outward</span>
+        </button>
         <button type="button" onclick="setTab('samples'); toggleMobileMoreMenu();" class="p-3 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl flex flex-col items-center gap-1.5 border border-slate-200 transition cursor-pointer">
           <i data-lucide="gift" class="w-5 h-5 text-amber-600"></i>
           <span>Samples</span>
@@ -3863,6 +4339,22 @@
         console.warn("Error saving inward entries locally:", e);
       }
     }
+
+    let outwardDispatches = [];
+    try {
+      const savedOutward = localStorage.getItem('sg_outward_dispatches');
+      if (savedOutward) outwardDispatches = JSON.parse(savedOutward);
+    } catch (e) {
+      outwardDispatches = [];
+    }
+
+    function saveOutwardDispatchesLocally() {
+      try {
+        localStorage.setItem('sg_outward_dispatches', JSON.stringify(outwardDispatches));
+      } catch (e) {
+        console.warn("Error saving outward dispatches locally:", e);
+      }
+    }
     let sampleGiveaways = [];
     let contractPricing = [];
     let cart = {};
@@ -3975,14 +4467,26 @@
 
     // 2. LIVE INVENTORY RECONCILIATION ENGINE
     // Live Balance = Initial Stock + Total Inward - Total Sold - Total Samples Given
+    // Warehouse Depot = Initial + Total Inward - Total Outward Dispatched
+    // Field In-Hand = Total Outward Dispatched - Rep Commercial Sales - Rep Samples
     function getProductStock(prod) {
-      if (!prod) return { initial: 0, inward: 0, sold: 0, samples: 0, balance: 0 };
+      if (!prod) return { initial: 0, inward: 0, outward: 0, sold: 0, samples: 0, balance: 0, warehouseDepot: 0, fieldInHand: 0 };
       const initial = Number(prod.initialStock || 0);
 
-      // Inward units
+      // Inward units (from factory/suppliers into warehouse)
       const inward = inwardEntries
         .filter(e => e.product_sku === prod.sku)
         .reduce((sum, e) => sum + Number(e.quantity_units || 0), 0);
+
+      // Outward units (dispatched to sales personnel vans/bags)
+      const outward = outwardDispatches
+        .reduce((sum, d) => {
+          if (Array.isArray(d.items)) {
+            const it = d.items.find(i => i.sku === prod.sku || i.productId === prod.id);
+            return sum + (it ? Number(it.qty || 0) : 0);
+          }
+          return sum;
+        }, 0);
 
       // Units sold across commercial orders
       let sold = 0;
@@ -4001,8 +4505,16 @@
         .filter(s => s.product_sku === prod.sku)
         .reduce((sum, s) => sum + Number(s.quantity_units || 0), 0);
 
+      // Total balance owned by company
       const balance = initial + inward - sold - samples;
-      return { initial, inward, sold, samples, balance };
+
+      // Warehouse depot stock: What is physically inside the central depot
+      const warehouseDepot = (outward > 0) ? (initial + inward - outward) : balance;
+
+      // Field in-hand stock: What is currently held across sales reps' vans
+      const fieldInHand = Math.max(0, outward - sold - samples);
+
+      return { initial, inward, outward, sold, samples, balance, warehouseDepot, fieldInHand };
     }
 
     // 3. SUPABASE INITIALIZATION & REALTIME
@@ -4012,6 +4524,33 @@
     let supabaseClient = null;
     let supabaseUrl = sanitizeSupabaseUrl((window.SRI_GOVINDA_CONFIG?.SUPABASE_URL) || localStorage.getItem('sg_supabase_url') || DEFAULT_SUPABASE_URL);
     let supabaseKey = (window.SRI_GOVINDA_CONFIG?.SUPABASE_KEY) || localStorage.getItem('sg_supabase_key') || DEFAULT_SUPABASE_KEY;
+
+    // Secure Manager Terminal Edge Function Gateway
+    const SYNC_EDGE_FUNCTION_URL = `${DEFAULT_SUPABASE_URL}/functions/v1/sync-order`;
+    const DEFAULT_MANAGER_KEY = "SG-MANAGER-MASTER-KEY-2026";
+    let managerSecretKey = (window.SRI_GOVINDA_CONFIG?.MANAGER_KEY) || localStorage.getItem('sg_manager_secret_key') || DEFAULT_MANAGER_KEY;
+
+    async function callManagerEdgeFunction(action, payload) {
+      try {
+        const response = await fetch(SYNC_EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-sg-manager-key': managerSecretKey,
+            'x-sg-terminal-key': 'SG-FIELD-TERMINAL-SECURE-KEY-2026'
+          },
+          body: JSON.stringify({ action, payload })
+        });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+        return await response.json();
+      } catch (err) {
+        console.warn(`Manager Edge Function action (${action}) error:`, err);
+        return null;
+      }
+    }
 
     async function initSupabase() {
       if (!supabaseUrl || !supabaseKey) {
@@ -4070,6 +4609,14 @@
             if (data && data.length > 0) { 
               inwardEntries = data; 
               saveInwardEntriesLocally();
+              refreshAllUI(); 
+            }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_outward' }, async () => {
+            const { data } = await supabaseClient.from('inventory_outward').select('*').order('created_at', { ascending: false });
+            if (data && data.length > 0) { 
+              outwardDispatches = data; 
+              saveOutwardDispatchesLocally();
               refreshAllUI(); 
             }
           })
@@ -4182,6 +4729,27 @@
           }
         }
 
+        try {
+          const { data: dbOutward } = await supabaseClient.from('inventory_outward').select('*').order('created_at', { ascending: false });
+          if (dbOutward && dbOutward.length > 0) {
+            outwardDispatches = dbOutward;
+            saveOutwardDispatchesLocally();
+          } else {
+            const localSavedOut = localStorage.getItem('sg_outward_dispatches');
+            if (localSavedOut) {
+              try {
+                const parsedOut = JSON.parse(localSavedOut);
+                if (parsedOut && parsedOut.length > 0) {
+                  outwardDispatches = parsedOut;
+                  supabaseClient.from('inventory_outward').upsert(parsedOut).catch(() => {});
+                }
+              } catch (e) {}
+            }
+          }
+        } catch (outErr) {
+          console.warn("Outward dispatches fetch note:", outErr);
+        }
+
         const { data: dbSamples } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
         if (dbSamples) sampleGiveaways = dbSamples;
 
@@ -4189,13 +4757,12 @@
         if (dbPricing) contractPricing = dbPricing;
 
         try {
-          const { data: dbSalespeople } = await supabaseClient.from('salespeople').select('*');
+          const { data: dbSalespeople, error: spErr } = await supabaseClient.from('salespeople').select('*');
           if (dbSalespeople && dbSalespeople.length > 0) {
             salespeople = dbSalespeople;
             saveSalespeopleLocally();
-          } else if (salespeople.length > 0) {
-            // Seed defaults to Supabase if table is currently empty
-            supabaseClient.from('salespeople').upsert(salespeople).catch(() => {});
+          } else if (salespeople.length > 0 && !spErr) {
+            callManagerEdgeFunction('manager_save_salesperson', salespeople).catch(() => {});
           }
         } catch (e) {
           console.warn("Salespeople table fetch note:", e);
@@ -4217,8 +4784,10 @@
       renderOrdersHistoryTable();
       renderSamplesTable();
       renderInwardTables();
+      renderOutwardTables();
       renderProductsTable();
       renderRoutesGrid();
+      renderSalesPersonnelHub();
       updateManagerUI();
       if (window.lucide) lucide.createIcons();
     }
@@ -4277,6 +4846,7 @@
       if (tabId === 'salespersonnel') renderSalesPersonnelHub();
       if (tabId === 'orders') renderOrdersHistoryTable();
       if (tabId === 'inward') renderInwardTables();
+      if (tabId === 'outward') renderOutwardTables();
       if (tabId === 'samples') renderSamplesTable();
       if (tabId === 'products') renderProductsTable();
       if (tabId === 'routes') renderRoutesGrid();
@@ -4310,6 +4880,7 @@
       const totalUnitsSold = orders.reduce((s, o) => s + Number(o.totalUnits || 0), 0);
       const totalSampleUnits = sampleGiveaways.reduce((s, g) => s + Number(g.quantity_units || 0), 0);
       const totalInwardUnits = inwardEntries.reduce((s, i) => s + Number(i.quantity_units || 0), 0);
+      const totalOutwardUnits = (outwardDispatches || []).reduce((s, d) => s + Number(d.total_units || 0), 0);
 
       const pendingDeliveries = orders.filter(o => getOrderStatus(o) === 'Pending Delivery').length;
       const kpiPending = document.getElementById('kpi-pending-deliveries');
@@ -4320,7 +4891,19 @@
       document.getElementById('kpi-total-units-sold').innerText = totalUnitsSold;
       document.getElementById('kpi-total-samples').innerText = totalSampleUnits + ' units';
       document.getElementById('kpi-total-inward').innerText = totalInwardUnits + ' units';
+      const kpiOutward = document.getElementById('kpi-total-outward');
+      if (kpiOutward) kpiOutward.innerText = totalOutwardUnits + ' packs';
       document.getElementById('kpi-total-customers').innerText = customers.length;
+
+      const outBadge = document.getElementById('nav-outward-badge');
+      if (outBadge) {
+        if (outwardDispatches && outwardDispatches.length > 0) {
+          outBadge.classList.remove('hidden');
+          outBadge.innerText = outwardDispatches.length;
+        } else {
+          outBadge.classList.add('hidden');
+        }
+      }
 
       // Low Stock Alerts check
       const lowStockItems = [];
@@ -5704,18 +6287,11 @@
       newEntries.forEach(entry => inwardEntries.unshift(entry));
       saveInwardEntriesLocally();
 
-      // Persist to Supabase
-      if (supabaseClient) {
-        try {
-          const { error } = await supabaseClient.from('inventory_inward').insert(newEntries);
-          if (error) {
-            console.error("Supabase bulk inward insert error:", error);
-          } else {
-            console.log("Supabase bulk inward saved successfully:", newEntries.length);
-          }
-        } catch (err) {
-          console.error("Bulk inward database persistence error:", err);
-        }
+      // Persist via Secure Manager Edge Function
+      try {
+        await callManagerEdgeFunction('manager_save_inward', newEntries);
+      } catch (err) {
+        console.error("Bulk inward database persistence error:", err);
       }
 
       if (saveBtn) {
@@ -5741,13 +6317,1011 @@
       if (!confirm("Delete this inward stock entry? (Stock will be deducted)")) return;
       inwardEntries = inwardEntries.filter(e => e.id !== inwardId);
       saveInwardEntriesLocally();
-      if (supabaseClient) {
-        try { await supabaseClient.from('inventory_inward').delete().eq('id', inwardId); } catch (e) {}
-      }
+      try { await callManagerEdgeFunction('manager_delete_inward', { id: inwardId }); } catch (e) {}
       renderInwardTables();
       renderDashboard();
       renderOrderCatalog();
       renderProductsTable();
+    }
+
+    // =========================================================================
+    // 9B. OUTWARD INVENTORY & SALES REP FIELD DISPATCH (MANAGER HUB)
+    // =========================================================================
+
+    // Currency to Indian Words Helper for Delivery Challan
+    function numberToIndianWords(num) {
+      if (!num || isNaN(num) || num <= 0) return 'Zero Rupees Only';
+      num = Math.round(num);
+      const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      function inWords(n) {
+        if (n === 0) return '';
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : ' ');
+        if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 !== 0 ? inWords(n % 100) : '');
+        if (n < 100000) return inWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? inWords(n % 1000) : '');
+        if (n < 10000000) return inWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? inWords(n % 100000) : '');
+        return inWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? inWords(n % 10000000) : '');
+      }
+      return inWords(num).trim() + ' Rupees Only';
+    }
+
+    // Accurate calculation of a sales representative's inventory custody:
+    // In Hand = Total Outward Received - Commercial Sales Billed - Free Samples Distributed
+    function getSalespersonStock(repId) {
+      const sp = (salespeople || []).find(s => s.id === repId);
+      const repDispatches = (outwardDispatches || []).filter(d => d.rep_id === repId);
+      const repOrders = (orders || []).filter(o => isOrderFromSalesperson(o, sp));
+      const repSamples = (sampleGiveaways || []).filter(s => isSampleFromSalesperson(s, sp));
+
+      const skuMap = {};
+      products.forEach(p => {
+        skuMap[p.sku] = {
+          product: p,
+          sku: p.sku,
+          name: p.name,
+          unitSize: p.unitSize || '',
+          rate: Number(p.baseRate || 0),
+          received: 0,
+          sold: 0,
+          samples: 0,
+          inHand: 0,
+          value: 0
+        };
+      });
+
+      // Sum dispatches received
+      repDispatches.forEach(d => {
+        if (Array.isArray(d.items)) {
+          d.items.forEach(it => {
+            const itemSku = it.sku;
+            if (!skuMap[itemSku]) {
+              skuMap[itemSku] = {
+                product: null,
+                sku: itemSku,
+                name: it.name || itemSku,
+                unitSize: it.unitSize || '',
+                rate: Number(it.rate || 0),
+                received: 0,
+                sold: 0,
+                samples: 0,
+                inHand: 0,
+                value: 0
+              };
+            }
+            skuMap[itemSku].received += Number(it.qty || 0);
+          });
+        }
+      });
+
+      // Deduct orders billed
+      repOrders.forEach(o => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach(it => {
+            const itemSku = it.sku;
+            if (skuMap[itemSku]) {
+              skuMap[itemSku].sold += Number(it.qty || 0);
+            }
+          });
+        }
+      });
+
+      // Deduct free samples given
+      repSamples.forEach(s => {
+        const itemSku = s.product_sku;
+        if (skuMap[itemSku]) {
+          skuMap[itemSku].samples += Number(s.quantity_units || s.quantity || 0);
+        }
+      });
+
+      let totalReceived = 0;
+      let totalSold = 0;
+      let totalSamples = 0;
+      let totalInHand = 0;
+      let totalValue = 0;
+
+      Object.values(skuMap).forEach(row => {
+        row.inHand = row.received - row.sold - row.samples;
+        row.value = Math.max(0, row.inHand) * row.rate;
+        totalReceived += row.received;
+        totalSold += row.sold;
+        totalSamples += row.samples;
+        totalInHand += row.inHand;
+        totalValue += row.value;
+      });
+
+      return {
+        rep: sp,
+        repId,
+        repName: sp ? sp.name : (repDispatches[0]?.rep_name || 'Representative'),
+        totalReceived,
+        totalSold,
+        totalSamples,
+        totalInHand,
+        totalValue,
+        skuBreakdown: Object.values(skuMap)
+      };
+    }
+
+    function generateOutwardVoucherNo() {
+      let maxNum = 1000;
+      (outwardDispatches || []).forEach(d => {
+        const v = String(d.voucher_no || '');
+        const match = v.match(/(\d+)/);
+        if (match) {
+          const n = parseInt(match[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+      const nextVoucher = `CHAL-${maxNum + 1}`;
+      const input = document.getElementById('outward-page-voucher');
+      if (input) input.value = nextVoucher;
+      return nextVoucher;
+    }
+
+    function renderOutwardTables() {
+      // 0. Ensure default date
+      const dateInp = document.getElementById('outward-page-date');
+      if (dateInp && !dateInp.value) {
+        dateInp.value = new Date().toISOString().split('T')[0];
+      }
+
+      // 1. Ensure default voucher
+      const voucherInp = document.getElementById('outward-page-voucher');
+      if (voucherInp && !voucherInp.value) {
+        generateOutwardVoucherNo();
+      }
+
+      // 2. Populate Reps dropdown in Outward dispatch terminal
+      populateOutwardRepsDropdown();
+
+      // 3. Render Outward Products Matrix
+      renderOutwardProductsMatrix();
+
+      // 4. Render Sales Reps Monitor Table
+      renderOutwardRepsMonitorTable();
+
+      // 5. Render Outward Dispatches Journal
+      renderOutwardJournalTable();
+
+      // 6. Update Outward KPI metric strip
+      updateOutwardKPIs();
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function populateOutwardRepsDropdown() {
+      const select = document.getElementById('outward-page-rep-select');
+      if (!select) return;
+      const currentVal = select.value;
+      const activeReps = (salespeople || []).filter(s => s.active !== false);
+
+      let opts = `<option value="">-- Choose Salesperson --</option>`;
+      activeReps.forEach(sp => {
+        opts += `<option value="${escapeHtml(sp.id)}">${escapeHtml(sp.name)} (${escapeHtml(sp.assignedRoute || 'General Beat')})</option>`;
+      });
+      select.innerHTML = opts;
+      if (currentVal && activeReps.some(s => s.id === currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    function onOutwardRepChanged() {
+      const select = document.getElementById('outward-page-rep-select');
+      const repId = select ? select.value : '';
+      const banner = document.getElementById('outward-rep-info-banner');
+
+      if (!repId) {
+        if (banner) banner.classList.add('hidden');
+        renderOutwardProductsMatrix();
+        return;
+      }
+
+      const sp = (salespeople || []).find(s => s.id === repId);
+      if (sp) {
+        // Auto-populate vehicle if defined on salesperson or notes
+        const vehInp = document.getElementById('outward-page-vehicle');
+        if (vehInp && !vehInp.value && sp.vehicleNo) vehInp.value = sp.vehicleNo;
+
+        // Auto-populate route note
+        const noteInp = document.getElementById('outward-page-notes');
+        if (noteInp && !noteInp.value && sp.assignedRoute) noteInp.value = `${sp.assignedRoute} - Daily Supply`;
+
+        // Update Rep Info Banner
+        if (banner) {
+          banner.classList.remove('hidden');
+          const avatar = document.getElementById('outward-rep-avatar');
+          if (avatar) avatar.innerText = (sp.name || 'R').charAt(0).toUpperCase();
+
+          const nameEl = document.getElementById('outward-rep-banner-name');
+          if (nameEl) nameEl.innerText = sp.name;
+
+          const routeEl = document.getElementById('outward-rep-banner-route');
+          if (routeEl) routeEl.innerText = `(${sp.assignedRoute || 'General Beat'})`;
+
+          const stock = getSalespersonStock(repId);
+          const bDisp = document.getElementById('outward-rep-banner-dispatched');
+          if (bDisp) bDisp.innerText = stock.totalReceived;
+          const bSold = document.getElementById('outward-rep-banner-sold');
+          if (bSold) bSold.innerText = stock.totalSold;
+          const bSmpl = document.getElementById('outward-rep-banner-samples');
+          if (bSmpl) bSmpl.innerText = stock.totalSamples;
+          const bHand = document.getElementById('outward-rep-banner-inhand');
+          if (bHand) bHand.innerText = `${stock.totalInHand} packs (${formatINR(stock.totalValue)})`;
+        }
+      }
+
+      // Re-render the matrix so the "Rep In Hand" column updates immediately
+      renderOutwardProductsMatrix();
+    }
+
+    function renderOutwardProductsMatrix() {
+      const tbody = document.getElementById('outward-products-tbody');
+      if (!tbody) return;
+
+      const select = document.getElementById('outward-page-rep-select');
+      const selectedRepId = select ? select.value : '';
+      const repStock = selectedRepId ? getSalespersonStock(selectedRepId) : null;
+      const repStockMap = {};
+      if (repStock && repStock.skuBreakdown) {
+        repStock.skuBreakdown.forEach(r => { repStockMap[r.sku] = r.inHand; });
+      }
+
+      const q = (document.getElementById('outward-search-input')?.value || '').toLowerCase().trim();
+
+      if (!products || products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No products configured in catalog. Add products first.</td></tr>`;
+        updateOutwardStagingSummary();
+        return;
+      }
+
+      const filtered = products.filter(p => !q || p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)) || (p.category && p.category.toLowerCase().includes(q)));
+
+      tbody.innerHTML = filtered.map(p => {
+        const stock = getProductStock(p);
+        const repInHand = selectedRepId ? (repStockMap[p.sku] || 0) : null;
+        const rate = Number(p.baseRate || 0);
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition outward-prod-row" data-search="${escapeHtml((p.name + ' ' + p.sku).toLowerCase())}">
+            <td class="p-2.5 pl-3 sm:pl-4">
+              <div class="font-bold text-slate-900 leading-tight">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-mono text-slate-400 font-semibold mt-0.5">${escapeHtml(p.sku)}</div>
+            </td>
+            <td class="p-2.5 whitespace-nowrap">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📦 ${escapeHtml(p.unitSize || '-')}</span>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-700">
+              ${formatINR(rate)}
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold ${stock.warehouseDepot <= 0 ? 'text-rose-600' : stock.warehouseDepot <= 10 ? 'text-amber-600' : 'text-slate-600'}" title="Units currently inside central warehouse storage">
+              ${stock.warehouseDepot}
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold ${selectedRepId ? (repInHand > 0 ? 'text-amber-800' : 'text-slate-400') : 'text-slate-400'}">
+              ${selectedRepId ? repInHand : '<span class="text-slate-300 font-normal italic">-</span>'}
+            </td>
+            <td class="p-2.5 text-center">
+              <div class="inline-flex items-center justify-center gap-1 flex-nowrap">
+                <button type="button" onclick="quickIncrementOutwardQty('${escapeHtml(p.sku)}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs active:scale-95 transition cursor-pointer">-</button>
+                <input type="number" min="0" step="1"
+                       id="outward-qty-${escapeHtml(p.sku)}"
+                       data-outward-sku="${escapeHtml(p.sku)}"
+                       data-outward-id="${escapeHtml(p.id)}"
+                       data-outward-name="${escapeHtml(p.name)}"
+                       data-outward-unitsize="${escapeHtml(p.unitSize || '')}"
+                       data-outward-rate="${rate}"
+                       placeholder="0"
+                       oninput="onOutwardQtyChanged(this)"
+                       class="w-16 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-center text-slate-900 outline-none focus:ring-2 focus:ring-amber-500/20 transition">
+                <button type="button" onclick="quickIncrementOutwardQty('${escapeHtml(p.sku)}', 1)" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-xs active:scale-95 transition cursor-pointer">+</button>
+                <button type="button" onclick="quickIncrementOutwardQty('${escapeHtml(p.sku)}', 10)" class="px-1.5 py-1 text-[10px] font-bold rounded-lg bg-slate-100 hover:bg-amber-100 hover:text-amber-800 text-slate-600 transition shadow-2xs cursor-pointer" title="Add 10 units">+10</button>
+              </div>
+            </td>
+            <td class="p-2.5 text-right font-mono font-bold text-xs" id="outward-row-val-${escapeHtml(p.sku)}">
+              <span class="text-slate-400">₹0</span>
+            </td>
+            <td class="p-2.5 pr-3 sm:pr-4 text-center">
+              <button type="button" onclick="clearSingleOutwardRow('${escapeHtml(p.sku)}')" title="Reset quantity to 0" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition cursor-pointer">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateOutwardStagingSummary();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function onOutwardQtyChanged(inputEl) {
+      const sku = inputEl.getAttribute('data-outward-sku');
+      const rate = parseFloat(inputEl.getAttribute('data-outward-rate')) || 0;
+      const qty = parseFloat(inputEl.value) || 0;
+      const valEl = document.getElementById(`outward-row-val-${sku}`);
+
+      if (qty > 0) {
+        inputEl.classList.add('border-amber-600', 'bg-amber-50/50', 'text-amber-950', 'font-black');
+        inputEl.classList.remove('border-slate-300');
+        if (valEl) {
+          const totalVal = qty * rate;
+          valEl.innerHTML = `<span class="text-emerald-700 font-black">${formatINR(totalVal)}</span>`;
+        }
+      } else {
+        inputEl.classList.remove('border-amber-600', 'bg-amber-50/50', 'text-amber-950', 'font-black');
+        inputEl.classList.add('border-slate-300');
+        if (valEl) {
+          valEl.innerHTML = `<span class="text-slate-400">₹0</span>`;
+        }
+      }
+      updateOutwardStagingSummary();
+    }
+
+    function quickIncrementOutwardQty(sku, amount) {
+      const input = document.getElementById(`outward-qty-${sku}`);
+      if (input) {
+        const current = parseFloat(input.value) || 0;
+        input.value = Math.max(0, current + amount);
+        onOutwardQtyChanged(input);
+      }
+    }
+
+    function bulkIncrementAllOutward(amount = 10) {
+      const inputs = document.querySelectorAll('#outward-products-tbody input[data-outward-sku]');
+      inputs.forEach(inp => {
+        const current = parseFloat(inp.value) || 0;
+        inp.value = Math.max(0, current + amount);
+        onOutwardQtyChanged(inp);
+      });
+    }
+
+    function clearSingleOutwardRow(sku) {
+      const input = document.getElementById(`outward-qty-${sku}`);
+      if (input) {
+        input.value = '';
+        onOutwardQtyChanged(input);
+      }
+    }
+
+    function clearAllOutwardQuantities() {
+      const inputs = document.querySelectorAll('#outward-products-tbody input[data-outward-sku]');
+      inputs.forEach(inp => {
+        inp.value = '';
+        onOutwardQtyChanged(inp);
+      });
+      generateOutwardVoucherNo();
+      updateOutwardStagingSummary();
+    }
+
+    function filterOutwardProductsTable() {
+      const q = (document.getElementById('outward-search-input')?.value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#outward-products-tbody tr.outward-prod-row');
+      rows.forEach(r => {
+        const text = r.getAttribute('data-search') || '';
+        r.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    }
+
+    function updateOutwardStagingSummary() {
+      const badge = document.getElementById('outward-page-summary-badge');
+      const footerSkus = document.getElementById('outward-footer-skus');
+      const footerUnits = document.getElementById('outward-footer-units');
+      const footerVal = document.getElementById('outward-footer-value');
+      const saveBtn = document.getElementById('btn-save-outward-dispatch');
+
+      const inputs = document.querySelectorAll('#outward-products-tbody input[data-outward-sku]');
+      let count = 0;
+      let totalUnits = 0;
+      let totalVal = 0;
+
+      inputs.forEach(inp => {
+        const q = parseFloat(inp.value) || 0;
+        const rate = parseFloat(inp.getAttribute('data-outward-rate')) || 0;
+        if (q > 0) {
+          count++;
+          totalUnits += q;
+          totalVal += (q * rate);
+        }
+      });
+
+      if (badge) {
+        if (count > 0) {
+          badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 shadow-xs font-black';
+          badge.innerText = `${count} SKU${count > 1 ? 's' : ''} staged (${totalUnits} packs • ${formatINR(totalVal)})`;
+        } else {
+          badge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+          badge.innerText = '0 products staged (0 units • ₹0)';
+        }
+      }
+
+      if (footerSkus) footerSkus.innerText = `${count} SKU${count !== 1 ? 's' : ''}`;
+      if (footerUnits) footerUnits.innerText = `${totalUnits} packs`;
+      if (footerVal) footerVal.innerText = formatINR(totalVal);
+
+      if (saveBtn) {
+        if (count > 0) {
+          saveBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Issue +${totalUnits} Units (${formatINR(totalVal)}) & Print Challan`;
+          saveBtn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+          saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        } else {
+          saveBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Issue Stock & Print Challan`;
+          saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          saveBtn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    async function saveOutwardDispatch() {
+      const repSelect = document.getElementById('outward-page-rep-select');
+      const repId = repSelect ? repSelect.value : '';
+      if (!repId) {
+        alert("Please select the receiving sales representative first.");
+        repSelect?.focus();
+        return;
+      }
+
+      const sp = (salespeople || []).find(s => s.id === repId);
+      if (!sp) {
+        alert("Selected representative is invalid.");
+        return;
+      }
+
+      const dispatchDate = document.getElementById('outward-page-date')?.value || new Date().toISOString().split('T')[0];
+      const voucherNo = (document.getElementById('outward-page-voucher')?.value || '').trim() || generateOutwardVoucherNo();
+      const vehicleNo = (document.getElementById('outward-page-vehicle')?.value || '').trim();
+      const notes = (document.getElementById('outward-page-notes')?.value || '').trim();
+
+      const inputs = document.querySelectorAll('#outward-products-tbody input[data-outward-sku]');
+      const stagedItems = [];
+      let totalUnits = 0;
+      let totalVal = 0;
+
+      inputs.forEach(inp => {
+        const qty = parseFloat(inp.value) || 0;
+        if (qty > 0) {
+          const sku = inp.getAttribute('data-outward-sku');
+          const productId = inp.getAttribute('data-outward-id');
+          const name = inp.getAttribute('data-outward-name');
+          const unitSize = inp.getAttribute('data-outward-unitsize');
+          const rate = parseFloat(inp.getAttribute('data-outward-rate')) || 0;
+          const total = qty * rate;
+
+          stagedItems.push({
+            productId: productId || sku,
+            sku,
+            name,
+            unitSize,
+            rate,
+            qty,
+            total
+          });
+          totalUnits += qty;
+          totalVal += total;
+        }
+      });
+
+      if (stagedItems.length === 0) {
+        alert("Please enter an issue quantity (> 0) for at least one product before saving dispatch.");
+        return;
+      }
+
+      const saveBtn = document.getElementById('btn-save-outward-dispatch');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Creating Outward Transfer...';
+      }
+
+      const dispatchRecord = {
+        id: 'OUT-' + Date.now(),
+        voucher_no: voucherNo,
+        date: dispatchDate,
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        rep_id: sp.id,
+        rep_name: sp.name,
+        rep_slug: sp.slug || sp.id,
+        vehicle: vehicleNo,
+        route: sp.assignedRoute || 'General Beat',
+        items: stagedItems,
+        total_units: totalUnits,
+        total_value: totalVal,
+        notes: notes,
+        created_at: new Date().toISOString()
+      };
+
+      // 1. Unshift into local state and localStorage
+      outwardDispatches.unshift(dispatchRecord);
+      saveOutwardDispatchesLocally();
+
+      // 2. Broadcast to other open tabs / sales portals
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({
+            type: 'OUTWARD_CREATED',
+            dispatch: dispatchRecord
+          });
+        }
+      } catch (err) {}
+
+      // 3. Persist to Supabase & Edge Function
+      try {
+        const edgeRes = await fetch(`${sanitizeSupabaseUrl(supabaseUrl)}/functions/v1/sync-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-sg-terminal-key': 'SG-FIELD-TERMINAL-SECURE-KEY-2026'
+          },
+          body: JSON.stringify({ action: 'log_outward', payload: dispatchRecord })
+        }).then(r => r.json()).catch(() => null);
+
+        if (edgeRes && edgeRes.success) {
+          console.log("Outward dispatch synced via Secure Edge Function:", dispatchRecord.id);
+        }
+      } catch (e) {}
+
+      if (supabaseClient) {
+        try {
+          const dbRow = {
+            id: dispatchRecord.id,
+            voucher_no: dispatchRecord.voucher_no,
+            date: dispatchRecord.date,
+            rep_id: dispatchRecord.rep_id,
+            rep_name: dispatchRecord.rep_name,
+            items: dispatchRecord.items,
+            total_units: dispatchRecord.total_units,
+            total_value: dispatchRecord.total_value,
+            vehicle: dispatchRecord.vehicle,
+            notes: dispatchRecord.notes
+          };
+          await supabaseClient.from('inventory_outward').upsert([dbRow]);
+        } catch (dbErr) {
+          console.warn("Direct outward supabase insert note:", dbErr);
+        }
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
+
+      // Reset form
+      clearAllOutwardQuantities();
+      refreshAllUI();
+
+      showToast(`✅ Successfully issued ${totalUnits} units (${formatINR(totalVal)}) to ${sp.name}!`);
+
+      // Open Printable Delivery Challan Modal
+      openOutwardChallanModal(dispatchRecord.id);
+    }
+
+    function renderOutwardRepsMonitorTable() {
+      const tbody = document.getElementById('outward-reps-monitor-tbody');
+      if (!tbody) return;
+
+      const activeReps = (salespeople || []).filter(s => s.active !== false);
+      if (activeReps.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No active sales representatives registered.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = activeReps.map(sp => {
+        const stock = getSalespersonStock(sp.id);
+        const initials = (sp.name || 'R').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+        let statusBadge = '';
+        if (stock.totalInHand <= 0) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-200">Zero Stock</span>`;
+        } else if (stock.totalInHand <= 20) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Low Stock (${stock.totalInHand})</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Adequate (${stock.totalInHand})</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-slate-900 text-amber-400 font-black text-xs flex items-center justify-center shrink-0">
+                  ${initials}
+                </div>
+                <div>
+                  <div class="font-extrabold text-slate-900 text-xs">${escapeHtml(sp.name)}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(sp.phone || '-')}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3 text-slate-600 text-xs">
+              <span class="inline-flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                ${escapeHtml(sp.assignedRoute || 'General Beat')}
+              </span>
+            </td>
+            <td class="p-3 font-mono font-bold text-right text-amber-800 text-xs">+${stock.totalReceived}</td>
+            <td class="p-3 font-mono font-bold text-right text-emerald-700 text-xs">-${stock.totalSold}</td>
+            <td class="p-3 font-mono font-bold text-right text-blue-700 text-xs">-${stock.totalSamples}</td>
+            <td class="p-3 font-mono font-black text-right text-sm ${stock.totalInHand <= 0 ? 'text-rose-600' : 'text-slate-900'}">${stock.totalInHand} packs</td>
+            <td class="p-3 font-mono font-bold text-right text-emerald-700 text-xs">${formatINR(stock.totalValue)}</td>
+            <td class="p-3 text-center">${statusBadge}</td>
+            <td class="p-3 text-right">
+              <div class="flex items-center justify-end gap-1.5 flex-nowrap">
+                <button type="button" onclick="selectRepForOutward('${escapeHtml(sp.id)}')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold transition cursor-pointer" title="Issue stock to this rep">
+                  + Issue
+                </button>
+                <button type="button" onclick="openRepStockSheetModal('${escapeHtml(sp.id)}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer" title="View detailed SKU breakdown">
+                  Stock Sheet
+                </button>
+                <button type="button" onclick="shareRepStockWa('${escapeHtml(sp.id)}')" class="p-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs transition cursor-pointer" title="Share stock breakdown on WhatsApp to rep">
+                  <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function selectRepForOutward(repId) {
+      const select = document.getElementById('outward-page-rep-select');
+      if (select) {
+        select.value = repId;
+        onOutwardRepChanged();
+      }
+      scrollToOutwardEntryCard();
+    }
+
+    function scrollToOutwardEntryCard() {
+      const card = document.getElementById('outward-entry-card');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('ring-4', 'ring-amber-500/40');
+        setTimeout(() => card.classList.remove('ring-4', 'ring-amber-500/40'), 1500);
+      }
+    }
+
+    function scrollToRepStockTable() {
+      const card = document.getElementById('outward-reps-stock-card');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function renderOutwardJournalTable() {
+      const tbody = document.getElementById('outward-journal-tbody');
+      const badge = document.getElementById('outward-journal-count-badge');
+      if (!tbody) return;
+
+      const list = outwardDispatches || [];
+      if (badge) badge.innerText = `${list.length} dispatch${list.length !== 1 ? 'es' : ''}`;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400">No outward stock dispatches recorded yet. Use the <b>Stock Issue Terminal</b> above to dispatch stock.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(d => {
+        const itemCount = Array.isArray(d.items) ? d.items.length : 0;
+        const itemPills = Array.isArray(d.items)
+          ? d.items.slice(0, 3).map(i => `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-mono mr-1">${escapeHtml(i.sku)}: ${i.qty}</span>`).join('') + (d.items.length > 3 ? `<span class="text-[10px] text-slate-400 font-semibold">+${d.items.length - 3} more</span>` : '')
+          : '-';
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 font-mono text-slate-500 whitespace-nowrap text-xs">
+              <div>${d.date}</div>
+              <div class="text-[10px] text-slate-400">${d.time || ''}</div>
+            </td>
+            <td class="p-3 font-mono font-black text-amber-800 text-xs">
+              ${escapeHtml(d.voucher_no || '-')}
+            </td>
+            <td class="p-3">
+              <div class="font-extrabold text-slate-900 text-xs">${escapeHtml(d.rep_name || 'Rep')}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(d.route || '')}</div>
+            </td>
+            <td class="p-3 text-xs">
+              <div class="font-semibold text-slate-700 mb-0.5">${itemCount} SKU${itemCount !== 1 ? 's' : ''}</div>
+              <div class="flex flex-wrap items-center gap-0.5">${itemPills}</div>
+            </td>
+            <td class="p-3 font-mono font-black text-right text-amber-800 text-xs">
+              ${d.total_units} packs
+            </td>
+            <td class="p-3 font-mono font-bold text-right text-emerald-700 text-xs">
+              ${formatINR(d.total_value)}
+            </td>
+            <td class="p-3 text-slate-600 text-xs">
+              ${escapeHtml(d.vehicle || '-')}
+            </td>
+            <td class="p-3 text-slate-400 text-[11px] max-w-xs truncate">
+              ${escapeHtml(d.notes || '-')}
+            </td>
+            <td class="p-3 text-right">
+              <div class="flex items-center justify-end gap-1 flex-nowrap">
+                <button type="button" onclick="openOutwardChallanModal('${escapeHtml(d.id)}')" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold transition cursor-pointer" title="View / Print Delivery Challan">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="shareChallanWaById('${escapeHtml(d.id)}')" class="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs transition cursor-pointer" title="WhatsApp Challan to Rep">
+                  <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                </button>
+                ${isManager ? `
+                  <button type="button" onclick="deleteOutwardConfirm('${escapeHtml(d.id)}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs transition cursor-pointer" title="Delete Dispatch and Return Stock to Depot">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateOutwardKPIs() {
+      const list = outwardDispatches || [];
+      const totalUnits = list.reduce((s, d) => s + Number(d.total_units || 0), 0);
+      const totalVal = list.reduce((s, d) => s + Number(d.total_value || 0), 0);
+
+      const kpiTotalUnits = document.getElementById('outward-kpi-total-dispatched');
+      if (kpiTotalUnits) kpiTotalUnits.innerText = `${totalUnits} packs`;
+
+      const kpiCount = document.getElementById('outward-kpi-total-dispatches-count');
+      if (kpiCount) kpiCount.innerText = `${list.length} dispatch${list.length !== 1 ? 'es' : ''}`;
+
+      const kpiVal = document.getElementById('outward-kpi-total-val');
+      if (kpiVal) kpiVal.innerText = formatINR(totalVal);
+
+      // Compute aggregate live floating field custody across all reps
+      let liveFieldPacks = 0;
+      let liveFieldVal = 0;
+      let holdingRepsCount = 0;
+
+      (salespeople || []).forEach(sp => {
+        const stock = getSalespersonStock(sp.id);
+        if (stock.totalInHand > 0) {
+          liveFieldPacks += stock.totalInHand;
+          liveFieldVal += stock.totalValue;
+          holdingRepsCount++;
+        }
+      });
+
+      const kpiFieldPacks = document.getElementById('outward-kpi-live-field-packs');
+      if (kpiFieldPacks) kpiFieldPacks.innerText = `${liveFieldPacks} packs`;
+
+      const kpiFieldVal = document.getElementById('outward-kpi-live-field-val');
+      if (kpiFieldVal) kpiFieldVal.innerText = `${formatINR(liveFieldVal)} floating in field`;
+
+      const kpiHoldingReps = document.getElementById('outward-kpi-active-reps-count');
+      if (kpiHoldingReps) kpiHoldingReps.innerText = `${holdingRepsCount} reps`;
+    }
+
+    async function deleteOutwardConfirm(dispatchId) {
+      if (!confirm("Are you sure you want to delete this outward dispatch? The issued stock will be credited back to the central warehouse depot balance.")) return;
+
+      outwardDispatches = (outwardDispatches || []).filter(d => d.id !== dispatchId);
+      saveOutwardDispatchesLocally();
+
+      try {
+        await callManagerEdgeFunction('manager_delete_outward', { id: dispatchId });
+      } catch (e) {}
+
+      refreshAllUI();
+      showToast("🗑️ Outward dispatch removed. Central depot stock credited back.");
+    }
+
+    // Modal: Printable Delivery Challan
+    let currentChallanDispatch = null;
+
+    function openOutwardChallanModal(dispatchId) {
+      const dispatch = (outwardDispatches || []).find(d => d.id === dispatchId) || outwardDispatches[0];
+      if (!dispatch) return;
+      currentChallanDispatch = dispatch;
+
+      const sp = (salespeople || []).find(s => s.id === dispatch.rep_id);
+
+      document.getElementById('challan-doc-voucher').innerText = dispatch.voucher_no || 'CHAL-1001';
+      document.getElementById('challan-doc-datetime').innerText = `Date: ${dispatch.date} ${dispatch.time || ''}`;
+      document.getElementById('challan-doc-rep-name').innerText = dispatch.rep_name || (sp ? sp.name : 'Representative');
+      document.getElementById('challan-doc-rep-route').innerText = dispatch.route || (sp ? sp.assignedRoute : '-');
+      document.getElementById('challan-doc-rep-phone').innerText = (sp ? sp.phone : '-') || '-';
+      document.getElementById('challan-doc-vehicle').innerText = dispatch.vehicle || 'Handover';
+      document.getElementById('challan-doc-sign-rep').innerText = `${dispatch.rep_name || (sp ? sp.name : 'Sales Representative')} (Recipient)`;
+
+      // Populate Items
+      const tbody = document.getElementById('challan-doc-items-tbody');
+      if (tbody) {
+        const items = Array.isArray(dispatch.items) ? dispatch.items : [];
+        tbody.innerHTML = items.map((it, idx) => `
+          <tr class="border-b border-slate-200">
+            <td class="p-2 border-r border-slate-300 text-center font-bold">${idx + 1}</td>
+            <td class="p-2 border-r border-slate-300 font-sans font-bold text-slate-900">${escapeHtml(it.name || it.sku)}</td>
+            <td class="p-2 border-r border-slate-300 text-slate-600">${escapeHtml(it.sku)}</td>
+            <td class="p-2 border-r border-slate-300 text-slate-600">${escapeHtml(it.unitSize || '-')}</td>
+            <td class="p-2 border-r border-slate-300 text-right font-black text-amber-900">${it.qty}</td>
+            <td class="p-2 border-r border-slate-300 text-right">${formatINR(it.rate)}</td>
+            <td class="p-2 text-right font-bold text-slate-900">${formatINR(it.total || (it.qty * it.rate))}</td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('challan-doc-total-units').innerText = `${dispatch.total_units} packs`;
+      document.getElementById('challan-doc-total-val').innerText = formatINR(dispatch.total_value);
+      document.getElementById('challan-doc-amount-words').innerText = numberToIndianWords(dispatch.total_value);
+
+      const notesBlock = document.getElementById('challan-doc-notes');
+      if (notesBlock) notesBlock.innerText = dispatch.notes || 'Field dispatch for retail billing';
+
+      const modal = document.getElementById('modal-outward-challan');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeOutwardChallanModal() {
+      const modal = document.getElementById('modal-outward-challan');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function shareCurrentChallanWa() {
+      if (!currentChallanDispatch) return;
+      shareChallanWaById(currentChallanDispatch.id);
+    }
+
+    function shareChallanWaById(dispatchId) {
+      const dispatch = (outwardDispatches || []).find(d => d.id === dispatchId);
+      if (!dispatch) return;
+
+      const sp = (salespeople || []).find(s => s.id === dispatch.rep_id);
+      const cleanPhone = ((sp ? sp.phone : '') || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+
+      let itemsText = '';
+      if (Array.isArray(dispatch.items)) {
+        dispatch.items.forEach((it, idx) => {
+          itemsText += `${idx + 1}. *${it.name}* (${it.sku} - ${it.unitSize || ''}) : *${it.qty} packs* @ ₹${it.rate} = ₹${it.total}\n`;
+        });
+      }
+
+      const waMsg = `*SRI GOVINDA SPICES & FOODS*\n` +
+        `📦 *STOCK DELIVERY CHALLAN / VAN TRANSFER NOTE*\n\n` +
+        `Challan No: *${dispatch.voucher_no || 'CHAL'}*\n` +
+        `Date: *${dispatch.date}* | Time: *${dispatch.time || ''}*\n` +
+        `Issued To: *${dispatch.rep_name}*\n` +
+        `Assigned Beat: *${dispatch.route || 'Field Beat'}*\n` +
+        `Vehicle: *${dispatch.vehicle || 'Handover'}*\n\n` +
+        `*STOCK DISPATCHED:*\n` +
+        itemsText +
+        `\n--------------------------------\n` +
+        `Total Packs Dispatched: *${dispatch.total_units} packs*\n` +
+        `Total Valuation: *₹${dispatch.total_value}*\n` +
+        `(${numberToIndianWords(dispatch.total_value)})\n` +
+        `--------------------------------\n` +
+        `*Custody Acknowledgement:* Goods handed over in sealed packaging. Deductions will reflect live as you book Bills of Supply.\n\n` +
+        `_Sri Govinda Depot Store In-Charge_`;
+
+      const waUrl = phoneToUse
+        ? `https://api.whatsapp.com/send?phone=${phoneToUse}&text=${encodeURIComponent(waMsg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`;
+
+      window.open(waUrl, '_blank');
+    }
+
+    // Modal: Itemized Rep Stock Sheet
+    let currentRepStockSheetId = null;
+
+    function openRepStockSheetModal(repId) {
+      const sp = (salespeople || []).find(s => s.id === repId);
+      if (!sp) return;
+      currentRepStockSheetId = repId;
+
+      const stock = getSalespersonStock(repId);
+      document.getElementById('rep-sheet-title').innerText = `${sp.name} - Live Stock in Hand`;
+      document.getElementById('rep-sheet-subtitle').innerText = `Beat: ${sp.assignedRoute || 'General'} | Phone: ${sp.phone || '-'}`;
+      document.getElementById('rep-sheet-avatar').innerText = (sp.name || 'R').charAt(0).toUpperCase();
+
+      renderRepStockSheetRows(stock.skuBreakdown);
+
+      document.getElementById('rep-sheet-total-packs').innerText = `${stock.totalInHand} packs`;
+      document.getElementById('rep-sheet-total-val').innerText = formatINR(stock.totalValue);
+
+      const modal = document.getElementById('modal-rep-stock-sheet');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderRepStockSheetRows(breakdown) {
+      const tbody = document.getElementById('rep-sheet-tbody');
+      if (!tbody) return;
+
+      const q = (document.getElementById('rep-sheet-search')?.value || '').toLowerCase().trim();
+      const filtered = (breakdown || []).filter(r => !q || r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No items match your search.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${r.inHand > 0 ? '' : 'opacity-40'}">
+          <td class="p-2.5 pl-4">
+            <div class="font-sans font-bold text-slate-900">${escapeHtml(r.name)}</div>
+            <div class="text-[10px] text-slate-400">${escapeHtml(r.sku)}</div>
+          </td>
+          <td class="p-2.5 text-slate-600">${escapeHtml(r.unitSize || '-')}</td>
+          <td class="p-2.5 text-right font-bold text-amber-800">+${r.received}</td>
+          <td class="p-2.5 text-right font-bold text-rose-700">-${r.sold}</td>
+          <td class="p-2.5 text-right font-bold text-blue-700">-${r.samples}</td>
+          <td class="p-2.5 text-right font-black text-sm ${r.inHand <= 0 ? 'text-slate-400' : 'text-slate-900'}">${r.inHand}</td>
+          <td class="p-2.5 pr-4 text-right font-bold text-emerald-700">${formatINR(r.value)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterRepStockSheetRows() {
+      if (!currentRepStockSheetId) return;
+      const stock = getSalespersonStock(currentRepStockSheetId);
+      renderRepStockSheetRows(stock.skuBreakdown);
+    }
+
+    function closeRepStockSheetModal() {
+      const modal = document.getElementById('modal-rep-stock-sheet');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function shareRepStockWa(repId) {
+      const sp = (salespeople || []).find(s => s.id === repId);
+      if (!sp) return;
+      const stock = getSalespersonStock(repId);
+
+      const cleanPhone = (sp.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+
+      let lines = '';
+      stock.skuBreakdown.filter(r => r.inHand > 0 || r.received > 0).forEach((r, idx) => {
+        lines += `${idx + 1}. *${r.name}* (${r.unitSize || ''}) : *${r.inHand} in hand* (Recv: ${r.received}, Sold: ${r.sold}, Smpl: ${r.samples}) = ₹${r.value}\n`;
+      });
+
+      const waMsg = `*SRI GOVINDA FIELD STOCK STATUS*\n` +
+        `Sales Official: *${sp.name}*\n` +
+        `Beat: *${sp.assignedRoute || 'General'}*\n` +
+        `As of: *${new Date().toLocaleDateString('en-GB')}*\n\n` +
+        `*LIVE STOCK IN HAND:* \n` +
+        lines +
+        `\n--------------------------------\n` +
+        `Total Units In Hand: *${stock.totalInHand} packs*\n` +
+        `Total Custody Valuation: *₹${stock.totalValue}*\n` +
+        `--------------------------------\n` +
+        `Please verify physical inventory count in your van/bag against this sheet.`;
+
+      const waUrl = phoneToUse
+        ? `https://api.whatsapp.com/send?phone=${phoneToUse}&text=${encodeURIComponent(waMsg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`;
+
+      window.open(waUrl, '_blank');
+    }
+
+    function copyRepStockSheetWa() {
+      if (currentRepStockSheetId) shareRepStockWa(currentRepStockSheetId);
+    }
+
+    function shareAllRepsStockSummaryWa() {
+      let summaryText = '';
+      let teamUnits = 0;
+      let teamVal = 0;
+
+      (salespeople || []).filter(s => s.active !== false).forEach((sp, idx) => {
+        const stock = getSalespersonStock(sp.id);
+        teamUnits += stock.totalInHand;
+        teamVal += stock.totalValue;
+        summaryText += `${idx + 1}. *${sp.name}* (${sp.assignedRoute || 'Beat'}) : *${stock.totalInHand} packs* (₹${stock.totalValue})\n`;
+      });
+
+      const waMsg = `*SRI GOVINDA - TEAM FIELD STOCK SUMMARY*\n` +
+        `Date: *${new Date().toLocaleDateString('en-GB')}*\n\n` +
+        `*REPRESENTATIVE CUSTODY:*\n` +
+        summaryText +
+        `\n--------------------------------\n` +
+        `Total Floating Field Packs: *${teamUnits} packs*\n` +
+        `Total Field Stock Valuation: *₹${teamVal}*\n` +
+        `--------------------------------\n` +
+        `_Report generated via Sri Govinda Manager Hub_`;
+
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`;
+      window.open(waUrl, '_blank');
     }
 
     // 10. CUSTOMERS CRUD (REPS & MANAGERS)
@@ -5795,31 +7369,31 @@
           <td class="p-3 font-mono font-bold text-right ${c.pendingUdhaar > 0 ? 'text-rose-600' : 'text-slate-400'}">${formatINR(c.pendingUdhaar || 0)}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
             ${activeQuote ? `
-              <button onclick="openQuotationModal('${c.id}', '${activeQuote.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 transition shadow-xs" title="Open, Share on WhatsApp & Edit Active Quotation (${escapeHtml(activeQuote.id)})">
+              <button type="button" onclick="openQuotationModal('${escapeHtml(c.id)}', '${escapeHtml(activeQuote.id)}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 transition shadow-xs cursor-pointer" title="Open, Share on WhatsApp & Edit Active Quotation (${escapeHtml(activeQuote.id)})">
                 <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Quotation
               </button>
             ` : `
-              <button onclick="openCustomerPricingModal('${c.id}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200 font-bold text-xs inline-flex items-center gap-1 transition" title="Create Quotation for this Customer">
+              <button type="button" onclick="openCustomerPricingModal('${escapeHtml(c.id)}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200 font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer" title="Create Quotation for this Customer">
                 <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> + Quote
               </button>
             `}
-            <button onclick="openCustomerProfileModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View Customer Profile & Quotes History">
+            <button type="button" onclick="openCustomerProfileModal('${escapeHtml(c.id)}')" class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer" title="View Customer Profile & Quotes History">
               <i data-lucide="contact-2" class="w-3.5 h-3.5"></i> Profile
             </button>
-            <button onclick="openCustomerPricingModal('${c.id}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition" title="Open Custom Price List & Decided Rates">
+            <button type="button" onclick="openCustomerPricingModal('${escapeHtml(c.id)}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer" title="Open Custom Price List & Decided Rates">
               <i data-lucide="tag" class="w-3.5 h-3.5"></i> Price List
             </button>
-            <button onclick="openCustomerStatementModal('${c.id}')" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs inline-flex items-center gap-1 transition" title="View & Download Official Statement Slip">
+            <button type="button" onclick="openCustomerStatementModal('${escapeHtml(c.id)}')" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-black text-white font-bold text-xs inline-flex items-center gap-1 transition cursor-pointer" title="View & Download Official Statement Slip">
               <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Statement
             </button>
-            <button type="button" onclick="openCustomerLedgerModal('${c.id}')" class="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1 transition shadow-xs cursor-pointer" title="View Customer Account Ledger & Concurrent Bills">
+            <button type="button" onclick="openCustomerLedgerModal('${escapeHtml(c.id)}')" class="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs inline-flex items-center gap-1 transition shadow-xs cursor-pointer" title="View Customer Account Ledger & Concurrent Bills">
               <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Ledger
             </button>
-            <button onclick="openCustomerModal('${c.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Edit Customer Details">
+            <button type="button" onclick="openCustomerModal('${escapeHtml(c.id)}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer" title="Edit Customer Details">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
             ${isManager ? `
-              <button onclick="deleteCustomerConfirm('${c.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Delete Customer">
+              <button type="button" onclick="deleteCustomerConfirm('${escapeHtml(c.id)}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 transition cursor-pointer" title="Delete Customer">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             ` : ''}
@@ -5830,20 +7404,28 @@
     }
 
     function openCustomerModal(editId = '') {
-      document.getElementById('form-customer').reset();
-      document.getElementById('cust-id').value = editId;
+      const modal = document.getElementById('modal-customer');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '9999';
+      }
+      document.getElementById('form-customer')?.reset();
+      document.getElementById('cust-id').value = editId || '';
 
       // Populate route select
       const routeSelect = document.getElementById('cust-route');
-      routeSelect.innerHTML = `<option value="">-- Select Home Route --</option>` + routes.map(r => `
-        <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
-      `).join('');
+      if (routeSelect) {
+        routeSelect.innerHTML = `<option value="">-- Select Home Route --</option>` + routes.map(r => `
+          <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
+        `).join('');
+      }
 
       if (editId) {
-        const c = customers.find(x => x.id === editId);
+        const c = customers.find(x => String(x.id) === String(editId));
         if (c) {
           document.getElementById('modal-customer-title').innerText = "Edit Customer & Contract Rates";
-          document.getElementById('cust-name').value = c.name;
+          document.getElementById('cust-name').value = c.name || '';
           document.getElementById('cust-gstin').value = c.gstin || '';
           document.getElementById('cust-contact-person').value = c.contactPerson || '';
           document.getElementById('cust-contact-role').value = c.contactRole || '';
@@ -5864,12 +7446,15 @@
       }
 
       renderCustomerPricingInputs(editId);
-      document.getElementById('modal-customer').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
 
     function closeCustomerModal() {
-      document.getElementById('modal-customer').classList.add('hidden');
+      const modal = document.getElementById('modal-customer');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function renderCustomerPricingInputs(targetCustId) {
@@ -6072,24 +7657,15 @@
       contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
       overridesToSave.forEach(o => contractPricing.push(o));
 
-      // Persist to Supabase
-      if (supabaseClient) {
-        try {
-          const dbRecord = sanitizeBuyerForSupabase(record);
-          const { error: custErr } = await supabaseClient.from('buyers').upsert([dbRecord]);
-          if (custErr) console.error("Supabase customer save error:", custErr);
-
-          // Delete previous overrides for this buyer, then insert new ones
-          const { error: delErr } = await supabaseClient.from('contract_pricing').delete().eq('buyerId', custId);
-          if (delErr) console.error("Supabase contract_pricing delete error:", delErr);
-
-          if (overridesToSave.length > 0) {
-            const { error: insErr } = await supabaseClient.from('contract_pricing').insert(overridesToSave);
-            if (insErr) console.error("Supabase contract_pricing insert error:", insErr);
-          }
-        } catch (err) {
-          console.error("Supabase save customer error:", err);
+      // Persist via Secure Manager Edge Function
+      try {
+        const dbRecord = sanitizeBuyerForSupabase(record);
+        await callManagerEdgeFunction('manager_update_buyer', dbRecord);
+        if (overridesToSave.length > 0) {
+          await callManagerEdgeFunction('manager_save_contract_pricing', overridesToSave);
         }
+      } catch (err) {
+        console.error("Manager save customer error:", err);
       }
 
       closeCustomerModal();
@@ -6105,13 +7681,10 @@
       contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
       saveCustomersLocally();
 
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('buyers').delete().eq('id', custId);
-          await supabaseClient.from('contract_pricing').delete().eq('buyerId', custId);
-        } catch (e) {
-          console.error("Supabase delete customer error:", e);
-        }
+      try {
+        await callManagerEdgeFunction('manager_delete_buyer', { id: custId });
+      } catch (e) {
+        console.error("Manager delete customer error:", e);
       }
 
       renderCustomersTable();
@@ -6496,28 +8069,15 @@
 
       orders[orderIndex] = updatedRecord;
 
-      if (supabaseClient) {
-        try {
-          const updateData = {
-            buyerId: updatedRecord.buyerId,
-            buyerName: updatedRecord.buyerName,
-            buyerPhone: updatedRecord.buyerPhone,
-            dispatchRoute: updatedRecord.dispatchRoute,
-            items: updatedRecord.items,
-            totalUnits: updatedRecord.totalUnits,
-            itemsSubtotal: updatedRecord.itemsSubtotal,
-            extraRebate: updatedRecord.extraRebate,
-            netPayable: updatedRecord.netPayable,
-            paymentMode: updatedRecord.paymentMode,
-            notes: updatedRecord.notes
-          };
-          const { error } = await supabaseClient.from('orders').update({ ...updateData, status: newStatus }).eq('id', orderId);
-          if (error && error.code === 'PGRST204') {
-            await supabaseClient.from('orders').update(updateData).eq('id', orderId);
-          }
-        } catch(err) {
-          console.error("Supabase order update error:", err);
-        }
+      // Persist via Manager Edge Function
+      try {
+        await callManagerEdgeFunction('manager_update_order_status', {
+          id: orderId,
+          status: newStatus,
+          notes: updatedRecord.notes
+        });
+      } catch(err) {
+        console.error("Manager order update error:", err);
       }
 
       closeEditOrderModal();
@@ -6538,20 +8098,18 @@
         const buyer = customers.find(c => c.id === o.buyerId);
         if (buyer) {
           buyer.pendingUdhaar = Math.max(0, Number(buyer.pendingUdhaar || 0) - Number(o.netPayable || 0));
-          if (supabaseClient) {
-            try { await supabaseClient.from('buyers').update({ pendingUdhaar: buyer.pendingUdhaar }).eq('id', buyer.id); } catch(err){}
-          }
+          try {
+            await callManagerEdgeFunction('manager_update_buyer', { id: buyer.id, pendingUdhaar: buyer.pendingUdhaar });
+          } catch(err){}
         }
       }
 
       orders = orders.filter(x => x.id !== orderId);
 
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('orders').delete().eq('id', orderId);
-        } catch(err) {
-          console.error("Supabase order delete error:", err);
-        }
+      try {
+        await callManagerEdgeFunction('manager_delete_order', { id: orderId });
+      } catch(err) {
+        console.error("Manager order delete error:", err);
       }
 
       refreshAllUI();
@@ -6698,25 +8256,20 @@
       if (editId) products = products.map(p => p.id === editId ? record : p);
       else products.push(record);
 
-      if (supabaseClient) {
-        try {
-          const dbPayload = {
-            id: record.id,
-            sku: record.sku,
-            name: record.name,
-            category: record.category,
-            unitSize: record.unitSize,
-            baseRate: record.baseRate,
-            initialStock: record.initialStock
-          };
-          const { error } = await supabaseClient.from('products').upsert([dbPayload]);
-          if (error) {
-            console.error("Supabase product save error:", error);
-            alert("Supabase save error: " + error.message);
-          }
-        } catch (err) {
-          console.error(err);
-        }
+      // Persist via Secure Manager Edge Function
+      try {
+        const dbPayload = {
+          id: record.id,
+          sku: record.sku,
+          name: record.name,
+          category: record.category,
+          unitSize: record.unitSize,
+          baseRate: record.baseRate,
+          initialStock: record.initialStock
+        };
+        await callManagerEdgeFunction('manager_save_product', dbPayload);
+      } catch (err) {
+        console.error("Manager save product note:", err);
       }
 
       closeProductModal();
@@ -6727,12 +8280,9 @@
       if (!confirm("Delete product from catalog?")) return;
       products = products.filter(p => p.id !== prodId);
       contractPricing = contractPricing.filter(c => String(c.productId) !== String(prodId));
-      if (supabaseClient) {
-        try { 
-          await supabaseClient.from('products').delete().eq('id', prodId); 
-          await supabaseClient.from('contract_pricing').delete().eq('productId', prodId);
-        } catch (e) {}
-      }
+      try { 
+        await callManagerEdgeFunction('manager_delete_product', { id: prodId }); 
+      } catch (e) {}
       refreshAllUI();
     }
 
@@ -6764,8 +8314,8 @@
             }
           });
 
-          if (supabaseClient && newItems.length > 0) {
-            try { await supabaseClient.from('products').upsert(newItems); } catch (err) {}
+          if (newItems.length > 0) {
+            try { await callManagerEdgeFunction('manager_save_product', newItems); } catch (err) {}
           }
           alert(`Imported ${newItems.length} products!`);
           refreshAllUI();
@@ -6844,13 +8394,11 @@
       if (editId) routes = routes.map(r => r.id === editId ? record : r);
       else routes.push(record);
 
-      if (supabaseClient) {
-        try {
-          if (editId && editId !== name) await supabaseClient.from('routes').delete().eq('id', editId);
-          await supabaseClient.from('routes').upsert([record]);
-        } catch (err) {
-          console.error(err);
-        }
+      try {
+        if (editId && editId !== name) await callManagerEdgeFunction('manager_delete_route', { id: editId });
+        await callManagerEdgeFunction('manager_save_route', [record]);
+      } catch (err) {
+        console.error("Manager save route error:", err);
       }
 
       closeRouteModal();
@@ -6861,9 +8409,7 @@
     async function deleteRouteConfirm(routeId) {
       if (!confirm("Delete this delivery beat?")) return;
       routes = routes.filter(r => r.id !== routeId);
-      if (supabaseClient) {
-        try { await supabaseClient.from('routes').delete().eq('id', routeId); } catch (e) {}
-      }
+      try { await callManagerEdgeFunction('manager_delete_route', { id: routeId }); } catch (e) {}
       renderRoutesGrid();
       populateDropdowns();
     }
@@ -7042,14 +8588,18 @@
         const accName = document.getElementById('set-bank-acc-name')?.value.trim() || "Sri Govinda Food Products";
         let uri = `upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(accName)}&cu=INR`;
         try {
-          new QRCode(container, {
-            text: uri,
-            width: 76,
-            height: 76,
-            colorDark: "#0f172a",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-          });
+          if (typeof QRCode !== 'undefined') {
+            new QRCode(container, {
+              text: uri,
+              width: 76,
+              height: 76,
+              colorDark: "#0f172a",
+              colorLight: "#ffffff",
+              correctLevel: (QRCode.CorrectLevel && QRCode.CorrectLevel.M) ? QRCode.CorrectLevel.M : 1
+            });
+          } else {
+            container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upi)}</span>`;
+          }
         } catch (e) {
           container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upi)}</span>`;
         }
@@ -7150,14 +8700,18 @@
         uri += `&tn=${encodeURIComponent(ref)}`;
       }
       try {
-        new QRCode(container, {
-          text: uri,
-          width: 100,
-          height: 100,
-          colorDark: "#0f172a",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(container, {
+            text: uri,
+            width: 100,
+            height: 100,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: (QRCode.CorrectLevel && QRCode.CorrectLevel.M) ? QRCode.CorrectLevel.M : 1
+          });
+        } else {
+          container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upiId)}</span>`;
+        }
       } catch (e) {
         console.warn("QR code render fallback:", e);
         container.innerHTML = `<span class="text-[9px] text-slate-500 font-mono">${escapeHtml(upiId)}</span>`;
@@ -7234,24 +8788,28 @@
     let currentCustomerPricingProductIds = [];
 
     function openCustomerPricingModal(custId) {
+      const modal = document.getElementById('modal-customer-pricing');
       const targetCustId = custId || (customers[0] ? customers[0].id : null);
       if (!targetCustId) {
         alert("No customers available. Please add a customer first.");
         return;
       }
       currentPricingCustomerId = targetCustId;
-      const cust = customers.find(c => c.id === targetCustId);
+      const cust = customers.find(c => String(c.id) === String(targetCustId)) || customers[0];
       if (!cust) return;
 
-      document.getElementById('cust-pricing-customer-name').innerText = cust.name;
-      document.getElementById('cust-pricing-customer-tier').innerText = cust.tier || 'Retail';
-      document.getElementById('cust-pricing-customer-route').innerText = (cust.homeRoute || 'Not assigned').split(':')[0];
-      document.getElementById('cust-bulk-pricing-search').value = '';
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '9999';
+      }
+
+      if (document.getElementById('cust-pricing-customer-name')) document.getElementById('cust-pricing-customer-name').innerText = cust.name || 'Customer';
+      if (document.getElementById('cust-pricing-customer-tier')) document.getElementById('cust-pricing-customer-tier').innerText = cust.tier || 'Retail';
+      if (document.getElementById('cust-pricing-customer-route')) document.getElementById('cust-pricing-customer-route').innerText = (cust.homeRoute || 'Not assigned').split(':')[0];
+      if (document.getElementById('cust-bulk-pricing-search')) document.getElementById('cust-bulk-pricing-search').value = '';
 
       // Initialize customer quote products list:
-      // If customer has existing contract overrides, load those products.
-      // Else if customer has an active quotation, load those products.
-      // Otherwise, initialize with all catalog products.
       const existingOverrides = contractPricing.filter(c => String(c.buyerId) === String(targetCustId));
       const activeQuote = customerQuotations.find(q => String(q.customerId) === String(targetCustId) && q.isCurrentActive);
 
@@ -7283,12 +8841,15 @@
         }
       }
 
-      document.getElementById('modal-customer-pricing').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
 
     function closeCustomerPricingModal() {
-      document.getElementById('modal-customer-pricing').classList.add('hidden');
+      const modal = document.getElementById('modal-customer-pricing');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function populateCustomerPricingAddProductDropdown() {
@@ -7704,7 +9265,7 @@
         return;
       }
       currentQuotationCustomerId = targetCustId;
-      const cust = customers.find(c => c.id === targetCustId);
+      const cust = customers.find(c => String(c.id) === String(targetCustId)) || customers[0];
       if (!cust) return;
 
       const settings = getCompanySettings();
@@ -7797,7 +9358,12 @@
       renderQuoteEditorProductsTable();
       populateQuoteEditorFields();
 
-      document.getElementById('modal-quotation-view').classList.remove('hidden');
+      const qModal = document.getElementById('modal-quotation-view');
+      if (qModal) {
+        qModal.classList.remove('hidden');
+        qModal.style.display = 'flex';
+        qModal.style.zIndex = '9999';
+      }
       if (window.lucide) lucide.createIcons();
     }
 
@@ -8299,18 +9865,22 @@
     }
 
     function closeQuotationModal() {
-      document.getElementById('modal-quotation-view').classList.add('hidden');
+      const modal = document.getElementById('modal-quotation-view');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
       toggleQuotationManagerEditor(false);
     }
 
     function downloadQuotationPdf() {
-      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      const cust = customers.find(c => String(c.id) === String(currentQuotationCustomerId));
       const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
       downloadElementAsPdf('quotation-printable-card', `Quotation_${name}`);
     }
 
     function downloadQuotationJpeg() {
-      const cust = customers.find(c => c.id === currentQuotationCustomerId);
+      const cust = customers.find(c => String(c.id) === String(currentQuotationCustomerId));
       const name = cust ? cust.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
       downloadElementAsJpeg('quotation-printable-card', `Quotation_${name}`);
     }
@@ -8808,21 +10378,37 @@
     let currentProfileCustomerId = null;
 
     function openCustomerProfileModal(custId) {
-      const cust = customers.find(c => c.id === custId);
+      const modal = document.getElementById('modal-customer-profile');
+      const targetCustId = custId || currentProfileCustomerId || (customers[0] ? customers[0].id : null);
+      if (!targetCustId) return;
+      const cust = customers.find(c => String(c.id) === String(targetCustId)) || customers[0];
       if (!cust) return;
-      currentProfileCustomerId = custId;
+      currentProfileCustomerId = String(cust.id);
 
-      renderCustomerProfileModal();
-      document.getElementById('modal-customer-profile').classList.remove('hidden');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '9999';
+      }
+
+      try {
+        renderCustomerProfileModal();
+      } catch (err) {
+        console.error("Error rendering customer profile modal:", err);
+      }
       if (window.lucide) lucide.createIcons();
     }
 
     function closeCustomerProfileModal() {
-      document.getElementById('modal-customer-profile').classList.add('hidden');
+      const modal = document.getElementById('modal-customer-profile');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function renderCustomerProfileModal() {
-      const cust = customers.find(c => c.id === currentProfileCustomerId);
+      const cust = customers.find(c => String(c.id) === String(currentProfileCustomerId)) || customers[0];
       if (!cust) return;
 
       document.getElementById('cust-profile-modal-name').innerText = cust.name;
@@ -9015,119 +10601,145 @@
     let currentStatementCustomerId = null;
 
     function openCustomerStatementModal(custId) {
+      const modal = document.getElementById('modal-statement-view');
+      if (!modal) return;
+
       const targetCustId = custId || (latestOrder ? latestOrder.buyerId : (customers[0] ? customers[0].id : null));
-      if (!targetCustId) {
+      if (!targetCustId && customers.length === 0) {
         alert("Please select a customer to view statement.");
         return;
       }
       currentStatementCustomerId = targetCustId;
-      const cust = customers.find(c => c.id === targetCustId);
-      if (!cust) return;
-
-      const settings = getCompanySettings();
-
-      // Company info
-      document.getElementById('stmt-company-name').innerText = settings.companyName;
-      document.getElementById('stmt-company-gstin').innerText = settings.gstin;
-      document.getElementById('stmt-company-address').innerText = settings.address;
-      document.getElementById('stmt-company-contact').innerText = `Phone: ${settings.phone}`;
-
-      // Dates & Reference
-      const now = new Date();
-      const refNum = 'STMT-' + (cust.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'SG')) + '-' + Math.floor(1000 + Math.random() * 9000);
-      document.getElementById('stmt-ref-number').innerText = refNum;
-      document.getElementById('stmt-date').innerText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-      // Customer particulars
-      document.getElementById('stmt-cust-name').innerText = cust.name;
-      document.getElementById('stmt-cust-address').innerText = cust.address || 'Address as per records';
-      document.getElementById('stmt-cust-phone').innerText = cust.phone ? `📞 ${cust.phone}` : 'No phone listed';
-      document.getElementById('stmt-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
-      document.getElementById('stmt-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
-      document.getElementById('stmt-cust-credit-limit').innerText = formatINR(cust.creditLimit || 50000);
-
-      // Customer past orders
-      const custOrders = orders.filter(o => o.buyerId === cust.id || o.buyerName === cust.name);
-      const totalOutstanding = Number(cust.pendingUdhaar || 0);
-
-      // Calculate previous due and latest bill
-      const latestOrderForCust = custOrders[0] || null;
-      let latestBillAmount = 0;
-      let prevBillsDue = totalOutstanding;
-
-      if (latestOrderForCust) {
-        latestBillAmount = Number(latestOrderForCust.netPayable || 0);
-        const { balanceDue } = getOrderPaymentBreakdown(latestOrderForCust);
-        prevBillsDue = Math.max(0, totalOutstanding - balanceDue);
+      const cust = customers.find(c => String(c.id) === String(targetCustId)) || customers[0];
+      if (!cust) {
+        alert("Customer record not found.");
+        return;
       }
 
-      document.getElementById('stmt-prev-due').innerText = formatINR(prevBillsDue);
-      document.getElementById('stmt-latest-bill').innerText = formatINR(latestBillAmount);
-      document.getElementById('stmt-total-receivables').innerText = formatINR(totalOutstanding);
-      document.getElementById('stmt-total-words').innerText = numberToWordsINR(totalOutstanding);
+      // Always unhide and bring modal to top immediately
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
 
-      const statusEl = document.getElementById('stmt-status-text');
-      if (statusEl) {
-        statusEl.innerText = totalOutstanding > 0 ? "Active Due" : "All Cleared";
-        statusEl.className = totalOutstanding > 0 ? "font-black text-rose-600" : "font-black text-emerald-700";
-      }
+      try {
+        const settings = getCompanySettings();
 
-      // Ledger Table
-      const tbody = document.getElementById('stmt-bills-tbody');
-      if (custOrders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No previous bills recorded for this customer.</td></tr>`;
-      } else {
-        tbody.innerHTML = custOrders.slice(0, 15).map((o, idx) => {
-          const itemsSummary = Array.isArray(o.items) 
-            ? o.items.map(it => `${it.qty}x ${it.name}`).join(', ') 
-            : `${o.totalUnits || 0} units`;
-          const isDelivered = (getOrderStatus(o) === 'Delivered');
-          const payInfo = getOrderPaymentBreakdown(o);
+        // Company info
+        if (document.getElementById('stmt-company-name')) document.getElementById('stmt-company-name').innerText = settings.companyName || "Sri Govinda's Food Products";
+        if (document.getElementById('stmt-company-gstin')) document.getElementById('stmt-company-gstin').innerText = settings.gstin || '';
+        if (document.getElementById('stmt-company-address')) document.getElementById('stmt-company-address').innerText = settings.address || '';
+        if (document.getElementById('stmt-company-contact')) document.getElementById('stmt-company-contact').innerText = `Phone: ${settings.phone || ''}`;
 
-          let payDesc = escapeHtml(o.paymentMode || 'Paid');
-          if (payInfo.isPartPayment) {
-            payDesc = `Part Paid (₹${payInfo.amountPaid})`;
-          } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
-            payDesc = `Credit / Udhaar`;
+        // Dates & Reference
+        const now = new Date();
+        const safeName = (cust.name || 'Store').replace(/[^a-zA-Z0-9]/g, '');
+        const refNum = 'STMT-' + (safeName.substring(0, 3).toUpperCase() || 'SG') + '-' + Math.floor(1000 + Math.random() * 9000);
+        if (document.getElementById('stmt-ref-number')) document.getElementById('stmt-ref-number').innerText = refNum;
+        if (document.getElementById('stmt-date')) document.getElementById('stmt-date').innerText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // Customer particulars
+        if (document.getElementById('stmt-cust-name')) document.getElementById('stmt-cust-name').innerText = cust.name || 'Store';
+        if (document.getElementById('stmt-cust-address')) document.getElementById('stmt-cust-address').innerText = cust.address || 'Address as per records';
+        if (document.getElementById('stmt-cust-phone')) document.getElementById('stmt-cust-phone').innerText = cust.phone ? `📞 ${cust.phone}` : 'No phone listed';
+        if (document.getElementById('stmt-cust-tier')) document.getElementById('stmt-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
+        if (document.getElementById('stmt-cust-route')) document.getElementById('stmt-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+        if (document.getElementById('stmt-cust-credit-limit')) document.getElementById('stmt-cust-credit-limit').innerText = formatINR(cust.creditLimit || 50000);
+
+        // Customer past orders
+        const custOrders = orders.filter(o => String(o.buyerId) === String(cust.id) || (o.buyerName && o.buyerName.toLowerCase() === (cust.name || '').toLowerCase()));
+        const totalOutstanding = Number(cust.pendingUdhaar || 0);
+
+        // Calculate previous due and latest bill
+        const latestOrderForCust = custOrders[0] || null;
+        let latestBillAmount = 0;
+        let prevBillsDue = totalOutstanding;
+
+        if (latestOrderForCust) {
+          latestBillAmount = Number(latestOrderForCust.netPayable || 0);
+          const { balanceDue } = getOrderPaymentBreakdown(latestOrderForCust);
+          prevBillsDue = Math.max(0, totalOutstanding - balanceDue);
+        }
+
+        if (document.getElementById('stmt-prev-due')) document.getElementById('stmt-prev-due').innerText = formatINR(prevBillsDue);
+        if (document.getElementById('stmt-latest-bill')) document.getElementById('stmt-latest-bill').innerText = formatINR(latestBillAmount);
+        if (document.getElementById('stmt-total-receivables')) document.getElementById('stmt-total-receivables').innerText = formatINR(totalOutstanding);
+        if (document.getElementById('stmt-total-words')) document.getElementById('stmt-total-words').innerText = numberToWordsINR(totalOutstanding);
+
+        const statusEl = document.getElementById('stmt-status-text');
+        if (statusEl) {
+          statusEl.innerText = totalOutstanding > 0 ? "Active Due" : "All Cleared";
+          statusEl.className = totalOutstanding > 0 ? "font-black text-rose-600" : "font-black text-emerald-700";
+        }
+
+        // Ledger Table
+        const tbody = document.getElementById('stmt-bills-tbody');
+        if (tbody) {
+          if (custOrders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No previous bills recorded for this customer.</td></tr>`;
+          } else {
+            tbody.innerHTML = custOrders.slice(0, 15).map((o, idx) => {
+              const itemsSummary = Array.isArray(o.items) 
+                ? o.items.map(it => `${it.qty}x ${it.name}`).join(', ') 
+                : `${o.totalUnits || 0} units`;
+              const isDelivered = (getOrderStatus(o) === 'Delivered');
+              const payInfo = getOrderPaymentBreakdown(o);
+
+              let payDesc = escapeHtml(o.paymentMode || 'Paid');
+              if (payInfo.isPartPayment) {
+                payDesc = `Part Paid (₹${payInfo.amountPaid})`;
+              } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+                payDesc = `Credit / Udhaar`;
+              }
+
+              let amountDisplay = `<div class="font-black">${formatINR(o.netPayable)}</div>`;
+              if (payInfo.isPartPayment) {
+                amountDisplay += `<div class="text-[9px] font-bold text-rose-700 font-mono">Bal: ${formatINR(payInfo.balanceDue)}</div>`;
+              }
+
+              return `
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
+                  <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.date)}</td>
+                  <td class="border-r border-black p-1.5 font-mono font-bold text-black">#${escapeHtml(o.id)}</td>
+                  <td class="border-r border-black p-1.5 font-sans truncate max-w-[180px]" title="${escapeHtml(itemsSummary)}">${escapeHtml(itemsSummary)}</td>
+                  <td class="border-r border-black p-1.5 font-mono text-[10px]">${payDesc}</td>
+                  <td class="border-r border-black p-1.5 text-right font-mono">${amountDisplay}</td>
+                  <td class="p-1.5 text-center font-sans text-[10px] font-bold">
+                    ${isDelivered ? '✅ Delivered' : '🚚 In Transit'}
+                  </td>
+                </tr>
+              `;
+            }).join('');
           }
+        }
 
-          let amountDisplay = `<div class="font-black">${formatINR(o.netPayable)}</div>`;
-          if (payInfo.isPartPayment) {
-            amountDisplay += `<div class="text-[9px] font-bold text-rose-700 font-mono">Bal: ${formatINR(payInfo.balanceDue)}</div>`;
-          }
+        // Banking Details
+        if (document.getElementById('stmt-bank-name')) document.getElementById('stmt-bank-name').innerText = settings.bankName || '';
+        if (document.getElementById('stmt-bank-acc-name')) document.getElementById('stmt-bank-acc-name').innerText = settings.accountName || '';
+        if (document.getElementById('stmt-bank-acc-num')) document.getElementById('stmt-bank-acc-num').innerText = settings.accountNumber || '';
+        if (document.getElementById('stmt-bank-ifsc')) document.getElementById('stmt-bank-ifsc').innerText = settings.ifsc || '';
+        if (document.getElementById('stmt-bank-upi')) document.getElementById('stmt-bank-upi').innerText = settings.upiId || '';
 
-          return `
-            <tr class="hover:bg-slate-50 transition">
-              <td class="border-r border-black p-1.5 text-center font-sans">${idx + 1}</td>
-              <td class="border-r border-black p-1.5 font-mono text-[10px]">${escapeHtml(o.date)}</td>
-              <td class="border-r border-black p-1.5 font-mono font-bold text-black">#${escapeHtml(o.id)}</td>
-              <td class="border-r border-black p-1.5 font-sans truncate max-w-[180px]" title="${escapeHtml(itemsSummary)}">${escapeHtml(itemsSummary)}</td>
-              <td class="border-r border-black p-1.5 font-mono text-[10px]">${payDesc}</td>
-              <td class="border-r border-black p-1.5 text-right font-mono">${amountDisplay}</td>
-              <td class="p-1.5 text-center font-sans text-[10px] font-bold">
-                ${isDelivered ? '✅ Delivered' : '🚚 In Transit'}
-              </td>
-            </tr>
-          `;
-        }).join('');
+        // Dynamic UPI QR code with total receivables!
+        try {
+          const upiRef = 'STMT-' + (safeName.substring(0, 4).toUpperCase() || 'CUST');
+          generateUpiQrCode('stmt-upi-qrcode', settings.upiId, settings.companyName, totalOutstanding, upiRef);
+        } catch (qrErr) {
+          console.warn("Statement QR code generation note:", qrErr);
+        }
+      } catch (err) {
+        console.error("Error populating customer statement:", err);
       }
 
-      // Banking Details
-      document.getElementById('stmt-bank-name').innerText = settings.bankName;
-      document.getElementById('stmt-bank-acc-name').innerText = settings.accountName;
-      document.getElementById('stmt-bank-acc-num').innerText = settings.accountNumber;
-      document.getElementById('stmt-bank-ifsc').innerText = settings.ifsc;
-      document.getElementById('stmt-bank-upi').innerText = settings.upiId;
-
-      // Dynamic UPI QR code with total receivables!
-      generateUpiQrCode('stmt-upi-qrcode', settings.upiId, settings.companyName, totalOutstanding, 'STMT-' + cust.name.substring(0, 4).toUpperCase());
-
-      document.getElementById('modal-statement-view').classList.remove('hidden');
       if (window.lucide) lucide.createIcons();
     }
 
     function closeCustomerStatementModal() {
-      document.getElementById('modal-statement-view').classList.add('hidden');
+      const modal = document.getElementById('modal-statement-view');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function downloadStatementPdf(custId) {
@@ -9229,24 +10841,30 @@
         return;
       }
 
+      currentLedgerCustomerId = targetCustId || (customers[0] ? customers[0].id : null);
+      currentLedgerFilter = 'all';
+      ledgerExpandedBillIds.clear();
+
+      // Show modal immediately so user gets instant visual confirmation
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
+
       // Populate customer select dropdown
       const sel = document.getElementById('ledger-customer-select');
       if (sel) {
         sel.innerHTML = customers.map(c => {
           const due = Number(c.pendingUdhaar || 0);
-          return `<option value="${c.id}" ${String(c.id) === String(targetCustId) ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
+          return `<option value="${c.id}" ${String(c.id) === String(currentLedgerCustomerId) ? 'selected' : ''}>${escapeHtml(c.name)} (Due: ${formatINR(due)})</option>`;
         }).join('');
       }
 
-      currentLedgerCustomerId = targetCustId || (customers[0] ? customers[0].id : null);
-      currentLedgerFilter = 'all';
-      ledgerExpandedBillIds.clear();
+      try {
+        renderCustomerLedger(currentLedgerCustomerId);
+      } catch (err) {
+        console.error("Error rendering customer ledger:", err);
+      }
 
-      renderCustomerLedger(currentLedgerCustomerId);
-
-      modal.classList.remove('hidden');
-      modal.style.display = 'flex';
-      modal.style.zIndex = '9999';
       if (window.lucide) lucide.createIcons();
     }
 
@@ -9419,111 +11037,132 @@
       };
     }
 
+    function shareLedgerPaymentReceipt(receiptId, custId, amount, newBalance) {
+      const cust = customers.find(c => String(c.id) === String(custId));
+      const rec = (paymentReceipts || []).find(r => String(r.id) === String(receiptId)) || {};
+      sharePaymentReceiptWhatsApp({
+        id: receiptId,
+        buyerName: cust ? cust.name : (rec.buyerName || 'Customer'),
+        buyerPhone: cust ? cust.phone : (rec.buyerPhone || ''),
+        date: rec.date || new Date().toISOString().split('T')[0],
+        time: rec.time || '',
+        amount: Number(amount || rec.amount || 0),
+        paymentMode: rec.paymentMode || 'Cash',
+        ref: rec.ref || '',
+        previousDue: Number(newBalance || 0) + Number(amount || 0),
+        newBalance: Number(newBalance || 0)
+      });
+    }
+
     function renderCustomerLedger(custId = null, filter = null) {
       const targetId = custId || currentLedgerCustomerId;
       if (!targetId) return;
       currentLedgerCustomerId = targetId;
       const activeFilter = filter || currentLedgerFilter || 'all';
 
-      const cust = customers.find(c => String(c.id) === String(targetId));
+      const cust = customers.find(c => String(c.id) === String(targetId)) || customers[0];
       if (!cust) return;
 
-      const ledger = getCustomerChronologicalLedger(targetId);
+      try {
+        const ledger = getCustomerChronologicalLedger(targetId);
 
-      // Populate header info
-      document.getElementById('ledger-cust-name').innerText = cust.name;
-      document.getElementById('ledger-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
-      document.getElementById('ledger-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
-      document.getElementById('ledger-cust-phone').innerText = cust.phone || 'No phone';
-      document.getElementById('ledger-cust-contact').innerText = cust.contactPerson || cust.name;
-      document.getElementById('ledger-cust-address').innerText = cust.address || 'Address as per master records';
+        // Populate header info
+        if (document.getElementById('ledger-cust-name')) document.getElementById('ledger-cust-name').innerText = cust.name;
+        if (document.getElementById('ledger-cust-tier')) document.getElementById('ledger-cust-tier').innerText = `${cust.tier || 'Retail'} Partner`;
+        if (document.getElementById('ledger-cust-route')) document.getElementById('ledger-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
+        if (document.getElementById('ledger-cust-phone')) document.getElementById('ledger-cust-phone').innerText = cust.phone || 'No phone';
+        if (document.getElementById('ledger-cust-contact')) document.getElementById('ledger-cust-contact').innerText = cust.contactPerson || cust.name;
+        if (document.getElementById('ledger-cust-address')) document.getElementById('ledger-cust-address').innerText = cust.address || 'Address as per master records';
 
-      const limit = Number(cust.creditLimit || 50000);
-      const curDue = Number(cust.pendingUdhaar || 0);
-      const availableCredit = Math.max(0, limit - curDue);
+        const limit = Number(cust.creditLimit || 50000);
+        const curDue = Number(cust.pendingUdhaar || 0);
+        const availableCredit = Math.max(0, limit - curDue);
 
-      document.getElementById('ledger-kpi-total-billed').innerText = formatINR(ledger.totalGrossBilled);
-      document.getElementById('ledger-kpi-bills-count').innerText = `${ledger.ordersCount} Invoices Total`;
+        if (document.getElementById('ledger-kpi-total-billed')) document.getElementById('ledger-kpi-total-billed').innerText = formatINR(ledger.totalGrossBilled);
+        if (document.getElementById('ledger-kpi-bills-count')) document.getElementById('ledger-kpi-bills-count').innerText = `${ledger.ordersCount} Invoices Total`;
 
-      document.getElementById('ledger-kpi-total-paid').innerText = formatINR(ledger.totalPaymentsCollected);
-      document.getElementById('ledger-kpi-receipts-count').innerText = `${ledger.receiptsCount} Collections Recorded`;
+        if (document.getElementById('ledger-kpi-total-paid')) document.getElementById('ledger-kpi-total-paid').innerText = formatINR(ledger.totalPaymentsCollected);
+        if (document.getElementById('ledger-kpi-receipts-count')) document.getElementById('ledger-kpi-receipts-count').innerText = `${ledger.receiptsCount} Collections Recorded`;
 
-      document.getElementById('ledger-kpi-current-due').innerText = formatINR(curDue);
-      document.getElementById('ledger-kpi-current-due').className = `font-mono font-black text-lg sm:text-xl ${curDue > 0 ? 'text-rose-600' : 'text-emerald-700'}`;
-      document.getElementById('ledger-kpi-due-status').innerText = curDue > 0 ? `${formatINR(curDue)} Pending Recovery` : '✅ All Bills Settled';
+        const curDueEl = document.getElementById('ledger-kpi-current-due');
+        if (curDueEl) {
+          curDueEl.innerText = formatINR(curDue);
+          curDueEl.className = `font-mono font-black text-lg sm:text-xl ${curDue > 0 ? 'text-rose-600' : 'text-emerald-700'}`;
+        }
+        if (document.getElementById('ledger-kpi-due-status')) document.getElementById('ledger-kpi-due-status').innerText = curDue > 0 ? `${formatINR(curDue)} Pending Recovery` : '✅ All Bills Settled';
 
-      document.getElementById('ledger-kpi-credit-limit').innerText = formatINR(limit);
-      document.getElementById('ledger-kpi-credit-available').innerText = `${formatINR(availableCredit)} Headroom`;
+        if (document.getElementById('ledger-kpi-credit-limit')) document.getElementById('ledger-kpi-credit-limit').innerText = formatINR(limit);
+        if (document.getElementById('ledger-kpi-credit-available')) document.getElementById('ledger-kpi-credit-available').innerText = `${formatINR(availableCredit)} Headroom`;
 
-      // Filter entries
-      let filteredEntries = [...ledger.entries];
-      if (activeFilter === 'bills') {
-        filteredEntries = filteredEntries.filter(e => e.type === 'bill' || e.type === 'opening');
-      } else if (activeFilter === 'payments') {
-        filteredEntries = filteredEntries.filter(e => e.type === 'payment');
-      }
-
-      // Display newest transactions first for immediate visibility
-      const displayList = [...filteredEntries].reverse();
-
-      const tbody = document.getElementById('ledger-entries-tbody');
-      if (!tbody) return;
-
-      if (displayList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No transaction records found under this filter for <b>${escapeHtml(cust.name)}</b>.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = displayList.map((entry, idx) => {
-        if (entry.type === 'opening') {
-          return `
-            <tr class="bg-amber-50/60 font-semibold border-b border-amber-200">
-              <td class="p-3 text-center font-mono text-amber-800">${displayList.length - idx}</td>
-              <td class="p-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(entry.date)}</td>
-              <td class="p-3 whitespace-nowrap">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  <i data-lucide="clock" class="w-3 h-3"></i> Opening Due
-                </span>
-              </td>
-              <td class="p-3 text-slate-700 font-bold">Historical / Pre-existing Udhaar Balance</td>
-              <td class="p-3 text-right font-mono font-bold text-slate-700">${formatINR(entry.debit)}</td>
-              <td class="p-3 text-right font-mono text-slate-400">-</td>
-              <td class="p-3 text-right font-mono font-black text-rose-600">${formatINR(entry.concurrentBalance)}</td>
-              <td class="p-3 text-center text-[10px] text-slate-400 font-semibold">Base Due</td>
-            </tr>
-          `;
+        // Filter entries
+        let filteredEntries = [...ledger.entries];
+        if (activeFilter === 'bills') {
+          filteredEntries = filteredEntries.filter(e => e.type === 'bill' || e.type === 'opening');
+        } else if (activeFilter === 'payments') {
+          filteredEntries = filteredEntries.filter(e => e.type === 'payment');
         }
 
-        if (entry.type === 'payment') {
-          const rec = entry.receipt;
-          return `
-            <tr class="hover:bg-slate-50/80 transition">
-              <td class="p-3 text-center font-mono text-slate-400">${displayList.length - idx}</td>
-              <td class="p-3 whitespace-nowrap">
-                <div class="font-mono font-bold text-slate-800">${escapeHtml(entry.date)}</div>
-                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(entry.time || '')}</div>
-              </td>
-              <td class="p-3 whitespace-nowrap">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <i data-lucide="hand-coins" class="w-3 h-3"></i> Receipt #${escapeHtml(entry.id)}
-                </span>
-                <div class="text-[10px] text-emerald-600 font-semibold mt-0.5">${escapeHtml(rec.paymentMode || 'Payment')}</div>
-              </td>
-              <td class="p-3">
-                <div class="font-bold text-slate-800">Udhaar Collection / Settlement</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">${rec.ref ? `Ref / Note: <b>${escapeHtml(rec.ref)}</b>` : 'Direct Ledger Credit'}</div>
-              </td>
-              <td class="p-3 text-right font-mono text-slate-400">-</td>
-              <td class="p-3 text-right font-mono font-black text-emerald-700">-${formatINR(entry.credit)}</td>
-              <td class="p-3 text-right font-mono font-black text-sm ${entry.concurrentBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}">${formatINR(entry.concurrentBalance)}</td>
-              <td class="p-3 text-center">
-                <button type="button" onclick="sharePaymentReceiptWhatsApp({ id: '${entry.id}', buyerName: '${escapeHtml(cust.name)}', buyerPhone: '${escapeHtml(cust.phone)}', date: '${entry.date}', time: '${entry.time}', amount: ${entry.credit}, paymentMode: '${escapeHtml(rec.paymentMode || 'Cash')}', ref: '${escapeHtml(rec.ref || '')}', previousDue: ${entry.concurrentBalance + entry.credit}, newBalance: ${entry.concurrentBalance} })" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer shadow-2xs" title="Send WhatsApp Receipt">
-                  <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-                </button>
-              </td>
-            </tr>
-          `;
+        // Display newest transactions first for immediate visibility
+        const displayList = [...filteredEntries].reverse();
+
+        const tbody = document.getElementById('ledger-entries-tbody');
+        if (!tbody) return;
+
+        if (displayList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No transaction records found under this filter for <b>${escapeHtml(cust.name)}</b>.</td></tr>`;
+          return;
         }
+
+        tbody.innerHTML = displayList.map((entry, idx) => {
+          if (entry.type === 'opening') {
+            return `
+              <tr class="bg-amber-50/60 font-semibold border-b border-amber-200">
+                <td class="p-3 text-center font-mono text-amber-800">${displayList.length - idx}</td>
+                <td class="p-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(entry.date)}</td>
+                <td class="p-3 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                    <i data-lucide="clock" class="w-3 h-3"></i> Opening Due
+                  </span>
+                </td>
+                <td class="p-3 text-slate-700 font-bold">Historical / Pre-existing Udhaar Balance</td>
+                <td class="p-3 text-right font-mono font-bold text-slate-700">${formatINR(entry.debit)}</td>
+                <td class="p-3 text-right font-mono text-slate-400">-</td>
+                <td class="p-3 text-right font-mono font-black text-rose-600">${formatINR(entry.concurrentBalance)}</td>
+                <td class="p-3 text-center text-[10px] text-slate-400 font-semibold">Base Due</td>
+              </tr>
+            `;
+          }
+
+          if (entry.type === 'payment') {
+            const rec = entry.receipt || {};
+            return `
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="p-3 text-center font-mono text-slate-400">${displayList.length - idx}</td>
+                <td class="p-3 whitespace-nowrap">
+                  <div class="font-mono font-bold text-slate-800">${escapeHtml(entry.date)}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(entry.time || '')}</div>
+                </td>
+                <td class="p-3 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <i data-lucide="hand-coins" class="w-3 h-3"></i> Receipt #${escapeHtml(entry.id)}
+                  </span>
+                  <div class="text-[10px] text-emerald-600 font-semibold mt-0.5">${escapeHtml(rec.paymentMode || 'Payment')}</div>
+                </td>
+                <td class="p-3">
+                  <div class="font-bold text-slate-800">Udhaar Collection / Settlement</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">${rec.ref ? `Ref / Note: <b>${escapeHtml(rec.ref)}</b>` : 'Direct Ledger Credit'}</div>
+                </td>
+                <td class="p-3 text-right font-mono text-slate-400">-</td>
+                <td class="p-3 text-right font-mono font-black text-emerald-700">-${formatINR(entry.credit)}</td>
+                <td class="p-3 text-right font-mono font-black text-sm ${entry.concurrentBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}">${formatINR(entry.concurrentBalance)}</td>
+                <td class="p-3 text-center">
+                  <button type="button" onclick="shareLedgerPaymentReceipt('${escapeHtml(entry.id)}', '${escapeHtml(targetId)}', ${entry.credit}, ${entry.concurrentBalance})" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer shadow-2xs" title="Send WhatsApp Receipt">
+                    <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+          }
 
         // It is a Bill / Order
         const o = entry.order;
@@ -9638,7 +11277,10 @@
             </td>
           </tr>
         `;
-      }).join('');
+        }).join('');
+      } catch (err) {
+        console.error("Error generating ledger rows:", err);
+      }
 
       if (window.lucide) lucide.createIcons();
     }
@@ -10782,6 +12424,9 @@
               <button onclick="openManageSalespersonModal('${sp.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 rounded-xl text-xs transition cursor-pointer" title="Edit official profile">
                 <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
               </button>
+              <button onclick="deleteSalespersonConfirm('${sp.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 rounded-xl text-xs transition cursor-pointer" title="Remove official from roster">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
           </div>
         `;
@@ -11339,7 +12984,7 @@
       form.reset();
 
       if (spId) {
-        const sp = (salespeople || []).find(s => s.id === spId);
+        const sp = (salespeople || []).find(s => String(s.id) === String(spId));
         if (sp) {
           if (title) title.innerText = `Edit: ${sp.name}`;
           if (isEditInput) isEditInput.value = "true";
@@ -11355,6 +13000,7 @@
           document.getElementById('sp-form-vehicle').value = sp.vehicleType || 'Two-Wheeler';
           document.getElementById('sp-form-active').checked = sp.active !== false;
           document.getElementById('btn-share-modal-sp')?.classList.remove('hidden');
+          document.getElementById('btn-delete-modal-sp')?.classList.remove('hidden');
         }
       } else {
         if (title) title.innerText = "Add New Sales Official";
@@ -11366,14 +13012,21 @@
         document.getElementById('sp-form-commission').value = 3.0;
         document.getElementById('sp-form-active').checked = true;
         document.getElementById('btn-share-modal-sp')?.classList.add('hidden');
+        document.getElementById('btn-delete-modal-sp')?.classList.add('hidden');
       }
 
       modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
       if (window.lucide) lucide.createIcons();
     }
 
     function closeManageSalespersonModal() {
-      document.getElementById('modal-manage-salesperson')?.classList.add('hidden');
+      const modal = document.getElementById('modal-manage-salesperson');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     function onSalespersonNameInput(val) {
@@ -11400,23 +13053,25 @@
       const vehicleType = document.getElementById('sp-form-vehicle').value;
       const active = document.getElementById('sp-form-active').checked;
 
+      const existIdx = salespeople.findIndex(s => String(s.id) === String(id) || (slug && String(s.slug) === String(slug)));
+      const existing = existIdx >= 0 ? salespeople[existIdx] : null;
+
       const spObj = {
         id,
         name,
         slug,
         phone,
-        email: '',
+        email: existing ? (existing.email || '') : '',
         assignedRoute,
         monthlyTarget,
         commissionPct,
         vehicleType,
         dailyOrderTarget,
-        joiningDate: new Date().toISOString().split('T')[0],
-        address: 'Bengaluru',
+        joiningDate: existing && existing.joiningDate ? existing.joiningDate : new Date().toISOString().split('T')[0],
+        address: existing && existing.address ? existing.address : 'Bengaluru',
         active
       };
 
-      const existIdx = salespeople.findIndex(s => s.id === id || s.slug === slug);
       if (existIdx >= 0) {
         salespeople[existIdx] = { ...salespeople[existIdx], ...spObj };
       } else {
@@ -11424,35 +13079,67 @@
       }
       saveSalespeopleLocally();
 
-      // POST to server.js on port 3005 to write salespeople.json and auto-generate sales_<slug>.html!
       const saveBtn = document.getElementById('btn-save-salesperson');
       if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating Portal...`;
+        saveBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving & Syncing...`;
         if (window.lucide) lucide.createIcons();
       }
 
+      // 1. Sync to Supabase via Secure Manager Edge Function
       try {
-        const res = await fetch('/api/salespeople', {
+        await callManagerEdgeFunction('manager_save_salesperson', spObj);
+      } catch (err) {
+        console.warn("Could not sync salesperson to Supabase:", err);
+      }
+
+      // 2. POST to server.js on port 3005 if running to write salespeople.json and auto-generate sales_<slug>.html
+      try {
+        await fetch('/api/salespeople', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(salespeople)
         });
-        if (res.ok) {
-          showToast(`✅ Sales official ${name} saved! Dedicated portal ready.`);
-        }
-      } catch (err) {
-        console.warn("Could not sync salesperson to server:", err);
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal`;
-          if (window.lucide) lucide.createIcons();
-        }
-        closeManageSalespersonModal();
-        populateSalespersonDropdowns();
-        renderSalesPersonnelHub();
+      } catch (err) {}
+
+      showToast(`✅ Sales official ${name} saved and synced!`);
+
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Generate Portal`;
+        if (window.lucide) lucide.createIcons();
       }
+      closeManageSalespersonModal();
+      populateSalespersonDropdowns();
+      renderSalesPersonnelHub();
+    }
+
+    async function deleteSalespersonConfirm(spId) {
+      const sp = (salespeople || []).find(s => String(s.id) === String(spId));
+      if (!sp) return;
+      if (!confirm(`Are you sure you want to remove sales official "${sp.name}" (${sp.id}) from the active roster?`)) return;
+
+      salespeople = salespeople.filter(s => String(s.id) !== String(spId));
+      saveSalespeopleLocally();
+
+      try {
+        await callManagerEdgeFunction('manager_delete_salesperson', { id: spId });
+      } catch (e) {
+        console.warn("Could not delete salesperson from Supabase:", e);
+      }
+
+      try {
+        await fetch('/api/salespeople', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(salespeople)
+        });
+      } catch (e) {}
+
+      showToast(`Sales official ${sp.name} removed from roster.`);
+      closeManageSalespersonModal();
+      populateSalespersonDropdowns();
+      renderSalesPersonnelHub();
     }
 
     // 7. EXPORT CSV
@@ -11581,6 +13268,14 @@
                 showToast(`🏪 Real-time: New Customer "${cust.name}" added by ${data.repName || 'Sales Official'}!`);
                 refreshAllUI();
               }
+            } else if (data.type === 'OUTWARD_CREATED') {
+              const disp = data.dispatch;
+              if (disp && !outwardDispatches.some(d => d.id === disp.id)) {
+                outwardDispatches.unshift(disp);
+                saveOutwardDispatchesLocally();
+                showToast(`📦 Outward Stock Issued: ${disp.total_units} units to ${disp.rep_name}!`);
+                refreshAllUI();
+              }
             }
           };
         } catch (e) {}
@@ -11593,6 +13288,14 @@
             const fresh = JSON.parse(e.newValue || '[]');
             if (Array.isArray(fresh)) {
               orders = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_outward_dispatches') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              outwardDispatches = fresh;
               refreshAllUI();
             }
           } catch(err) {}

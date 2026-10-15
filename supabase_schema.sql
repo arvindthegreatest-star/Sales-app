@@ -86,6 +86,21 @@ CREATE TABLE IF NOT EXISTS inventory_inward (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Outward Inventory / Dispatch to Sales Personnel (Van / Bag stock issue)
+CREATE TABLE IF NOT EXISTS inventory_outward (
+  id TEXT PRIMARY KEY,
+  voucher_no TEXT,
+  date TEXT NOT NULL,
+  rep_id TEXT NOT NULL,
+  rep_name TEXT NOT NULL,
+  items JSONB DEFAULT '[]'::jsonb,
+  total_units NUMERIC DEFAULT 0,
+  total_value NUMERIC DEFAULT 0,
+  vehicle TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Samples Tracker (Free giveaways for chef tastings, trials & client acquisition)
 CREATE TABLE IF NOT EXISTS sample_giveaways (
   id TEXT PRIMARY KEY,
@@ -137,50 +152,66 @@ ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "dailyOrderTarget" NUMERIC DEFA
 ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS "joiningDate" TEXT;
 ALTER TABLE salespeople ADD COLUMN IF NOT EXISTS address TEXT;
 
--- 2. ROW LEVEL SECURITY (RLS) POLICIES
+-- 2. ROW LEVEL SECURITY (RLS) POLICIES - STRICT ZERO-TRUST LOCKDOWN
+-- The public anon key (embedded in sales portals) is granted STRICTLY READ-ONLY (SELECT) access.
+-- All database modifications (orders, samples, stores, products, inward stock) MUST be routed
+-- through the secure Edge Function (/functions/v1/sync-order) which authenticates signatures
+-- and uses the service_role secret. Direct client writes from anon are 100% BLOCKED.
+
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buyers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_inward ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_outward ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sample_giveaways ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contract_pricing ENABLE ROW LEVEL SECURITY;
 ALTER TABLE salespeople ENABLE ROW LEVEL SECURITY;
 
+-- Clean up any legacy permissive policies
 DROP POLICY IF EXISTS "Public full access routes" ON routes;
-CREATE POLICY "Public read routes" ON routes FOR SELECT TO anon, authenticated USING (true);
-
+DROP POLICY IF EXISTS "Public read routes" ON routes;
 DROP POLICY IF EXISTS "Public full access buyers" ON buyers;
-CREATE POLICY "Public read buyers" ON buyers FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Public insert buyers" ON buyers FOR INSERT TO anon, authenticated WITH CHECK (true);
-CREATE POLICY "Public update buyers" ON buyers FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-
+DROP POLICY IF EXISTS "Public read buyers" ON buyers;
+DROP POLICY IF EXISTS "Public insert buyers" ON buyers;
+DROP POLICY IF EXISTS "Public update buyers" ON buyers;
 DROP POLICY IF EXISTS "Public full access products" ON products;
-CREATE POLICY "Public read products" ON products FOR SELECT TO anon, authenticated USING (true);
-
+DROP POLICY IF EXISTS "Public read products" ON products;
 DROP POLICY IF EXISTS "Public full access orders" ON orders;
-CREATE POLICY "Public read orders" ON orders FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Public insert orders" ON orders FOR INSERT TO anon, authenticated WITH CHECK (true);
-
+DROP POLICY IF EXISTS "Public read orders" ON orders;
+DROP POLICY IF EXISTS "Public insert orders" ON orders;
 DROP POLICY IF EXISTS "Public full access inventory_inward" ON inventory_inward;
-CREATE POLICY "Public read inventory_inward" ON inventory_inward FOR SELECT TO anon, authenticated USING (true);
-
+DROP POLICY IF EXISTS "Public read inventory_inward" ON inventory_inward;
+DROP POLICY IF EXISTS "Public full access inventory_outward" ON inventory_outward;
+DROP POLICY IF EXISTS "Public read inventory_outward" ON inventory_outward;
+DROP POLICY IF EXISTS "Public insert inventory_outward" ON inventory_outward;
 DROP POLICY IF EXISTS "Public full access sample_giveaways" ON sample_giveaways;
-CREATE POLICY "Public read sample_giveaways" ON sample_giveaways FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY "Public insert sample_giveaways" ON sample_giveaways FOR INSERT TO anon, authenticated WITH CHECK (true);
-
+DROP POLICY IF EXISTS "Public read sample_giveaways" ON sample_giveaways;
+DROP POLICY IF EXISTS "Public insert sample_giveaways" ON sample_giveaways;
 DROP POLICY IF EXISTS "Public full access contract_pricing" ON contract_pricing;
-CREATE POLICY "Public read contract_pricing" ON contract_pricing FOR SELECT TO anon, authenticated USING (true);
-
+DROP POLICY IF EXISTS "Public read contract_pricing" ON contract_pricing;
 DROP POLICY IF EXISTS "Public full access salespeople" ON salespeople;
-CREATE POLICY "Public read salespeople" ON salespeople FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "Public read salespeople" ON salespeople;
+DROP POLICY IF EXISTS "Public full access reps" ON reps;
+
+-- Strictly Read-Only (SELECT) Policies for anon and authenticated clients
+CREATE POLICY "Public read-only routes" ON routes FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only buyers" ON buyers FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only products" ON products FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only orders" ON orders FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only inventory_inward" ON inventory_inward FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only inventory_outward" ON inventory_outward FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only sample_giveaways" ON sample_giveaways FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only contract_pricing" ON contract_pricing FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only salespeople" ON salespeople FOR SELECT TO anon, authenticated USING (true);
 
 -- 3. REALTIME REPLICATION (Instant Updates across all devices)
-ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople;
+ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, inventory_outward, sample_giveaways, contract_pricing, salespeople;
 
 -- ==============================================================================
 -- OPTIONAL: RESET DUMMY DATA SCRIPT
 -- If you want to purge test records from Supabase, run this in SQL Editor:
 -- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople CASCADE;
 -- ==============================================================================
+
 
