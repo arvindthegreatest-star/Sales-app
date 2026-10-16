@@ -4,8 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Nagaraju - Sales Portal | Sri Govinda Food Products</title>
+  <meta name="description" content="Sri Govinda Food Products Field Sales Terminal for Nagaraju">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nagaraju Portal">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#020617">
   <link rel="icon" type="image/png" href="icon-192.png">
-  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+  <link rel="manifest" id="manifest-link" href="manifest_nagaraju.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,8 +65,18 @@
         </div>
       </div>
 
-      <!-- Cloud Status & Target Pill -->
+      <!-- Cloud Status & Quick Action -->
       <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-install-pwa" type="button" onclick="handlePwaInstallClick()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer" title="Add to Home Screen / Install App">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Add to Homescreen</span>
+          <span class="sm:hidden">Install</span>
+        </button>
+        <button type="button" onclick="openNewCustomerModal()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer" title="Add Customer">
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">+ Add Customer</span>
+          <span class="sm:hidden">+ Customer</span>
+        </button>
         <button type="button" onclick="openAgentStockSheetModal()" class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="View My Stock In Hand Sheet">
           <i data-lucide="package-check" class="w-3.5 h-3.5 text-amber-400"></i>
           <span class="hidden sm:inline">In Hand:</span>
@@ -75,15 +94,43 @@
 
     <!-- Mobile Cloud Pill & Quick Progress -->
     <div class="max-w-5xl mx-auto mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs sm:hidden">
-      <div class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot-mobile"></span>
-        <span class="text-[10px] text-slate-400" id="portal-cloud-text-mobile">Connecting...</span>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openNewCustomerModal()" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">
+          <i data-lucide="user-plus" class="w-3 h-3"></i> + Add Customer
+        </button>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400" id="portal-cloud-dot-mobile"></span>
+          <span class="text-[10px] text-slate-400" id="portal-cloud-text-mobile">Connecting...</span>
+        </div>
       </div>
       <div class="text-[11px] text-slate-300 font-mono">
         Today: <b class="text-emerald-400 font-bold" id="bar-today-sales">₹0</b> (<span id="bar-today-orders">0</span> bills)
       </div>
     </div>
   </header>
+
+  <!-- ==============================================================================
+       PWA HOMESCREEN PROMOTION BANNER
+       ============================================================================== -->
+  <div id="pwa-install-banner" class="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-b border-emerald-500/30 px-3 py-2 text-xs flex items-center justify-between gap-2 shadow-inner hidden">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-400"></i>
+      </div>
+      <div class="min-w-0">
+        <p class="text-white font-extrabold text-[11px] leading-tight truncate">Keep on your phone as an App</p>
+        <p class="text-[10px] text-slate-400 leading-tight truncate">Add Nagaraju's Portal to homescreen for fast 1-tap offline booking</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button onclick="handlePwaInstallClick()" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[11px] shadow-sm transition cursor-pointer flex items-center gap-1">
+        <i data-lucide="plus-circle" class="w-3 h-3"></i> Add to Homescreen
+      </button>
+      <button onclick="dismissPwaBanner()" class="p-1 text-slate-400 hover:text-white transition cursor-pointer" title="Dismiss">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- ==============================================================================
        NAVIGATION TABS (Sticky Mobile Bottom Bar + Desktop Header)
@@ -103,7 +150,10 @@
         <i data-lucide="gift" class="w-4 h-4"></i> Log Sample
       </button>
       <button onclick="switchTab('shops')" id="tab-btn-shops" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
-        <i data-lucide="store" class="w-4 h-4"></i> Route Shops (<span id="tab-shops-count">0</span>)
+        <i data-lucide="store" class="w-4 h-4"></i> Route Customers (<span id="tab-shops-count">0</span>)
+      </button>
+      <button type="button" onclick="openNewCustomerModal()" class="ml-auto px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer">
+        <i data-lucide="user-plus" class="w-4 h-4"></i> + Add Customer
       </button>
     </div>
   </div>
@@ -128,7 +178,7 @@
     </button>
     <button onclick="switchTab('shops')" id="m-tab-shops" class="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-400">
       <i data-lucide="store" class="w-5 h-5"></i>
-      <span>Shops</span>
+      <span>Customers</span>
     </button>
   </nav>
 
@@ -144,12 +194,12 @@
       <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 shadow-md space-y-3">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <label class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-            <i data-lucide="store" class="w-4 h-4"></i> Step 1: Select Retailer / Shop
+            <i data-lucide="user-check" class="w-4 h-4"></i> Step 1: Select Customer
           </label>
           <div class="flex items-center gap-2">
             <span class="text-[11px] text-slate-400" id="route-indicator-badge">Route: Vidyaranyapura Beat 3</span>
-            <button type="button" onclick="openNewCustomerModal()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow transition cursor-pointer">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + New Shop
+            <button type="button" onclick="openNewCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition cursor-pointer" title="Add Customer">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + Add Customer
             </button>
           </div>
         </div>
@@ -157,11 +207,11 @@
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           <div class="sm:col-span-8">
             <select id="order-customer-select" onchange="onCustomerSelected()" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-              <option value="">-- Choose Customer Store --</option>
+              <option value="">-- Choose Customer --</option>
             </select>
           </div>
           <div class="sm:col-span-4 flex items-center gap-2">
-            <input type="text" id="cust-filter-input" oninput="filterCustomerDropdown()" placeholder="Quick search shop name..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <input type="text" id="cust-filter-input" oninput="filterCustomerDropdown()" placeholder="Quick search customer name..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
           </div>
         </div>
 
@@ -223,7 +273,18 @@
         </div>
 
         <!-- Calculations & Options Form -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-800 text-xs">
+          <div>
+            <label class="block text-slate-400 font-bold text-[11px] mb-1 flex items-center justify-between">
+              <span>Fulfillment & Delivery</span>
+              <span id="badge-fulfillment-status" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Delivered On-Spot</span>
+            </label>
+            <select id="order-fulfillment-mode" onchange="onOrderFulfillmentModeChange()" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="Delivered" selected>⚡ Deliver On-Spot (Handed Over)</option>
+              <option value="Pending Delivery">⏳ Book for Later Delivery (Pending Dispatch)</option>
+            </select>
+          </div>
+
           <div>
             <label class="block text-slate-400 font-bold text-[11px] mb-1">Payment Mode</label>
             <select id="order-pay-mode" onchange="onOrderPaymentModeChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
@@ -274,7 +335,7 @@
           </div>
 
           <button type="button" onclick="submitOrder()" id="btn-submit-order" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-sm shadow-lg shadow-emerald-950 transition flex items-center gap-2 cursor-pointer">
-            <i data-lucide="check" class="w-5 h-5"></i> Book & Generate Bill
+            <i data-lucide="check-check" class="w-5 h-5"></i> <span id="btn-submit-order-text">Deliver On-Spot & Generate Bill</span>
           </button>
         </div>
       </div>
@@ -429,8 +490,8 @@
           </div>
           <div class="flex items-center gap-2">
             <input type="text" id="route-shops-search" oninput="filterRouteShops()" placeholder="Search route shop..." class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
-            <button type="button" onclick="openNewCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition shrink-0 cursor-pointer">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + Add Shop
+            <button type="button" onclick="openNewCustomerModal()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition shrink-0 cursor-pointer" title="Register New Customer / Store">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> + Add Customer
             </button>
           </div>
         </div>
@@ -452,9 +513,12 @@
       <div class="p-3 bg-slate-950 text-white flex items-center justify-between gap-2 border-b border-slate-800">
         <div class="flex items-center gap-2">
           <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-          <span class="font-extrabold text-xs">Official Bill of Supply</span>
+          <span class="font-extrabold text-xs" id="invoice-modal-title">Official Bill of Supply (Delivered)</span>
         </div>
         <div class="flex items-center gap-2">
+          <button id="btn-bill-deliver-on-spot" onclick="fulfillActiveInvoiceOnSpot()" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition hidden">
+            <i data-lucide="truck" class="w-3.5 h-3.5"></i> Deliver On-Spot Now
+          </button>
           <button onclick="shareActiveInvoiceWhatsApp()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 transition">
             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp Bill
           </button>
@@ -478,10 +542,13 @@
               <p class="text-[10px] text-black leading-tight max-w-xs" id="bill-company-address">17, Jai Layout, Gantiganahalli post, Yelahanka, Bengaluru - 560064</p>
               <div class="text-[10px] font-bold text-black">GST No: <span id="bill-company-gstin" class="font-mono font-black">29AFVPD7658B1Z1</span></div>
             </div>
-            <div class="border border-black p-2 min-w-[130px] text-right font-mono text-[11px] space-y-0.5">
+            <div class="border border-black p-2 min-w-[140px] text-right font-mono text-[11px] space-y-0.5">
               <div>Date: <b id="bill-date">-</b></div>
               <div>Bill No: <b id="bill-ref">-</b></div>
               <div class="text-[9px] text-slate-600">Executive: Nagaraju</div>
+              <div id="bill-delivery-status" class="mt-1 pt-1 border-t border-black text-[9px] font-black uppercase text-emerald-800">
+                ✓ Delivered On-Spot
+              </div>
             </div>
           </div>
 
@@ -575,11 +642,11 @@
       <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <i data-lucide="store" class="w-4 h-4"></i>
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
           </div>
           <div>
-            <h3 class="font-extrabold text-sm text-white">Add New Customer Store</h3>
-            <p class="text-[11px] text-slate-400">Register retail shop for orders & ledger</p>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Add Customer</h3>
+            <p class="text-[11px] text-slate-400">Register new customer for immediate orders & ledger</p>
           </div>
         </div>
         <button type="button" onclick="closeNewCustomerModal()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer">
@@ -589,12 +656,21 @@
 
       <!-- Modal Body (Form) -->
       <form id="form-new-customer" onsubmit="saveNewCustomer(event)" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
-        <div>
-          <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
-            Store / Business Name <span class="text-rose-400">*</span>
-          </label>
-          <input type="text" id="cust-new-name" required placeholder="e.g. Balaji Provision Store" 
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              Customer / Business Name <span class="text-rose-400">*</span>
+            </label>
+            <input type="text" id="cust-new-name" required placeholder="e.g. Balaji Provisions" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
+              Owner / Contact Person
+            </label>
+            <input type="text" id="cust-new-contact-person" placeholder="e.g. Ramesh Patel (Owner)" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -609,14 +685,13 @@
 
           <div>
             <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
-              Customer Tier
+              Customer Tier <span class="text-rose-400">*</span>
             </label>
             <select id="cust-new-tier" 
-              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="Retail" selected>Retail Shop</option>
-              <option value="HoReCa">HoReCa (Hotel/Rest/Cafe)</option>
-              <option value="Wholesale">Wholesale Trader</option>
-              <option value="Caterer">Caterer / Bulk</option>
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold">
+              <option value="HoReCa">HoReCa</option>
+              <option value="Retail" selected>Retail</option>
+              <option value="Wholesale">Wholesale</option>
             </select>
           </div>
         </div>
@@ -644,13 +719,13 @@
           <label class="block font-bold text-slate-300 uppercase text-[10px] mb-1">
             Delivery Address / Landmark <span class="text-rose-400">*</span>
           </label>
-          <textarea id="cust-new-address" rows="2" required placeholder="Shop No., Street, Landmark, Area..." 
+          <textarea id="cust-new-address" rows="2" required placeholder="Shop No., Market, Street, Area, Landmark..." 
             class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
         </div>
 
         <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-start gap-2.5 text-[11px] text-slate-400">
           <i data-lucide="info" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
-          <span>This store will be saved to your device and synced with Sri Govinda cloud (Supabase) in real time. You can book an order immediately after saving.</span>
+          <span>This customer will be saved to your device and synced with Sri Govinda cloud (Supabase) in real time. You can book an order immediately after saving.</span>
         </div>
 
         <!-- Footer Buttons -->
@@ -659,7 +734,7 @@
             Cancel
           </button>
           <button type="submit" id="btn-save-new-cust" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition cursor-pointer">
-            <i data-lucide="check" class="w-4 h-4"></i> Save & Select Store
+            <i data-lucide="check" class="w-4 h-4"></i> Add Customer
           </button>
         </div>
       </form>
@@ -725,6 +800,86 @@
   </div>
 
   <!-- ==============================================================================
+       MODAL: PWA INSTALL / ADD TO HOMESCREEN GUIDE
+       ============================================================================== -->
+  <div id="modal-pwa-install-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-slate-900 text-white border border-slate-700 rounded-3xl max-w-md w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md">
+            <i data-lucide="smartphone" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Add to Home Screen</h3>
+            <p class="text-[11px] text-slate-400">Keep Nagaraju's Portal as an App on your phone</p>
+          </div>
+        </div>
+        <button type="button" onclick="closePwaInstallModal()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-5 space-y-4 overflow-y-auto text-xs">
+        <!-- Direct 1-Click Install Action (If browser supports beforeinstallprompt) -->
+        <div id="pwa-prompt-container" class="space-y-2 hidden">
+          <div class="bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-3 text-center space-y-2">
+            <p class="text-emerald-300 font-bold text-xs">1-Click Install Available on this Browser!</p>
+            <button type="button" onclick="triggerPwaPrompt()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+              <i data-lucide="download" class="w-4 h-4"></i> Install App to Home Screen
+            </button>
+          </div>
+        </div>
+
+        <!-- Android Chrome Instructions -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-emerald-400 font-bold">
+            <i data-lucide="smartphone" class="w-4 h-4"></i>
+            <span>For Android (Google Chrome / Brave / Edge)</span>
+          </div>
+          <ol class="space-y-2 text-slate-300 pl-4 list-decimal text-[11px]">
+            <li>Tap the browser menu <b class="text-white">(three vertical dots ⋮)</b> in the top right corner.</li>
+            <li>Look for and tap <b class="text-emerald-400">"Install app"</b> or <b class="text-emerald-400">"Add to Home screen"</b>.</li>
+            <li>Confirm by tapping <b class="text-white">"Install"</b> or <b class="text-white">"Add"</b>.</li>
+          </ol>
+        </div>
+
+        <!-- iPhone Safari Instructions -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-indigo-400 font-bold">
+            <i data-lucide="apple" class="w-4 h-4"></i>
+            <span>For iPhone & iPad (Apple Safari)</span>
+          </div>
+          <ol class="space-y-2 text-slate-300 pl-4 list-decimal text-[11px]">
+            <li>Open this portal page in <b class="text-white">Safari</b>.</li>
+            <li>Tap the <b class="text-indigo-400">Share button</b> at the bottom of the screen <span class="inline-block px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono border border-slate-700">⎋ (Square with arrow up)</span>.</li>
+            <li>Scroll down and tap <b class="text-emerald-400">"Add to Home Screen"</b> <span class="text-slate-400">(➕ icon)</span>.</li>
+            <li>Tap <b class="text-white">"Add"</b> at the top-right corner.</li>
+          </ol>
+        </div>
+
+        <!-- Benefits strip -->
+        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 text-[11px] text-emerald-300 space-y-1">
+          <div class="font-bold flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Why add to home screen?
+          </div>
+          <p class="text-slate-400 leading-snug">
+            Opens full-screen like a native app without address bars, launches in 1 second, and keeps working even if mobile network drops in basements or remote markets!
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
+        <button type="button" onclick="closePwaInstallModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
+          Got It
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
        APPLICATION LOGIC & DATA SYNCHRONIZATION
        ============================================================================== -->
   <script>
@@ -781,8 +936,142 @@
       }
     }
 
+    // -----------------------------------------------------------------------------
+    // PWA & HOMESCREEN APP CAPABILITIES
+    // -----------------------------------------------------------------------------
+    let deferredPwaPrompt = null;
+
+    function isRunningStandalone() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || 
+             (window.navigator.standalone === true) || 
+             (document.referrer && document.referrer.includes('android-app://'));
+    }
+
+    function initPwaFeatures() {
+      // 1. Setup dynamic fallback manifest (for offline file:// or direct download)
+      try {
+        const pwaManifest = {
+          name: `Sri Govinda - ${AGENT.name}`,
+          short_name: `${AGENT.name.split(' ')[0]} Portal`,
+          description: `Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for ${AGENT.name}`,
+          start_url: window.location.href || `./sales_${AGENT.slug}.html`,
+          scope: "./",
+          display: "standalone",
+          orientation: "portrait",
+          background_color: "#020617",
+          theme_color: "#020617",
+          icons: [
+            { src: "./icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: "./icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+          ]
+        };
+        const mLink = document.getElementById('manifest-link');
+        if (mLink && window.location.protocol === 'file:') {
+          const blob = new Blob([JSON.stringify(pwaManifest)], { type: 'application/manifest+json' });
+          mLink.href = URL.createObjectURL(blob);
+        }
+      } catch(e) {}
+
+      // 2. Register Service Worker for offline PWA
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('PWA ServiceWorker active:', reg.scope))
+            .catch(err => console.log('PWA ServiceWorker skipped:', err));
+        });
+      }
+
+      // 3. Update PWA UI State
+      updatePwaUiVisibility();
+    }
+
+    // Capture beforeinstallprompt on Android/Chrome
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      const promptBox = document.getElementById('pwa-prompt-container');
+      if (promptBox) promptBox.classList.remove('hidden');
+      updatePwaUiVisibility();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPwaPrompt = null;
+      updatePwaUiVisibility();
+      console.log('Sri Govinda Portal added to homescreen!');
+    });
+
+    function updatePwaUiVisibility() {
+      const isStandalone = isRunningStandalone();
+      const banner = document.getElementById('pwa-install-banner');
+      const btnHdr = document.getElementById('btn-install-pwa');
+
+      if (isStandalone) {
+        if (banner) banner.classList.add('hidden');
+        if (btnHdr) {
+          btnHdr.className = 'px-2 py-1 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-[10px] font-bold flex items-center gap-1';
+          btnHdr.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-emerald-400"></i> <span class="hidden sm:inline">Installed App</span>';
+          btnHdr.onclick = null;
+          if (window.lucide) lucide.createIcons();
+        }
+      } else {
+        const isDismissed = sessionStorage.getItem(`pwa_dismissed_${AGENT.slug}`);
+        if (!isDismissed && banner) {
+          banner.classList.remove('hidden');
+        }
+        if (btnHdr) btnHdr.classList.remove('hidden');
+      }
+    }
+
+    function dismissPwaBanner() {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.classList.add('hidden');
+      try { sessionStorage.setItem(`pwa_dismissed_${AGENT.slug}`, 'true'); } catch(e) {}
+    }
+
+    function handlePwaInstallClick() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            deferredPwaPrompt = null;
+            dismissPwaBanner();
+          }
+        }).catch(() => {});
+      } else {
+        openPwaInstallModal();
+      }
+    }
+
+    function triggerPwaPrompt() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            deferredPwaPrompt = null;
+            closePwaInstallModal();
+            dismissPwaBanner();
+          }
+        }).catch(() => {});
+      }
+    }
+
+    function openPwaInstallModal() {
+      const promptBox = document.getElementById('pwa-prompt-container');
+      if (promptBox) {
+        if (deferredPwaPrompt) promptBox.classList.remove('hidden');
+        else promptBox.classList.add('hidden');
+      }
+      document.getElementById('modal-pwa-install-guide')?.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closePwaInstallModal() {
+      document.getElementById('modal-pwa-install-guide')?.classList.add('hidden');
+    }
+
     // 3. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
+      initPwaFeatures();
       if (window.lucide) lucide.createIcons();
       loadCachedData();
       renderAllViews();
@@ -974,7 +1263,7 @@
             const agentNameClean = (AGENT.name || '').trim().toLowerCase();
             const agentRouteClean = (AGENT.assignedRoute || '').trim().toLowerCase();
 
-            orders = edgeBoot.orders
+            const cloudOrders = edgeBoot.orders
               .filter(o => {
                 const repId = (o.repId || '').trim().toLowerCase();
                 const repName = (o.repName || '').trim().toLowerCase();
@@ -1000,6 +1289,10 @@
                   balanceDue: breakdown.balanceDue
                 };
               });
+
+            const cloudIds = new Set(cloudOrders.map(o => o.id));
+            const pendingLocal = (orders || []).filter(o => o && o.id && !cloudIds.has(o.id));
+            orders = [...pendingLocal, ...cloudOrders];
 
             localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
           }
@@ -1056,7 +1349,7 @@
           const agentNameClean = (AGENT.name || '').trim().toLowerCase();
           const agentRouteClean = (AGENT.assignedRoute || '').trim().toLowerCase();
 
-          orders = dbOrders
+          const cloudOrders = dbOrders
             .filter(o => {
               const repId = (o.repId || '').trim().toLowerCase();
               const repName = (o.repName || '').trim().toLowerCase();
@@ -1083,6 +1376,10 @@
                 balanceDue: breakdown.balanceDue
               };
             });
+
+          const cloudIds = new Set(cloudOrders.map(o => o.id));
+          const pendingLocal = (orders || []).filter(o => o && o.id && !cloudIds.has(o.id));
+          orders = [...pendingLocal, ...cloudOrders];
 
           localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
         }
@@ -1141,6 +1438,7 @@
     }
 
     // 6. CUSTOMER SELECTION LOGIC
+    // 6. CUSTOMER SELECTION LOGIC
     function populateCustomerDropdown() {
       const select = document.getElementById('order-customer-select');
       if (!select) return;
@@ -1153,6 +1451,7 @@
       const otherCusts = customers.filter(c => !(c.homeRoute || '').toLowerCase().includes(beat));
 
       let html = `<option value="">-- Choose Customer Store --</option>`;
+      html += `<option value="__NEW_CUSTOMER__" class="bg-emerald-950 text-emerald-300 font-bold">➕ + Add New Customer...</option>`;
       if (routeCusts.length > 0) {
         html += `<optgroup label="⭐ Stores on Your Beat (${AGENT.assignedRoute})">`;
         routeCusts.forEach(c => {
@@ -1173,7 +1472,8 @@
     }
 
     function filterCustomerDropdown() {
-      const q = (document.getElementById('cust-filter-input')?.value || '').toLowerCase().trim();
+      const rawQ = (document.getElementById('cust-filter-input')?.value || '').trim();
+      const q = rawQ.toLowerCase();
       const select = document.getElementById('order-customer-select');
       if (!select) return;
 
@@ -1185,10 +1485,12 @@
       const matches = customers.filter(c => 
         (c.name || '').toLowerCase().includes(q) || 
         (c.phone || '').includes(q) || 
+        (c.contactPerson || '').toLowerCase().includes(q) ||
         (c.address || '').toLowerCase().includes(q)
       );
 
-      let html = `<option value="">-- ${matches.length} Stores Found --</option>`;
+      let html = `<option value="">-- ${matches.length} Store${matches.length === 1 ? '' : 's'} Found --</option>`;
+      html += `<option value="__NEW_CUSTOMER__" class="bg-emerald-950 text-emerald-300 font-bold">➕ + Add "${escapeHtml(rawQ)}" as New Customer...</option>`;
       matches.forEach(c => {
         html += `<option value="${c.id}">${escapeHtml(c.name)} (${escapeHtml(c.phone || c.homeRoute || '')})</option>`;
       });
@@ -1200,7 +1502,14 @@
     }
 
     function onCustomerSelected() {
-      const custId = document.getElementById('order-customer-select')?.value;
+      const select = document.getElementById('order-customer-select');
+      const custId = select?.value;
+      if (custId === '__NEW_CUSTOMER__') {
+        if (select) select.value = '';
+        openNewCustomerModal();
+        return;
+      }
+
       const infoBox = document.getElementById('selected-cust-info');
       if (!custId) {
         activeCustomer = null;
@@ -1231,11 +1540,21 @@
     }
 
     // 6B. ADD NEW CUSTOMER MODAL & REALTIME SAVE
-    function openNewCustomerModal() {
+    function openNewCustomerModal(prefillName = '') {
       const modal = document.getElementById('modal-new-customer');
       if (!modal) return;
       const form = document.getElementById('form-new-customer');
       if (form) form.reset();
+
+      const filterInput = document.getElementById('cust-filter-input');
+      const filterVal = (typeof prefillName === 'string' && prefillName) 
+        ? prefillName 
+        : (filterInput ? filterInput.value.trim() : '');
+
+      const nameInput = document.getElementById('cust-new-name');
+      if (nameInput) {
+        nameInput.value = filterVal;
+      }
 
       const routeInput = document.getElementById('cust-new-route');
       if (routeInput) {
@@ -1247,20 +1566,26 @@
       }
 
       modal.classList.remove('hidden');
+      modal.style.display = 'flex';
       if (window.lucide) lucide.createIcons();
       setTimeout(() => {
-        document.getElementById('cust-new-name')?.focus();
+        if (nameInput && !nameInput.value) nameInput.focus();
+        else document.getElementById('cust-new-phone')?.focus();
       }, 100);
     }
 
     function closeNewCustomerModal() {
       const modal = document.getElementById('modal-new-customer');
-      if (modal) modal.classList.add('hidden');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
     }
 
     async function saveNewCustomer(e) {
       if (e) e.preventDefault();
       const name = (document.getElementById('cust-new-name')?.value || '').trim();
+      const contactPerson = (document.getElementById('cust-new-contact-person')?.value || '').trim();
       const rawPhone = (document.getElementById('cust-new-phone')?.value || '').trim();
       const phone = rawPhone.replace(/\D/g, '').slice(-10);
       const tier = document.getElementById('cust-new-tier')?.value || 'Retail';
@@ -1269,7 +1594,7 @@
       const address = (document.getElementById('cust-new-address')?.value || '').trim();
 
       if (!name) {
-        alert("Please enter the store name.");
+        alert("Please enter the store / business name.");
         document.getElementById('cust-new-name')?.focus();
         return;
       }
@@ -1287,7 +1612,7 @@
       const btn = document.getElementById('btn-save-new-cust');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving Store...`;
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving Customer...`;
         if (window.lucide) lucide.createIcons();
       }
 
@@ -1295,6 +1620,7 @@
       const newCustomer = {
         id: custId,
         name: name,
+        contactPerson: contactPerson,
         tier: tier,
         phone: phone,
         homeRoute: route,
@@ -1361,7 +1687,10 @@
       populateCustomerDropdown();
       renderRouteShops();
 
-      // 5. Auto-select newly created customer in order view
+      // 5. Clear search filter & auto-select newly created customer in order view
+      const filterInput = document.getElementById('cust-filter-input');
+      if (filterInput) filterInput.value = '';
+
       const select = document.getElementById('order-customer-select');
       if (select) {
         select.value = newCustomer.id;
@@ -1371,7 +1700,7 @@
       // Close modal & restore button
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Select Store`;
+        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save & Select Customer`;
       }
       closeNewCustomerModal();
 
@@ -1379,7 +1708,7 @@
         switchTab('order');
       }
 
-      alert(`✅ Store "${newCustomer.name}" added successfully!\nSelected and ready for booking.`);
+      alert(`✅ Customer "${newCustomer.name}" added successfully!\nSelected and ready for booking.`);
     }
 
     // 6C. SALES AGENT STOCK IN HAND & CUSTODY RECONCILIATION
@@ -1867,10 +2196,13 @@
         effectivePayMode = 'Cash on Delivery';
       }
 
+      const fulfillmentMode = document.getElementById('order-fulfillment-mode')?.value || 'Delivered';
+      const isDelivered = (fulfillmentMode === 'Delivered');
+
       const btn = document.getElementById('btn-submit-order');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Booking Order...`;
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> ${isDelivered ? 'Fulfilling & Delivering Bill...' : 'Booking Order...'}`;
         if (window.lucide) lucide.createIcons();
       }
 
@@ -1879,7 +2211,7 @@
       const dateStr = now.toISOString().split('T')[0];
       const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
       const payTag = `[PAID:${amountPaid}] [BAL:${balanceDue}]`;
-      const statusTag = `[STATUS:PENDING]`;
+      const statusTag = isDelivered ? `[STATUS:DELIVERED]` : `[STATUS:PENDING]`;
       const repTag = `[REP_ID:${AGENT.id}] [REP_NAME:${AGENT.name}]`;
       const fullNotes = notes 
         ? `Field booking by ${AGENT.name} | ${notes} ${payTag} ${statusTag} ${repTag}` 
@@ -1909,7 +2241,8 @@
         amountPaid,
         balanceDue,
         paymentMode: effectivePayMode,
-        status: 'Pending Delivery',
+        status: isDelivered ? 'Delivered' : 'Pending Delivery',
+        deliveredAt: isDelivered ? now.toISOString() : null,
         notes: fullNotes
       };
 
@@ -1978,7 +2311,8 @@
 
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> Book & Generate Bill`;
+        btn.innerHTML = `<i data-lucide="check-check" class="w-5 h-5"></i> <span id="btn-submit-order-text">Deliver On-Spot & Generate Bill</span>`;
+        if (window.lucide) lucide.createIcons();
       }
 
       renderAllViews();
@@ -1992,6 +2326,31 @@
       currentViewingOrder = order;
       const modal = document.getElementById('modal-invoice');
       if (!modal) return;
+
+      const isDelivered = (order.status === 'Delivered') || (order.notes && order.notes.includes('[STATUS:DELIVERED]'));
+      const statusBadge = document.getElementById('bill-delivery-status');
+      if (statusBadge) {
+        if (isDelivered) {
+          statusBadge.className = 'mt-1 pt-1 border-t border-black text-[9px] font-black uppercase text-emerald-800';
+          statusBadge.innerHTML = '✓ Delivered & Fulfilled On-Spot';
+        } else {
+          statusBadge.className = 'mt-1 pt-1 border-t border-black text-[9px] font-black uppercase text-amber-700';
+          statusBadge.innerHTML = '⏳ Pending Delivery';
+        }
+      }
+      const titleBadge = document.getElementById('invoice-modal-title');
+      if (titleBadge) {
+        titleBadge.innerText = isDelivered ? 'Official Bill of Supply (Delivered)' : 'Official Bill of Supply (Pending)';
+      }
+
+      const btnDeliver = document.getElementById('btn-bill-deliver-on-spot');
+      if (btnDeliver) {
+        if (isDelivered) {
+          btnDeliver.classList.add('hidden');
+        } else {
+          btnDeliver.classList.remove('hidden');
+        }
+      }
 
       document.getElementById('bill-date').innerText = `${order.date} ${order.time || ''}`;
       document.getElementById('bill-ref').innerText = '#' + order.id;
@@ -2068,13 +2427,19 @@
         payLine = `Payment: *Credit / Udhaar* (Balance Due: *${formatINR(payInfo.balanceDue)}*)\n`;
       }
 
+      const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
+      const statusLine = isDelivered 
+        ? `Delivery Status: *DELIVERED & FULFILLED ON-SPOT* 🚚✅\n` 
+        : `Delivery Status: *PENDING DISPATCH / LATER DELIVERY* ⏳\n`;
+
       const text = `*SRI GOVINDA FOOD PRODUCTS*\n` +
-        `*BILL OF SUPPLY / ORDER SLIP*\n` +
+        `*BILL OF SUPPLY / DELIVERY SLIP*\n` +
         `--------------------------------\n` +
         `Bill Ref: *#${o.id}*\n` +
         `Date: ${o.date} ${o.time}\n` +
         `Customer: *${o.buyerName}*\n` +
         `Executive: *${AGENT.name}* [${AGENT.assignedRoute}]\n` +
+        statusLine +
         `--------------------------------\n` +
         `*ORDERED ITEMS:*\n${lines}\n` +
         `--------------------------------\n` +
@@ -2159,7 +2524,8 @@
       }
 
       tbody.innerHTML = orders.map(o => {
-        const isDelivered = (o.status === 'Delivered');
+        const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
+        const delivDateStr = o.deliveredAt ? String(o.deliveredAt).split('T')[0] : '';
         return `
           <tr class="hover:bg-slate-800/50 transition">
             <td class="p-2.5 font-bold text-white">#${o.id}</td>
@@ -2170,22 +2536,106 @@
             <td class="p-2.5 text-[10px] text-slate-400">${escapeHtml(o.paymentMode || 'COD')}</td>
             <td class="p-2.5 text-center">
               <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isDelivered ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'}">
-                ${isDelivered ? 'Delivered' : 'Pending'}
+                ${isDelivered ? '✓ Delivered' : '⏳ Pending'}
               </span>
+              ${delivDateStr ? `<div class="text-[9px] text-emerald-400 font-mono mt-0.5">🚚 ${delivDateStr}</div>` : ''}
             </td>
-            <td class="p-2.5 text-right">
-              <button onclick="viewHistoricalOrder('${o.id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-[11px] transition">
-                View Bill
-              </button>
+            <td class="p-2.5 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-1.5">
+                ${!isDelivered ? `
+                  <button onclick="fulfillOrderOnSpot('${o.id}')" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition inline-flex items-center gap-1 shadow-xs cursor-pointer" title="Fulfill & Deliver Now">
+                    <i data-lucide="check" class="w-3 h-3"></i> Deliver
+                  </button>
+                ` : ''}
+                <button onclick="viewHistoricalOrder('${o.id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-[11px] transition">
+                  View Bill
+                </button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function onOrderFulfillmentModeChange() {
+      const mode = document.getElementById('order-fulfillment-mode')?.value || 'Delivered';
+      const badge = document.getElementById('badge-fulfillment-status');
+      const btnText = document.getElementById('btn-submit-order-text');
+      if (mode === 'Delivered') {
+        if (badge) {
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800';
+          badge.innerText = 'Delivered On-Spot';
+        }
+        if (btnText) btnText.innerText = 'Deliver On-Spot & Generate Bill';
+      } else {
+        if (badge) {
+          badge.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800';
+          badge.innerText = 'Future Dispatch';
+        }
+        if (btnText) btnText.innerText = 'Book Pending Order & Bill';
+      }
+    }
+
+    async function fulfillOrderOnSpot(orderId) {
+      const ord = orders.find(x => x.id === orderId);
+      if (!ord) return;
+      if (!confirm(`Mark Order #${orderId} for "${ord.buyerName}" as Delivered & Fulfilled on spot?`)) {
+        return;
+      }
+      ord.status = 'Delivered';
+      ord.deliveredAt = new Date().toISOString();
+      if (!ord.notes) ord.notes = '';
+      if (!ord.notes.includes('[STATUS:DELIVERED]')) {
+        ord.notes = ord.notes.replace(/\[STATUS:[^\]]+\]/g, '').trim() + ' [STATUS:DELIVERED]';
+      }
+
+      // Update local storage
+      localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
+      try {
+        let allOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
+        const idx = allOrders.findIndex(x => x.id === orderId);
+        if (idx >= 0) {
+          allOrders[idx].status = 'Delivered';
+          allOrders[idx].deliveredAt = ord.deliveredAt;
+          allOrders[idx].notes = ord.notes;
+          localStorage.setItem('sg_orders', JSON.stringify(allOrders));
+        }
+      } catch(e) {}
+
+      // Broadcast update
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ORDER_UPDATED', repId: AGENT.id, repName: AGENT.name, order: ord });
+        }
+      } catch(e) {}
+
+      // Sync to cloud via Edge Function
+      try {
+        await callSyncEdgeFunction('fulfill_order', {
+          id: orderId,
+          status: 'Delivered',
+          deliveredAt: ord.deliveredAt,
+          notes: ord.notes
+        });
+      } catch(e) {}
+
+      renderAllViews();
+      alert(`✅ Order #${orderId} fulfilled on spot! Bill marked as Delivered.`);
     }
 
     function viewHistoricalOrder(orderId) {
       const o = orders.find(x => x.id === orderId);
       if (o) showInvoiceModal(o);
+    }
+
+    async function fulfillActiveInvoiceOnSpot() {
+      if (!currentViewingOrder) return;
+      const orderId = currentViewingOrder.id;
+      await fulfillOrderOnSpot(orderId);
+      const updated = orders.find(x => x.id === orderId) || currentViewingOrder;
+      showInvoiceModal(updated);
     }
 
     // 12. SAMPLE LOGGING
@@ -2285,7 +2735,19 @@
       if (tabCount) tabCount.innerText = routeCusts.length;
 
       if (routeCusts.length === 0) {
-        list.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs italic">No retailer shops found matching this beat.</div>`;
+        list.innerHTML = `
+          <div class="col-span-full py-8 text-center space-y-3 bg-slate-900/60 border border-dashed border-slate-700/80 rounded-2xl p-6">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="store" class="w-6 h-6"></i>
+            </div>
+            <p class="text-slate-300 font-bold text-xs">No retailer customer shops found matching this search or beat.</p>
+            <p class="text-slate-500 text-[11px]">Add newly onboarded customer stores to book orders and track ledger balances.</p>
+            <button type="button" onclick="openNewCustomerModal()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold shadow-md transition cursor-pointer">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> + Add New Customer
+            </button>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
         return;
       }
 

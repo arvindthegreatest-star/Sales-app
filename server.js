@@ -58,6 +58,27 @@ function generateSalesPortalFile(salesperson) {
 
   fs.writeFileSync(filePath, content, 'utf8');
   console.log(`Generated dedicated sales portal: ${fileName} for ${salesperson.name}`);
+
+  // Generate dedicated PWA manifest for salesperson
+  try {
+    const manifestData = {
+      name: `Sri Govinda - ${salesperson.name}`,
+      short_name: `${(salesperson.name || 'Rep').split(' ')[0]} Portal`,
+      description: `Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for ${salesperson.name}`,
+      start_url: `./sales_${slug}.html`,
+      scope: "./",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#020617",
+      theme_color: "#020617",
+      icons: [
+        { src: "./icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+        { src: "./icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    fs.writeFileSync(path.join(ROOT_DIR, `manifest_${slug}.json`), JSON.stringify(manifestData, null, 2), 'utf8');
+  } catch(e) {}
+
   return { fileName, filePath, slug, url: `/${fileName}` };
 }
 

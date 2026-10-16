@@ -25,5 +25,35 @@ salespeople.forEach(sp => {
 
   fs.writeFileSync(filePath, content, 'utf8');
   console.log(`Regenerated ${fileName} for ${sp.name}`);
+
+  // Generate dedicated PWA manifest for salesperson
+  const manifestData = {
+    name: `Sri Govinda - ${sp.name}`,
+    short_name: `${sp.name.split(' ')[0]} Portal`,
+    description: `Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for ${sp.name}`,
+    start_url: `./sales_${slug}.html`,
+    scope: "./",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#020617",
+    theme_color: "#020617",
+    icons: [
+      {
+        src: "./icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any maskable"
+      },
+      {
+        src: "./icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any maskable"
+      }
+    ]
+  };
+  const manifestPath = path.join(__dirname, `manifest_${slug}.json`);
+  fs.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), 'utf8');
+  console.log(`Generated manifest_${slug}.json for ${sp.name}`);
 });
-console.log('All sales portals successfully regenerated!');
+console.log('All sales portals and manifests successfully regenerated!');

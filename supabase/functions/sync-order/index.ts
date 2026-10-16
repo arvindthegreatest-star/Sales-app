@@ -129,6 +129,7 @@ Deno.serve(async (req: Request) => {
         netPayable: Number(order.netPayable || 0),
         paymentMode: String(order.paymentMode || "Cash on Delivery"),
         status: String(order.status || "Pending Delivery"),
+        deliveredAt: order.deliveredAt ? order.deliveredAt : (order.status === "Delivered" ? new Date().toISOString() : null),
         notes: String(order.notes || ""),
       };
 
@@ -143,20 +144,26 @@ Deno.serve(async (req: Request) => {
 
       // Update customer ledger balance if unpaid balance exists
       const balanceDue = Number(order.balanceDue || 0);
-      if (balanceDue > 0) {
-        const { data: buyerData } = await supabase
-          .from("buyers")
-          .select("pendingUdhaar")
-          .eq("id", dbOrder.buyerId)
-          .single();
+      if (balanceDue > 0 && dbOrder.buyerId) {
+        try {
+          const { data: buyerData } = await supabase
+            .from("buyers")
+            .select("pendingUdhaar")
+            .eq("id", dbOrder.buyerId)
+            .maybeSingle();
 
-        const currentUdhaar = Number(buyerData?.pendingUdhaar || 0);
-        const updatedUdhaar = currentUdhaar + balanceDue;
+          if (buyerData) {
+            const currentUdhaar = Number(buyerData.pendingUdhaar || 0);
+            const updatedUdhaar = currentUdhaar + balanceDue;
 
-        await supabase
-          .from("buyers")
-          .update({ pendingUdhaar: updatedUdhaar })
-          .eq("id", dbOrder.buyerId);
+            await supabase
+              .from("buyers")
+              .update({ pendingUdhaar: updatedUdhaar })
+              .eq("id", dbOrder.buyerId);
+          }
+        } catch (udhaarErr) {
+          console.warn("Could not update buyer udhaar:", udhaarErr);
+        }
       }
 
       return new Response(
@@ -269,6 +276,26 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ success: true, dispatch: savedDispatch || dbDispatch }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+
+    } else if (action === "fulfill_order" || action === "update_order_status") {
+      const { id, status, deliveredAt, notes } = payload;
+      if (!id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Missing required order id." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const newStatus = status || "Delivered";
+      const updateData: any = { status: newStatus };
+      updateData.deliveredAt = deliveredAt || new Date().toISOString();
+      if (notes !== undefined) updateData.notes = notes;
+
+      const { data, error } = await supabase.from("orders").update(updateData).eq("id", id).select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, data: data?.[0] || updateData }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
 
     } else if (action === "get_bootstrap") {
       // Parallel fetch of catalog, buyers, contract pricing, orders, and outward dispatches
@@ -443,11 +470,23 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    } else if (action === "manager_update_order_status") {
-      const { id, status, deliveredAt, notes } = payload;
-      const updateData: any = { status };
-      if (deliveredAt) updateData.deliveredAt = deliveredAt;
-      if (notes !== undefined) updateData.notes = notes;
+    } else if (action === "manager_update_order_status" || action === "manager_update_order") {
+      const { id, ...rest } = payload;
+      const updateData: any = {};
+      const allowedFields = [
+        "date", "time", "status", "deliveredAt", "notes", "paymentMode",
+        "buyerId", "buyerName", "buyerPhone", "buyerAddress", "buyerGstin",
+        "dispatchRoute", "items", "totalUnits", "itemsSubtotal", "extraRebate", "netPayable",
+        "repId", "repName", "salespersonId", "salespersonName"
+      ];
+      for (const field of allowedFields) {
+        if (rest[field] !== undefined) {
+          updateData[field] = rest[field];
+        }
+      }
+      if (rest.status !== undefined) {
+        updateData.status = rest.status;
+      }
       const { data, error } = await supabase.from("orders").update(updateData).eq("id", id).select();
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, data }), {

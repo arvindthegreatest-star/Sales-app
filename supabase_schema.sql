@@ -71,6 +71,10 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Pending Deliver
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "deliveredAt" TIMESTAMPTZ;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "repId" TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS "repName" TEXT DEFAULT 'Field Sales';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "buyerAddress" TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "buyerGstin" TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "salespersonId" TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS "salespersonName" TEXT;
 
 -- Inward Inventory (Stock arrivals from factory/suppliers)
 CREATE TABLE IF NOT EXISTS inventory_inward (
