@@ -4329,7 +4329,10 @@
 
     async function fetchSalespeopleFromServer() {
       try {
-        const res = await fetch('/api/salespeople');
+        let res = await fetch('/api/salespeople');
+        if (!res.ok) {
+          res = await fetch('salespeople.json');
+        }
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -8736,7 +8739,10 @@
 
     async function fetchCompanySettingsFromServer() {
       try {
-        const res = await fetch('/api/company-settings');
+        let res = await fetch('/api/company-settings');
+        if (!res.ok) {
+          res = await fetch('company_settings.json');
+        }
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object') {
