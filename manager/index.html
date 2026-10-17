@@ -15239,8 +15239,31 @@
         }).catch(() => {});
 
         navigator.serviceWorker.register('/sw.js', { scope: '/manager/' })
-          .then(reg => console.log('Manager Service Worker registered:', reg.scope))
+          .then(reg => {
+            console.log('Manager Service Worker registered:', reg.scope);
+            // Check for updates immediately
+            reg.update().catch(() => {});
+            // Check periodically every 60s
+            setInterval(() => reg.update().catch(() => {}), 60000);
+          })
           .catch(err => console.warn('Manager Service Worker registration skipped:', err));
+
+        // Check for updates when user returns to app/tab
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
+          }
+        });
+
+        // When a new version of the service worker takes control, refresh smoothly
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            console.log('✨ New server version detected. Refreshing manager hub...');
+            window.location.reload();
+          }
+        });
       }
 
       setTab('dashboard');

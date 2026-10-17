@@ -1010,15 +1010,38 @@
         }
       } catch(e) {}
 
-      // 3. Register Service Worker with isolated representative scope
+      // 3. Register Service Worker with isolated representative scope & auto-update listeners
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         window.addEventListener('load', () => {
           const isSubdomain = window.location.hostname.startsWith(AGENT.slug + '.');
           const swScope = isSubdomain ? '/' : `/rep/${AGENT.slug}/`;
 
           navigator.serviceWorker.register('/sw.js', { scope: swScope })
-            .then(reg => console.log('PWA ServiceWorker active for rep scope:', reg.scope))
+            .then(reg => {
+              console.log('PWA ServiceWorker active for rep scope:', reg.scope);
+              // Check for server updates immediately on launch
+              reg.update().catch(() => {});
+              // Periodically check for updates every 60 seconds
+              setInterval(() => reg.update().catch(() => {}), 60000);
+            })
             .catch(err => console.log('PWA ServiceWorker skipped:', err));
+        });
+
+        // Check for updates when user switches back to the app from background
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            navigator.serviceWorker.ready.then(reg => reg.update()).catch(() => {});
+          }
+        });
+
+        // When a new version of the service worker takes control, refresh smoothly
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            console.log('✨ New server version detected. Refreshing app to apply updates...');
+            window.location.reload();
+          }
         });
       }
 
