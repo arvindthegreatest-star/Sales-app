@@ -1209,7 +1209,7 @@
                 } else {
                   fetchCloudData();
                 }
-              } else if (data.type === 'ORDER_CREATED' || data.type === 'SAMPLE_CREATED') {
+              } else if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'SAMPLE_CREATED') {
                 fetchCloudData();
               }
             };
@@ -1329,8 +1329,8 @@
 
             const cloudOrders = edgeBoot.orders
               .filter(o => {
-                const repId = (o.repId || '').trim().toLowerCase();
-                const repName = (o.repName || '').trim().toLowerCase();
+                const repId = (o.repId || o.salespersonId || '').trim().toLowerCase();
+                const repName = (o.repName || o.salespersonName || '').trim().toLowerCase();
                 const dispatchRoute = (o.dispatchRoute || '').trim().toLowerCase();
                 const notes = (o.notes || '').toLowerCase();
                 return (
@@ -1415,8 +1415,8 @@
 
           const cloudOrders = dbOrders
             .filter(o => {
-              const repId = (o.repId || '').trim().toLowerCase();
-              const repName = (o.repName || '').trim().toLowerCase();
+              const repId = (o.repId || o.salespersonId || '').trim().toLowerCase();
+              const repName = (o.repName || o.salespersonName || '').trim().toLowerCase();
               const dispatchRoute = (o.dispatchRoute || '').trim().toLowerCase();
               const notes = (o.notes || '').toLowerCase();
 

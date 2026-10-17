@@ -8530,9 +8530,15 @@
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3 font-mono font-bold text-slate-800">
             #${o.id}<br><span class="text-[10px] text-slate-400 font-normal">${o.date} ${o.time}</span>
-            ${(o.repName || o.salespersonName) 
-              ? `<div class="text-[9px] font-sans font-bold text-indigo-600 flex items-center gap-1 mt-0.5"><i data-lucide="user" class="w-2.5 h-2.5"></i> ${escapeHtml(o.repName || o.salespersonName)}</div>` 
-              : `<button type="button" onclick="openEditOrderModal('${o.id}')" class="text-[9px] font-sans font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 mt-1 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 transition shadow-2xs" title="Tag this bill to a Salesperson"><i data-lucide="user-plus" class="w-2.5 h-2.5 text-amber-600"></i> + Tag Rep</button>`}
+            ${(() => {
+              const assignedName = o.repName || o.salespersonName || '';
+              const isAssigned = Boolean((o.repId && o.repId !== 'null') || (o.salespersonId && o.salespersonId !== 'null') || (assignedName && assignedName !== 'Manager' && assignedName !== 'Field Sales'));
+              if (isAssigned) {
+                return `<button type="button" onclick="openEditOrderModal('${o.id}')" class="text-[9px] font-sans font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 mt-1 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 transition shadow-2xs" title="Assigned to ${escapeHtml(assignedName)} - Click to reassign or change details"><i data-lucide="user-check" class="w-2.5 h-2.5 text-indigo-600"></i> ${escapeHtml(assignedName)} <i data-lucide="edit-2" class="w-2 h-2 text-indigo-400 ml-0.5"></i></button>`;
+              } else {
+                return `<button type="button" onclick="openEditOrderModal('${o.id}')" class="text-[9px] font-sans font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 mt-1 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 transition shadow-2xs" title="Untagged bill - Click to tag salesperson"><i data-lucide="user-plus" class="w-2.5 h-2.5 text-amber-600"></i> + Tag Rep</button>`;
+              }
+            })()}
           </td>
           <td class="p-3">
             <div class="font-bold text-slate-900">${escapeHtml(o.buyerName)}</div>
@@ -8619,19 +8625,23 @@
     let editOrderItems = [];
 
     function openEditOrderModal(orderId) {
-      const o = orders.find(x => x.id === orderId);
+      const o = orders.find(x => String(x.id).trim().toLowerCase() === String(orderId).trim().toLowerCase());
       if (!o) return;
 
-      document.getElementById('edit-order-id').value = orderId;
+      document.getElementById('edit-order-id').value = o.id;
       document.getElementById('modal-edit-order-title').innerText = `Modify Order #${o.id}`;
 
-      // Populate customer select
+      // Populate customer select safely
       const custSelect = document.getElementById('edit-order-customer');
-      custSelect.innerHTML = customers.map(c => `
+      let custOpts = customers.map(c => `
         <option value="${c.id}" ${c.id === o.buyerId ? 'selected' : ''}>${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]</option>
       `).join('');
+      if (o.buyerId && !customers.some(c => c.id === o.buyerId)) {
+        custOpts = `<option value="${escapeHtml(o.buyerId)}" selected>${escapeHtml(o.buyerName || o.buyerId)} [Customer Record]</option>` + custOpts;
+      }
+      custSelect.innerHTML = custOpts;
 
-      // Populate route select
+      // Populate route select safely
       const routeSelect = document.getElementById('edit-order-route');
       const allRoutes = routes.map(r => r.name);
       if (o.dispatchRoute && !allRoutes.includes(o.dispatchRoute)) allRoutes.unshift(o.dispatchRoute);
@@ -8639,11 +8649,12 @@
         <option value="${escapeHtml(r)}" ${r === o.dispatchRoute ? 'selected' : ''}>${escapeHtml(r)}</option>
       `).join('');
 
-      // Populate salesperson select
+      // Populate salesperson select safely
       const repSelect = document.getElementById('edit-order-rep');
       if (repSelect) {
-        const curRepId = o.repId || o.salespersonId || '';
-        const curRepName = (o.repName || o.salespersonName || '').toLowerCase().trim();
+        const isUntagged = !o.repId || o.repId === 'null' || o.repName === 'Manager' || o.repName === 'Field Sales';
+        const curRepId = isUntagged ? '' : (o.repId || o.salespersonId || '');
+        const curRepName = isUntagged ? '' : (o.repName || o.salespersonName || '').toLowerCase().trim();
         repSelect.innerHTML = `<option value="">-- No Rep / Company Direct (Manager) --</option>` +
           (salespeople || []).filter(s => s.active !== false).map(sp => {
             const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
@@ -8665,16 +8676,26 @@
       document.getElementById('edit-order-rebate').value = o.extraRebate || 0;
       document.getElementById('edit-order-notes').value = cleanOrderNotes(o.notes) || '';
 
-      // Clone items
-      editOrderItems = (o.items || []).map(it => ({
-        productId: it.productId,
-        sku: it.sku,
-        name: it.name,
-        unitSize: it.unitSize || '',
-        rate: Number(it.rate || 0),
-        qty: Number(it.qty || 1),
-        total: Number(it.total || 0)
-      }));
+      // Clone items safely
+      let rawItems = o.items;
+      if (typeof rawItems === 'string') {
+        try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+      }
+      if (!Array.isArray(rawItems)) rawItems = [];
+      editOrderItems = rawItems.map(it => {
+        const rate = Number(it.rate || 0);
+        const qty = Number(it.qty != null ? it.qty : 1);
+        const total = (it.total != null && !isNaN(Number(it.total))) ? Number(it.total) : (rate * qty);
+        return {
+          productId: it.productId || '',
+          sku: it.sku || '',
+          name: it.name || '',
+          unitSize: it.unitSize || '',
+          rate,
+          qty,
+          total
+        };
+      });
 
       // Populate add product select
       const addSelect = document.getElementById('edit-order-add-product');
@@ -8846,129 +8867,156 @@
       document.getElementById('edit-order-summary-items').innerText = editOrderItems.length;
       document.getElementById('edit-order-summary-units').innerText = totalUnits;
       document.getElementById('edit-order-summary-total').innerText = formatINR(netPayable);
-      document.getElementById('btn-save-edit-order').disabled = (editOrderItems.length === 0 || totalUnits === 0);
+      const saveBtn = document.getElementById('btn-save-edit-order');
+      if (saveBtn) saveBtn.disabled = (editOrderItems.length === 0);
     }
 
     async function handleSaveEditedOrder(e) {
       e.preventDefault();
-      const orderId = document.getElementById('edit-order-id').value;
-      const orderIndex = orders.findIndex(x => x.id === orderId);
-      if (orderIndex === -1) return;
-
-      const origOrder = orders[orderIndex];
-
-      if (editOrderItems.length === 0) {
-        alert("An order must have at least 1 item. If you want to cancel the order, use the Delete button.");
-        return;
+      const saveBtn = document.getElementById('btn-save-edit-order');
+      const origBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Saving changes...`;
+        if (window.lucide) lucide.createIcons();
       }
 
-      const custId = document.getElementById('edit-order-customer').value;
-      const cust = customers.find(c => c.id === custId) || { id: custId, name: origOrder.buyerName, phone: origOrder.buyerPhone };
-      const route = document.getElementById('edit-order-route').value;
-      const newStatus = document.getElementById('edit-order-status')?.value || getOrderStatus(origOrder);
-      const payMode = document.getElementById('edit-order-payment-mode').value;
-      const rebate = Math.max(0, parseFloat(document.getElementById('edit-order-rebate').value) || 0);
-      const rawNotes = document.getElementById('edit-order-notes').value.trim();
-      const statusTag = (newStatus === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
-      const cleanUserNotes = cleanOrderNotes(rawNotes);
-      const notes = cleanUserNotes ? (cleanUserNotes + ' ' + statusTag) : statusTag;
-
-      let totalUnits = 0;
-      let itemsSubtotal = 0;
-      editOrderItems.forEach(it => {
-        it.total = Number(it.rate || 0) * Number(it.qty || 0);
-        totalUnits += it.qty;
-        itemsSubtotal += it.total;
-      });
-      const netPayable = Math.max(0, itemsSubtotal - rebate);
-
-      // Reconcile Udhaar balance if credit or amounts changed
-      const oldPayMode = origOrder.paymentMode;
-      const oldNet = Number(origOrder.netPayable || 0);
-      const oldBuyerId = origOrder.buyerId;
-
-      const oldBuyer = customers.find(c => c.id === oldBuyerId);
-      if (oldPayMode === 'Credit / Udhaar' && oldBuyer) {
-        oldBuyer.pendingUdhaar = Math.max(0, Number(oldBuyer.pendingUdhaar || 0) - oldNet);
-        if (supabaseClient) {
-          try { await supabaseClient.from('buyers').update({ pendingUdhaar: oldBuyer.pendingUdhaar }).eq('id', oldBuyer.id); } catch(err){}
+      try {
+        const orderId = document.getElementById('edit-order-id').value;
+        const orderIndex = orders.findIndex(x => String(x.id).trim().toLowerCase() === String(orderId).trim().toLowerCase());
+        if (orderIndex === -1) {
+          alert(`Order #${orderId} could not be located in local memory.`);
+          return;
         }
-      }
 
-      if (payMode === 'Credit / Udhaar') {
-        const newBuyer = customers.find(c => c.id === cust.id);
-        if (newBuyer) {
-          newBuyer.pendingUdhaar = Number(newBuyer.pendingUdhaar || 0) + netPayable;
+        const origOrder = orders[orderIndex];
+
+        if (editOrderItems.length === 0) {
+          alert("An order must have at least 1 item. If you want to cancel the order, use the Delete button.");
+          return;
+        }
+
+        const custId = document.getElementById('edit-order-customer').value;
+        const cust = customers.find(c => c.id === custId) || { id: custId || origOrder.buyerId, name: origOrder.buyerName, phone: origOrder.buyerPhone };
+        const route = document.getElementById('edit-order-route').value;
+        const newStatus = document.getElementById('edit-order-status')?.value || getOrderStatus(origOrder);
+        const payMode = document.getElementById('edit-order-payment-mode').value;
+        const rebate = Math.max(0, parseFloat(document.getElementById('edit-order-rebate').value) || 0);
+        const rawNotes = document.getElementById('edit-order-notes').value.trim();
+        const statusTag = (newStatus === 'Delivered') ? '[STATUS:DELIVERED]' : '[STATUS:PENDING]';
+        const cleanUserNotes = cleanOrderNotes(rawNotes);
+        const notes = cleanUserNotes ? (cleanUserNotes + ' ' + statusTag) : statusTag;
+
+        let totalUnits = 0;
+        let itemsSubtotal = 0;
+        editOrderItems.forEach(it => {
+          it.total = Number(it.rate || 0) * Number(it.qty || 0);
+          totalUnits += Number(it.qty || 0);
+          itemsSubtotal += Number(it.total || 0);
+        });
+        const netPayable = Math.max(0, itemsSubtotal - rebate);
+
+        // Reconcile Udhaar balance if credit or amounts changed
+        const oldPayMode = origOrder.paymentMode;
+        const oldNet = Number(origOrder.netPayable || 0);
+        const oldBuyerId = origOrder.buyerId;
+
+        const oldBuyer = customers.find(c => c.id === oldBuyerId);
+        if (oldPayMode === 'Credit / Udhaar' && oldBuyer) {
+          oldBuyer.pendingUdhaar = Math.max(0, Number(oldBuyer.pendingUdhaar || 0) - oldNet);
           if (supabaseClient) {
-            try { await supabaseClient.from('buyers').update({ pendingUdhaar: newBuyer.pendingUdhaar }).eq('id', newBuyer.id); } catch(err){}
+            try { await supabaseClient.from('buyers').update({ pendingUdhaar: oldBuyer.pendingUdhaar }).eq('id', oldBuyer.id); } catch(err){}
           }
         }
-      }
 
-      // Update Order Record
-      const newDate = document.getElementById('edit-order-date')?.value.trim() || origOrder.date;
-      const newTime = document.getElementById('edit-order-time')?.value.trim() || origOrder.time || '12:00';
-      const deliveryDateVal = document.getElementById('edit-order-delivery-date')?.value.trim();
+        if (payMode === 'Credit / Udhaar') {
+          const newBuyer = customers.find(c => c.id === cust.id);
+          if (newBuyer) {
+            newBuyer.pendingUdhaar = Number(newBuyer.pendingUdhaar || 0) + netPayable;
+            if (supabaseClient) {
+              try { await supabaseClient.from('buyers').update({ pendingUdhaar: newBuyer.pendingUdhaar }).eq('id', newBuyer.id); } catch(err){}
+            }
+          }
+        }
 
-      let newDeliveredAt = null;
-      if (newStatus === 'Delivered') {
-        if (deliveryDateVal) {
-          newDeliveredAt = new Date(deliveryDateVal + 'T12:00:00Z').toISOString();
-        } else if (origOrder.deliveredAt) {
-          newDeliveredAt = origOrder.deliveredAt;
+        // Update Order Record
+        const newDate = document.getElementById('edit-order-date')?.value.trim() || origOrder.date;
+        const newTime = document.getElementById('edit-order-time')?.value.trim() || origOrder.time || '12:00';
+        const deliveryDateVal = document.getElementById('edit-order-delivery-date')?.value.trim();
+
+        let newDeliveredAt = null;
+        if (newStatus === 'Delivered') {
+          if (deliveryDateVal) {
+            newDeliveredAt = new Date(deliveryDateVal + 'T12:00:00Z').toISOString();
+          } else if (origOrder.deliveredAt) {
+            newDeliveredAt = origOrder.deliveredAt;
+          } else {
+            newDeliveredAt = new Date().toISOString();
+          }
         } else {
-          newDeliveredAt = new Date().toISOString();
+          newDeliveredAt = null;
         }
-      } else {
-        newDeliveredAt = null;
-      }
 
-      // Get salesperson attribution
-      const repIdVal = document.getElementById('edit-order-rep')?.value || '';
-      const selectedRep = (salespeople || []).find(s => s.id === repIdVal);
-      const newRepId = selectedRep ? selectedRep.id : (repIdVal || null);
-      const newRepName = selectedRep ? selectedRep.name : (repIdVal ? repIdVal : null);
+        // Get salesperson attribution
+        const repIdVal = document.getElementById('edit-order-rep')?.value || '';
+        const selectedRep = (salespeople || []).find(s => String(s.id).toLowerCase() === String(repIdVal).toLowerCase());
+        const newRepId = selectedRep ? selectedRep.id : (repIdVal || null);
+        const newRepName = selectedRep ? selectedRep.name : (repIdVal ? repIdVal : null);
 
-      const updatedRecord = {
-        ...origOrder,
-        buyerId: cust.id,
-        buyerName: cust.name,
-        buyerPhone: cust.phone || '',
-        dispatchRoute: route,
-        repId: newRepId,
-        repName: newRepName,
-        salespersonId: newRepId,
-        salespersonName: newRepName,
-        date: newDate,
-        time: newTime,
-        deliveredAt: newDeliveredAt,
-        items: editOrderItems,
-        totalUnits,
-        itemsSubtotal,
-        extraRebate: rebate,
-        netPayable,
-        paymentMode: payMode,
-        status: newStatus,
-        notes
-      };
+        const updatedRecord = {
+          ...origOrder,
+          buyerId: cust.id,
+          buyerName: cust.name,
+          buyerPhone: cust.phone || '',
+          dispatchRoute: route,
+          repId: newRepId,
+          repName: newRepName,
+          salespersonId: newRepId,
+          salespersonName: newRepName,
+          date: newDate,
+          time: newTime,
+          deliveredAt: newDeliveredAt,
+          items: editOrderItems,
+          totalUnits,
+          itemsSubtotal,
+          extraRebate: rebate,
+          netPayable,
+          paymentMode: payMode,
+          status: newStatus,
+          notes
+        };
 
-      orders[orderIndex] = updatedRecord;
+        orders[orderIndex] = updatedRecord;
 
-      // 1. Save locally to sg_orders
-      try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+        // 1. Save locally to sg_orders
+        try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
 
-      // 2. Broadcast update across all open tabs
-      try {
-        if (window.BroadcastChannel) {
-          const bc = new BroadcastChannel('sg_sales_bus');
-          bc.postMessage({ type: 'ORDER_UPDATED', repId: newRepId || origOrder.repId || origOrder.salespersonId, order: updatedRecord });
-        }
-      } catch(e) {}
-
-      // 3. Direct update to Supabase orders table (guaranteed immediate cloud persistence)
-      if (supabaseClient) {
+        // 2. Broadcast update across all open tabs
         try {
-          await supabaseClient.from('orders').update({
+          if (window.BroadcastChannel) {
+            const bc = new BroadcastChannel('sg_sales_bus');
+            bc.postMessage({ type: 'ORDER_UPDATED', repId: newRepId || origOrder.repId || origOrder.salespersonId, order: updatedRecord });
+          }
+        } catch(e) {}
+
+        // 3. Cloud persistence via elevated Manager Edge Function
+        let edgeUpdated = false;
+        try {
+          const edgeRes = await callManagerEdgeFunction('manager_update_order', updatedRecord);
+          if (edgeRes && edgeRes.success) {
+            edgeUpdated = true;
+            if (edgeRes.data && edgeRes.data[0]) {
+              orders[orderIndex] = { ...updatedRecord, ...edgeRes.data[0] };
+              try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+            }
+          }
+        } catch(err) {
+          console.error("Manager order update error:", err);
+        }
+
+        // 4. Non-blocking client fallback
+        if (supabaseClient) {
+          supabaseClient.from('orders').update({
             repId: newRepId,
             repName: newRepName,
             salespersonId: newRepId,
@@ -8988,25 +9036,22 @@
             netPayable,
             paymentMode: payMode,
             notes
-          }).eq('id', orderId);
-        } catch(supErr) {
-          console.warn("Direct Supabase order update:", supErr);
+          }).eq('id', orderId).then(() => {}).catch(e => console.warn("Direct update note:", e));
+        }
+
+        closeEditOrderModal();
+        refreshAllUI();
+        if (typeof renderSalespersonReportsView === 'function') {
+          renderSalespersonReportsView();
+        }
+        showToast(`✓ Order #${orderId} tagged to ${newRepName || 'Company Direct'} and saved!`);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = origBtnHtml;
+          if (window.lucide) lucide.createIcons();
         }
       }
-
-      // 4. Persist via elevated Manager Edge Function
-      try {
-        await callManagerEdgeFunction('manager_update_order', updatedRecord);
-      } catch(err) {
-        console.error("Manager order update error:", err);
-      }
-
-      closeEditOrderModal();
-      refreshAllUI();
-      if (typeof renderSalespersonReportsView === 'function') {
-        renderSalespersonReportsView();
-      }
-      showToast(`✓ Order #${orderId} tagged to ${newRepName || 'Company Direct'} and saved!`);
     }
 
     async function deleteOrderConfirm(orderId) {
@@ -11106,8 +11151,9 @@
       // Populate Salesperson Attribution
       const invRepSelect = document.getElementById('inv-edit-rep');
       if (invRepSelect) {
-        const curRepId = d.repId || d.salespersonId || '';
-        const curRepName = (d.repName || d.salespersonName || '').toLowerCase().trim();
+        const isUntagged = !d.repId || d.repId === 'null' || d.repName === 'Manager' || d.repName === 'Field Sales';
+        const curRepId = isUntagged ? '' : (d.repId || d.salespersonId || '');
+        const curRepName = isUntagged ? '' : (d.repName || d.salespersonName || '').toLowerCase().trim();
         invRepSelect.innerHTML = `<option value="">-- No Rep (Company Direct) --</option>` +
           (salespeople || []).filter(s => s.active !== false).map(sp => {
             const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
@@ -11368,38 +11414,38 @@
         }
       } catch(e) {}
 
-      // Direct update to Supabase orders table (guaranteed immediate cloud persistence)
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('orders').update({
-            repId: updatedOrder.repId,
-            repName: updatedOrder.repName,
-            salespersonId: updatedOrder.salespersonId,
-            salespersonName: updatedOrder.salespersonName,
-            status: updatedOrder.status,
-            deliveredAt: updatedOrder.deliveredAt,
-            paymentMode: updatedOrder.paymentMode,
-            dispatchRoute: updatedOrder.dispatchRoute,
-            buyerName: updatedOrder.buyerName,
-            buyerPhone: updatedOrder.buyerPhone,
-            date: updatedOrder.date,
-            items: updatedOrder.items,
-            totalUnits: updatedOrder.totalUnits,
-            itemsSubtotal: updatedOrder.itemsSubtotal,
-            extraRebate: updatedOrder.extraRebate,
-            netPayable: updatedOrder.netPayable,
-            notes: updatedOrder.notes
-          }).eq('id', updatedOrder.id);
-        } catch(supErr) {
-          console.warn("Direct Supabase invoice order update:", supErr);
-        }
-      }
-
-      // Elevate to Manager Edge Function
+      // 1. Cloud persistence via elevated Manager Edge Function (admin credentials)
       try {
-        await callManagerEdgeFunction('manager_update_order', updatedOrder);
+        const edgeRes = await callManagerEdgeFunction('manager_update_order', updatedOrder);
+        if (edgeRes && edgeRes.success && edgeRes.data && edgeRes.data[0]) {
+          orders[oIdx] = { ...updatedOrder, ...edgeRes.data[0] };
+          try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+        }
       } catch (e) {
         console.warn("Manager order update error:", e);
+      }
+
+      // 2. Non-blocking direct client update fallback
+      if (supabaseClient) {
+        supabaseClient.from('orders').update({
+          repId: updatedOrder.repId,
+          repName: updatedOrder.repName,
+          salespersonId: updatedOrder.salespersonId,
+          salespersonName: updatedOrder.salespersonName,
+          status: updatedOrder.status,
+          deliveredAt: updatedOrder.deliveredAt,
+          paymentMode: updatedOrder.paymentMode,
+          dispatchRoute: updatedOrder.dispatchRoute,
+          buyerName: updatedOrder.buyerName,
+          buyerPhone: updatedOrder.buyerPhone,
+          date: updatedOrder.date,
+          items: updatedOrder.items,
+          totalUnits: updatedOrder.totalUnits,
+          itemsSubtotal: updatedOrder.itemsSubtotal,
+          extraRebate: updatedOrder.extraRebate,
+          netPayable: updatedOrder.netPayable,
+          notes: updatedOrder.notes
+        }).eq('id', updatedOrder.id).then(() => {}).catch(e => console.warn("Direct update note:", e));
       }
 
       renderPrintableInvoiceCard(updatedOrder);
