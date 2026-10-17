@@ -2771,16 +2771,25 @@
       <form id="form-edit-order" onsubmit="handleSaveEditedOrder(event)" class="space-y-4 text-xs flex-1 overflow-y-auto pr-1">
         <input type="hidden" id="edit-order-id" value="">
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Customer / Store *</label>
-            <select id="edit-order-customer" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+            <select id="edit-order-customer" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-indigo-500">
               <!-- Populated by JS -->
             </select>
           </div>
           <div>
             <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Dispatch Route Beat</label>
-            <select id="edit-order-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none">
+            <select id="edit-order-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-indigo-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1 flex items-center justify-between">
+              <span>Salesperson Attribution</span>
+              <span class="text-[9px] text-indigo-600 font-bold">Tag Rep</span>
+            </label>
+            <select id="edit-order-rep" class="w-full p-2 bg-indigo-50/60 border border-indigo-200 rounded-xl font-bold text-xs text-indigo-950 outline-none focus:ring-1 focus:ring-indigo-500">
               <!-- Populated by JS -->
             </select>
           </div>
@@ -3528,10 +3537,19 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Route Beat</label>
               <input type="text" id="inv-edit-route" oninput="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-700 mb-0.5 flex items-center justify-between">
+                <span>Salesperson</span>
+                <span class="text-[9px] text-indigo-600 font-bold">Tag Rep</span>
+              </label>
+              <select id="inv-edit-rep" onchange="handleInvoiceFieldLiveChange()" class="w-full p-1.5 bg-indigo-50/60 border border-indigo-200 rounded-lg text-xs font-bold text-indigo-950">
+                <!-- Populated dynamically -->
+              </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Delivery Address</label>
@@ -3652,6 +3670,7 @@
             <div class="space-y-1 sm:text-right">
               <div><span class="font-bold uppercase text-[10px]">GST No:</span> <span id="invoice-cust-gstin" class="font-mono font-bold block">Unregistered / Retail</span></div>
               <div><span class="font-bold uppercase text-[10px]">Route Beat:</span> <span id="invoice-route" class="font-bold block">-</span></div>
+              <div id="invoice-rep-row" class="hidden"><span class="font-bold uppercase text-[10px]">Sales Official:</span> <span id="invoice-rep-name" class="font-bold block font-mono text-indigo-950">-</span></div>
             </div>
           </div>
 
@@ -8511,7 +8530,9 @@
         <tr class="hover:bg-slate-50 transition">
           <td class="p-3 font-mono font-bold text-slate-800">
             #${o.id}<br><span class="text-[10px] text-slate-400 font-normal">${o.date} ${o.time}</span>
-            ${o.repName ? `<div class="text-[9px] font-sans font-bold text-indigo-600 flex items-center gap-1 mt-0.5"><i data-lucide="user" class="w-2.5 h-2.5"></i> ${escapeHtml(o.repName)}</div>` : ''}
+            ${(o.repName || o.salespersonName) 
+              ? `<div class="text-[9px] font-sans font-bold text-indigo-600 flex items-center gap-1 mt-0.5"><i data-lucide="user" class="w-2.5 h-2.5"></i> ${escapeHtml(o.repName || o.salespersonName)}</div>` 
+              : `<button type="button" onclick="openEditOrderModal('${o.id}')" class="text-[9px] font-sans font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 mt-1 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 transition shadow-2xs" title="Tag this bill to a Salesperson"><i data-lucide="user-plus" class="w-2.5 h-2.5 text-amber-600"></i> + Tag Rep</button>`}
           </td>
           <td class="p-3">
             <div class="font-bold text-slate-900">${escapeHtml(o.buyerName)}</div>
@@ -8574,7 +8595,8 @@
       const status = getOrderStatus(o);
       const lines = (o.items || []).map(i => `• ${i.name} (${i.unitSize}) x${i.qty} @ ₹${i.rate} = ${formatINR(i.total)}`).join('\n');
       const cleanNotes = cleanOrderNotes(o.notes);
-      const msg = `ORDER #${o.id}\nStatus: ${status}\nCustomer: ${o.buyerName}\nPhone: ${o.buyerPhone || '-'}\nRoute: ${o.dispatchRoute || '-'}\nDate: ${o.date} ${o.time}\nPayment: ${o.paymentMode}\n\nITEMS:\n${lines}\n\nTotal Units: ${o.totalUnits}\nExtra Rebate: ${formatINR(o.extraRebate || 0)}\nNet Amount: ${formatINR(o.netPayable)}\nNotes: ${cleanNotes || 'None'}`;
+      const repLabel = o.repName || o.salespersonName || 'Direct / No Rep';
+      const msg = `ORDER #${o.id}\nStatus: ${status}\nSalesperson: ${repLabel}\nCustomer: ${o.buyerName}\nPhone: ${o.buyerPhone || '-'}\nRoute: ${o.dispatchRoute || '-'}\nDate: ${o.date} ${o.time}\nPayment: ${o.paymentMode}\n\nITEMS:\n${lines}\n\nTotal Units: ${o.totalUnits}\nExtra Rebate: ${formatINR(o.extraRebate || 0)}\nNet Amount: ${formatINR(o.netPayable)}\nNotes: ${cleanNotes || 'None'}`;
       
       if (status === 'Pending Delivery') {
         if (confirm(`${msg}\n\nClick OK to Confirm Delivery & Send WhatsApp Bill, or Cancel to Edit/Dismiss.`)) {
@@ -8616,6 +8638,19 @@
       routeSelect.innerHTML = allRoutes.map(r => `
         <option value="${escapeHtml(r)}" ${r === o.dispatchRoute ? 'selected' : ''}>${escapeHtml(r)}</option>
       `).join('');
+
+      // Populate salesperson select
+      const repSelect = document.getElementById('edit-order-rep');
+      if (repSelect) {
+        const curRepId = o.repId || o.salespersonId || '';
+        const curRepName = (o.repName || o.salespersonName || '').toLowerCase().trim();
+        repSelect.innerHTML = `<option value="">-- No Rep / Company Direct (Manager) --</option>` +
+          (salespeople || []).filter(s => s.active !== false).map(sp => {
+            const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
+                            (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
+            return `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>${escapeHtml(sp.name)} (${sp.id}) • ${escapeHtml(sp.assignedRoute || 'Beat')}</option>`;
+          }).join('');
+      }
 
       // Populate Date of Entry, Status, Date of Delivery
       document.getElementById('edit-order-date').value = o.date || new Date().toISOString().split('T')[0];
@@ -8888,12 +8923,22 @@
         newDeliveredAt = null;
       }
 
+      // Get salesperson attribution
+      const repIdVal = document.getElementById('edit-order-rep')?.value || '';
+      const selectedRep = (salespeople || []).find(s => s.id === repIdVal);
+      const newRepId = selectedRep ? selectedRep.id : (repIdVal || null);
+      const newRepName = selectedRep ? selectedRep.name : (repIdVal ? repIdVal : null);
+
       const updatedRecord = {
         ...origOrder,
         buyerId: cust.id,
         buyerName: cust.name,
         buyerPhone: cust.phone || '',
         dispatchRoute: route,
+        repId: newRepId,
+        repName: newRepName,
+        salespersonId: newRepId,
+        salespersonName: newRepName,
         date: newDate,
         time: newTime,
         deliveredAt: newDeliveredAt,
@@ -8916,11 +8961,40 @@
       try {
         if (window.BroadcastChannel) {
           const bc = new BroadcastChannel('sg_sales_bus');
-          bc.postMessage({ type: 'ORDER_UPDATED', repId: origOrder.repId || origOrder.salespersonId, order: updatedRecord });
+          bc.postMessage({ type: 'ORDER_UPDATED', repId: newRepId || origOrder.repId || origOrder.salespersonId, order: updatedRecord });
         }
       } catch(e) {}
 
-      // 3. Persist via elevated Manager Edge Function
+      // 3. Direct update to Supabase orders table (guaranteed immediate cloud persistence)
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').update({
+            repId: newRepId,
+            repName: newRepName,
+            salespersonId: newRepId,
+            salespersonName: newRepName,
+            buyerId: cust.id,
+            buyerName: cust.name,
+            buyerPhone: cust.phone || '',
+            dispatchRoute: route,
+            date: newDate,
+            time: newTime,
+            status: newStatus,
+            deliveredAt: newDeliveredAt,
+            items: editOrderItems,
+            totalUnits,
+            itemsSubtotal,
+            extraRebate: rebate,
+            netPayable,
+            paymentMode: payMode,
+            notes
+          }).eq('id', orderId);
+        } catch(supErr) {
+          console.warn("Direct Supabase order update:", supErr);
+        }
+      }
+
+      // 4. Persist via elevated Manager Edge Function
       try {
         await callManagerEdgeFunction('manager_update_order', updatedRecord);
       } catch(err) {
@@ -8929,7 +9003,10 @@
 
       closeEditOrderModal();
       refreshAllUI();
-      alert(`Order #${orderId} successfully modified! Stock and ledger reconciled.`);
+      if (typeof renderSalespersonReportsView === 'function') {
+        renderSalespersonReportsView();
+      }
+      showToast(`✓ Order #${orderId} tagged to ${newRepName || 'Company Direct'} and saved!`);
     }
 
     async function deleteOrderConfirm(orderId) {
@@ -10922,6 +10999,19 @@
       if (notesEl) {
         notesEl.innerText = cleanNotes ? `Delivery Notes: ${cleanNotes}` : '';
       }
+
+      // Populate Sales Representative attribution if present
+      const repEl = document.getElementById('invoice-rep-name');
+      const repRow = document.getElementById('invoice-rep-row');
+      const repName = o.repName || o.salespersonName;
+      if (repEl && repRow) {
+        if (repName) {
+          repRow.classList.remove('hidden');
+          repEl.innerText = repName;
+        } else {
+          repRow.classList.add('hidden');
+        }
+      }
     }
 
     function toggleInvoiceManagerEditor(forceState = null) {
@@ -10943,6 +11033,10 @@
             deliveredAt: o.deliveredAt || (getOrderStatus(o) === 'Delivered' ? (o.date || '') : null),
             paymentMode: o.paymentMode,
             dispatchRoute: o.dispatchRoute || (custObj && custObj.homeRoute) || '',
+            repId: o.repId || o.salespersonId || null,
+            repName: o.repName || o.salespersonName || null,
+            salespersonId: o.repId || o.salespersonId || null,
+            salespersonName: o.repName || o.salespersonName || null,
             buyerName: o.buyerName,
             buyerPhone: o.buyerPhone || (custObj && custObj.phone) || '',
             buyerAddress: (custObj && custObj.address) || o.buyerAddress || '',
@@ -11008,6 +11102,19 @@
       document.getElementById('inv-edit-buyer-address').value = d.buyerAddress;
       document.getElementById('inv-edit-notes').value = d.notes;
       document.getElementById('inv-edit-rebate').value = d.extraRebate || 0;
+
+      // Populate Salesperson Attribution
+      const invRepSelect = document.getElementById('inv-edit-rep');
+      if (invRepSelect) {
+        const curRepId = d.repId || d.salespersonId || '';
+        const curRepName = (d.repName || d.salespersonName || '').toLowerCase().trim();
+        invRepSelect.innerHTML = `<option value="">-- No Rep (Company Direct) --</option>` +
+          (salespeople || []).filter(s => s.active !== false).map(sp => {
+            const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
+                            (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
+            return `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>${escapeHtml(sp.name)} (${sp.id})</option>`;
+          }).join('');
+      }
 
       renderStagedInvoiceItemsTable();
       recalculateStagedInvoice();
@@ -11115,6 +11222,17 @@
       currentInvoiceEditData.date = document.getElementById('inv-edit-date')?.value.trim() || currentInvoiceEditData.date;
       currentInvoiceEditData.paymentMode = document.getElementById('inv-edit-pay-mode')?.value || currentInvoiceEditData.paymentMode;
       currentInvoiceEditData.dispatchRoute = document.getElementById('inv-edit-route')?.value.trim() || currentInvoiceEditData.dispatchRoute;
+
+      const invRepSelect = document.getElementById('inv-edit-rep');
+      if (invRepSelect) {
+        const repVal = invRepSelect.value;
+        const selectedRep = (salespeople || []).find(s => s.id === repVal);
+        currentInvoiceEditData.repId = selectedRep ? selectedRep.id : (repVal || null);
+        currentInvoiceEditData.repName = selectedRep ? selectedRep.name : (repVal ? repVal : null);
+        currentInvoiceEditData.salespersonId = currentInvoiceEditData.repId;
+        currentInvoiceEditData.salespersonName = currentInvoiceEditData.repName;
+      }
+
       currentInvoiceEditData.buyerName = document.getElementById('inv-edit-buyer-name')?.value.trim() || currentInvoiceEditData.buyerName;
       currentInvoiceEditData.buyerPhone = document.getElementById('inv-edit-buyer-phone')?.value.trim() || currentInvoiceEditData.buyerPhone;
       currentInvoiceEditData.buyerGstin = document.getElementById('inv-edit-buyer-gstin')?.value.trim() || currentInvoiceEditData.buyerGstin;
@@ -11214,6 +11332,10 @@
         deliveredAt: finalDeliveredAt,
         paymentMode: d.paymentMode,
         dispatchRoute: d.dispatchRoute,
+        repId: d.repId !== undefined ? d.repId : (oldOrder.repId || oldOrder.salespersonId || null),
+        repName: d.repName !== undefined ? d.repName : (oldOrder.repName || oldOrder.salespersonName || null),
+        salespersonId: d.repId !== undefined ? d.repId : (oldOrder.salespersonId || oldOrder.repId || null),
+        salespersonName: d.repName !== undefined ? d.repName : (oldOrder.salespersonName || oldOrder.repName || null),
         buyerName: d.buyerName,
         buyerPhone: d.buyerPhone,
         notes: finalNotes,
@@ -11246,6 +11368,33 @@
         }
       } catch(e) {}
 
+      // Direct update to Supabase orders table (guaranteed immediate cloud persistence)
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('orders').update({
+            repId: updatedOrder.repId,
+            repName: updatedOrder.repName,
+            salespersonId: updatedOrder.salespersonId,
+            salespersonName: updatedOrder.salespersonName,
+            status: updatedOrder.status,
+            deliveredAt: updatedOrder.deliveredAt,
+            paymentMode: updatedOrder.paymentMode,
+            dispatchRoute: updatedOrder.dispatchRoute,
+            buyerName: updatedOrder.buyerName,
+            buyerPhone: updatedOrder.buyerPhone,
+            date: updatedOrder.date,
+            items: updatedOrder.items,
+            totalUnits: updatedOrder.totalUnits,
+            itemsSubtotal: updatedOrder.itemsSubtotal,
+            extraRebate: updatedOrder.extraRebate,
+            netPayable: updatedOrder.netPayable,
+            notes: updatedOrder.notes
+          }).eq('id', updatedOrder.id);
+        } catch(supErr) {
+          console.warn("Direct Supabase invoice order update:", supErr);
+        }
+      }
+
       // Elevate to Manager Edge Function
       try {
         await callManagerEdgeFunction('manager_update_order', updatedOrder);
@@ -11258,6 +11407,9 @@
       renderOrdersHistoryTable();
       renderCustomersTable();
       renderDashboard();
+      if (typeof renderSalespersonReportsView === 'function') {
+        renderSalespersonReportsView();
+      }
 
       alert(`✅ Bill of Supply #${updatedOrder.id} updated successfully by Manager!`);
     }
