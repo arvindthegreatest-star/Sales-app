@@ -209,13 +209,69 @@ CREATE POLICY "Public read-only sample_giveaways" ON sample_giveaways FOR SELECT
 CREATE POLICY "Public read-only contract_pricing" ON contract_pricing FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Public read-only salespeople" ON salespeople FOR SELECT TO anon, authenticated USING (true);
 
+-- 1B. SALESPERSON OPENING & MONTHLY CLOSING STOCK AUDITS
+CREATE TABLE IF NOT EXISTS salesperson_opening_stock (
+  id TEXT PRIMARY KEY, -- e.g. 'OP-SP101-BASE' or 'OP-SP101-2026-10'
+  rep_id TEXT NOT NULL,
+  rep_name TEXT NOT NULL,
+  period_key TEXT NOT NULL, -- 'BASE' or 'YYYY-MM'
+  items JSONB DEFAULT '{}'::jsonb, -- map of sku -> { qty, rate, value }
+  total_units NUMERIC DEFAULT 0,
+  total_value NUMERIC DEFAULT 0,
+  notes TEXT,
+  recorded_by TEXT DEFAULT 'Manager',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS salesperson_stock_audits (
+  id TEXT PRIMARY KEY, -- e.g. 'AUDIT-SP101-2026-10'
+  rep_id TEXT NOT NULL,
+  rep_name TEXT NOT NULL,
+  period_type TEXT NOT NULL DEFAULT 'monthly', -- 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+  period_key TEXT NOT NULL, -- e.g. '2026-10', '2026-W42', '2026-10-17'
+  period_label TEXT NOT NULL,
+  opening_stock JSONB DEFAULT '{}'::jsonb,
+  dispatched_stock JSONB DEFAULT '{}'::jsonb,
+  sold_stock JSONB DEFAULT '{}'::jsonb,
+  sample_stock JSONB DEFAULT '{}'::jsonb,
+  expected_closing_stock JSONB DEFAULT '{}'::jsonb,
+  actual_closing_stock JSONB DEFAULT '{}'::jsonb,
+  variance_stock JSONB DEFAULT '{}'::jsonb,
+  total_opening_units NUMERIC DEFAULT 0,
+  total_dispatched_units NUMERIC DEFAULT 0,
+  total_sold_units NUMERIC DEFAULT 0,
+  total_sample_units NUMERIC DEFAULT 0,
+  total_expected_closing_units NUMERIC DEFAULT 0,
+  total_actual_closing_units NUMERIC DEFAULT 0,
+  total_variance_units NUMERIC DEFAULT 0,
+  total_closing_value NUMERIC DEFAULT 0,
+  total_revenue NUMERIC DEFAULT 0,
+  total_collected NUMERIC DEFAULT 0,
+  total_udhaar NUMERIC DEFAULT 0,
+  status TEXT DEFAULT 'Finalized', -- 'Draft', 'Finalized', 'Audited'
+  notes TEXT,
+  audited_by TEXT DEFAULT 'Manager',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE salesperson_opening_stock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE salesperson_stock_audits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read-only salesperson_opening_stock" ON salesperson_opening_stock;
+DROP POLICY IF EXISTS "Public read-only salesperson_stock_audits" ON salesperson_stock_audits;
+
+CREATE POLICY "Public read-only salesperson_opening_stock" ON salesperson_opening_stock FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Public read-only salesperson_stock_audits" ON salesperson_stock_audits FOR SELECT TO anon, authenticated USING (true);
+
 -- 3. REALTIME REPLICATION (Instant Updates across all devices)
-ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, inventory_outward, sample_giveaways, contract_pricing, salespeople;
+ALTER PUBLICATION supabase_realtime ADD TABLE orders, products, buyers, routes, inventory_inward, inventory_outward, sample_giveaways, contract_pricing, salespeople, salesperson_opening_stock, salesperson_stock_audits;
 
 -- ==============================================================================
 -- OPTIONAL: RESET DUMMY DATA SCRIPT
 -- If you want to purge test records from Supabase, run this in SQL Editor:
--- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople CASCADE;
+-- TRUNCATE orders, buyers, products, routes, inventory_inward, sample_giveaways, contract_pricing, salespeople, salesperson_opening_stock, salesperson_stock_audits CASCADE;
 -- ==============================================================================
 
 

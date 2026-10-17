@@ -759,28 +759,47 @@
         </button>
       </div>
 
-      <!-- Quick Summary Cards -->
-      <div class="grid grid-cols-2 gap-2 text-xs">
+      <!-- Timeframe Selector -->
+      <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl overflow-x-auto no-scrollbar border border-slate-800 text-[11px] shrink-0">
+        <button type="button" onclick="setAgentStockTimeframe('today')" id="btn-agent-tf-today" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">Today</button>
+        <button type="button" onclick="setAgentStockTimeframe('week')" id="btn-agent-tf-week" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">This Week</button>
+        <button type="button" onclick="setAgentStockTimeframe('month')" id="btn-agent-tf-month" class="px-2.5 py-1 rounded-lg font-bold bg-emerald-600 text-white shadow-xs transition">This Month</button>
+        <button type="button" onclick="setAgentStockTimeframe('quarter')" id="btn-agent-tf-quarter" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">Quarter</button>
+        <button type="button" onclick="setAgentStockTimeframe('year')" id="btn-agent-tf-year" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">Year</button>
+        <button type="button" onclick="setAgentStockTimeframe('all')" id="btn-agent-tf-all" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">All Time</button>
+      </div>
+
+      <!-- Quick Summary Cards (4 Cards) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs shrink-0">
         <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-          <span class="text-[10px] text-slate-400 uppercase font-bold block">Total Packs In Hand</span>
-          <span class="text-base font-black font-mono text-amber-400 block mt-0.5" id="agent-sheet-packs">0 packs</span>
+          <span class="text-[9px] text-slate-400 uppercase font-bold block">Opening Stock</span>
+          <span class="text-sm font-black font-mono text-slate-200 block mt-0.5" id="agent-sheet-opening">0 packs</span>
         </div>
         <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-          <span class="text-[10px] text-slate-400 uppercase font-bold block">Custody Valuation</span>
-          <span class="text-base font-black font-mono text-emerald-400 block mt-0.5" id="agent-sheet-val">₹0</span>
+          <span class="text-[9px] text-amber-400 uppercase font-bold block">Issued (+)</span>
+          <span class="text-sm font-black font-mono text-amber-400 block mt-0.5" id="agent-sheet-recv">+0 packs</span>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[9px] text-emerald-400 uppercase font-bold block">Sold / Delivered (-)</span>
+          <span class="text-sm font-black font-mono text-emerald-400 block mt-0.5" id="agent-sheet-sold">-0 packs</span>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <span class="text-[9px] text-indigo-400 uppercase font-bold block">Closing In Hand</span>
+          <span class="text-sm font-black font-mono text-indigo-300 block mt-0.5" id="agent-sheet-packs">0 packs</span>
         </div>
       </div>
 
       <!-- Itemized Table -->
-      <div class="overflow-y-auto flex-1">
+      <div class="overflow-y-auto flex-1 border border-slate-800 rounded-xl">
         <table class="w-full text-left text-xs border-collapse text-slate-200">
           <thead class="bg-slate-950 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-800 sticky top-0">
             <tr>
               <th class="p-2">Product & SKU</th>
+              <th class="p-2 text-right text-slate-300">Opening</th>
               <th class="p-2 text-right text-amber-400">Recv (+)</th>
               <th class="p-2 text-right text-rose-400">Sold (-)</th>
               <th class="p-2 text-right text-blue-400">Smpl (-)</th>
-              <th class="p-2 text-right font-black text-white">In Hand</th>
+              <th class="p-2 text-right font-black text-white bg-slate-900/60">In Hand</th>
               <th class="p-2 text-right font-mono text-emerald-400">Value</th>
             </tr>
           </thead>
@@ -1712,11 +1731,68 @@
     }
 
     // 6C. SALES AGENT STOCK IN HAND & CUSTODY RECONCILIATION
-    function getAgentStockSummary() {
+    let agentStockTimeframe = 'month';
+
+    function setAgentStockTimeframe(tf) {
+      agentStockTimeframe = tf;
+      ['today', 'week', 'month', 'quarter', 'year', 'all'].forEach(t => {
+        const btn = document.getElementById(`btn-agent-tf-${t}`);
+        if (btn) {
+          if (t === tf) {
+            btn.className = "px-2.5 py-1 rounded-lg font-bold bg-emerald-600 text-white shadow-xs transition";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition";
+          }
+        }
+      });
+      renderAgentStockSheet();
+    }
+
+    function getAgentStockSummary(tf = agentStockTimeframe) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      let startDate = '2020-01-01';
+      let endDate = '2099-12-31';
+
+      if (tf === 'today') {
+        startDate = todayStr;
+        endDate = todayStr;
+      } else if (tf === 'week') {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(d.setDate(diff));
+        startDate = mon.toISOString().split('T')[0];
+        const sun = new Date(mon);
+        sun.setDate(sun.getDate() + 6);
+        endDate = sun.toISOString().split('T')[0];
+      } else if (tf === 'month') {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        startDate = `${y}-${String(m).padStart(2, '0')}-01`;
+        const lastDate = new Date(y, m, 0).getDate();
+        endDate = `${y}-${String(m).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`;
+      } else if (tf === 'quarter') {
+        const now = new Date();
+        const y = now.getFullYear();
+        const q = Math.floor((now.getMonth() + 3) / 3);
+        let sm = 1; let em = 3;
+        if (q === 2) { sm = 4; em = 6; }
+        else if (q === 3) { sm = 7; em = 9; }
+        else if (q === 4) { sm = 10; em = 12; }
+        startDate = `${y}-${String(sm).padStart(2, '0')}-01`;
+        const lastDate = new Date(y, em, 0).getDate();
+        endDate = `${y}-${String(em).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`;
+      } else if (tf === 'year') {
+        const y = new Date().getFullYear();
+        startDate = `${y}-01-01`;
+        endDate = `${y}-12-31`;
+      }
+
       const repDispatches = (outwardDispatches || []).filter(d => 
         String(d.rep_id || '').toLowerCase() === String(AGENT.id || '').toLowerCase() || 
-        (d.rep_name && d.rep_name.toLowerCase() === (AGENT.name || '').toLowerCase()) ||
-        (AGENT.slug && d.rep_id && d.rep_id.toLowerCase().includes(AGENT.slug.toLowerCase()))
+        String(d.rep_slug || '').toLowerCase() === String(AGENT.slug || '').toLowerCase() ||
+        (d.rep_name && d.rep_name.toLowerCase() === (AGENT.name || '').toLowerCase())
       );
       const repOrders = orders || [];
       const repSamples = (sampleGiveaways || []).filter(s => 
@@ -1724,6 +1800,16 @@
         (s.rep_name && s.rep_name.toLowerCase() === (AGENT.name || '').toLowerCase()) ||
         (s.notes && (s.notes.includes(AGENT.id) || (AGENT.name && s.notes.toLowerCase().includes(AGENT.name.toLowerCase()))))
       );
+
+      // Partition into In-Period vs Prior
+      const dispatchesInPeriod = repDispatches.filter(d => (d.date || '') >= startDate && (d.date || '') <= endDate);
+      const dispatchesPrior = repDispatches.filter(d => (d.date || '') < startDate);
+
+      const ordersInPeriod = repOrders.filter(o => (o.date || '') >= startDate && (o.date || '') <= endDate);
+      const ordersPrior = repOrders.filter(o => (o.date || '') < startDate);
+
+      const samplesInPeriod = repSamples.filter(s => (s.date || '') >= startDate && (s.date || '') <= endDate);
+      const samplesPrior = repSamples.filter(s => (s.date || '') < startDate);
 
       const skuMap = {};
       products.forEach(p => {
@@ -1733,6 +1819,7 @@
           name: p.name,
           unitSize: p.unitSize || '',
           rate: Number(p.baseRate || 0),
+          opening: 0,
           received: 0,
           sold: 0,
           samples: 0,
@@ -1741,8 +1828,28 @@
         };
       });
 
-      // Sum dispatches received
-      repDispatches.forEach(d => {
+      // Opening stock from prior movements
+      dispatchesPrior.forEach(d => {
+        if (Array.isArray(d.items)) {
+          d.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].opening += Number(it.qty || 0);
+          });
+        }
+      });
+      ordersPrior.forEach(o => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].opening -= Number(it.qty || 0);
+          });
+        }
+      });
+      samplesPrior.forEach(s => {
+        const itemSku = s.product_sku;
+        if (skuMap[itemSku]) skuMap[itemSku].opening -= Number(s.quantity_units || s.quantity || 0);
+      });
+
+      // In-period received dispatches
+      dispatchesInPeriod.forEach(d => {
         if (Array.isArray(d.items)) {
           d.items.forEach(it => {
             const itemSku = it.sku;
@@ -1753,6 +1860,7 @@
                 name: it.name || itemSku,
                 unitSize: it.unitSize || '',
                 rate: Number(it.rate || 0),
+                opening: 0,
                 received: 0,
                 sold: 0,
                 samples: 0,
@@ -1765,8 +1873,8 @@
         }
       });
 
-      // Deduct orders billed
-      repOrders.forEach(o => {
+      // In-period orders billed
+      ordersInPeriod.forEach(o => {
         if (Array.isArray(o.items)) {
           o.items.forEach(it => {
             const itemSku = it.sku;
@@ -1777,14 +1885,15 @@
         }
       });
 
-      // Deduct free samples given
-      repSamples.forEach(s => {
+      // In-period free samples given
+      samplesInPeriod.forEach(s => {
         const itemSku = s.product_sku;
         if (skuMap[itemSku]) {
           skuMap[itemSku].samples += Number(s.quantity_units || s.quantity || 0);
         }
       });
 
+      let totalOpening = 0;
       let totalReceived = 0;
       let totalSold = 0;
       let totalSamples = 0;
@@ -1792,8 +1901,9 @@
       let totalValue = 0;
 
       Object.values(skuMap).forEach(row => {
-        row.inHand = row.received - row.sold - row.samples;
+        row.inHand = row.opening + row.received - row.sold - row.samples;
         row.value = Math.max(0, row.inHand) * row.rate;
+        totalOpening += row.opening;
         totalReceived += row.received;
         totalSold += row.sold;
         totalSamples += row.samples;
@@ -1802,6 +1912,7 @@
       });
 
       return {
+        totalOpening,
         totalReceived,
         totalSold,
         totalSamples,
@@ -1812,11 +1923,12 @@
     }
 
     function getAgentProductStock(prod) {
-      if (!prod) return { received: 0, sold: 0, samples: 0, inHand: 0, rate: 0, value: 0 };
-      const summary = getAgentStockSummary();
+      if (!prod) return { opening: 0, received: 0, sold: 0, samples: 0, inHand: 0, rate: 0, value: 0 };
+      const summary = getAgentStockSummary('all');
       const match = summary.skuBreakdown.find(s => s.sku === prod.sku);
       if (match) return match;
       return {
+        opening: 0,
         received: 0,
         sold: 0,
         samples: 0,
@@ -1840,7 +1952,13 @@
     }
 
     function renderAgentStockSheet() {
-      const summary = getAgentStockSummary();
+      const summary = getAgentStockSummary(agentStockTimeframe);
+      const opEl = document.getElementById('agent-sheet-opening');
+      if (opEl) opEl.innerText = `${summary.totalOpening} pk`;
+      const recEl = document.getElementById('agent-sheet-recv');
+      if (recEl) recEl.innerText = `+${summary.totalReceived} pk`;
+      const sldEl = document.getElementById('agent-sheet-sold');
+      if (sldEl) sldEl.innerText = `-${summary.totalSold} pk`;
       const pEl = document.getElementById('agent-sheet-packs');
       if (pEl) pEl.innerText = `${summary.totalInHand} packs`;
       const vEl = document.getElementById('agent-sheet-val');
@@ -1857,10 +1975,11 @@
               <div class="font-bold text-white font-sans">${escapeHtml(row.name)}</div>
               <div class="text-[9px] text-slate-400 font-mono">${escapeHtml(row.sku)} • ${escapeHtml(row.unitSize || '-')}</div>
             </td>
+            <td class="p-2 text-right text-slate-300 font-bold">${row.opening}</td>
             <td class="p-2 text-right text-amber-400 font-bold">+${row.received}</td>
             <td class="p-2 text-right text-rose-400">-${row.sold}</td>
             <td class="p-2 text-right text-blue-400">-${row.samples}</td>
-            <td class="p-2 text-right ${inHandCls}">${row.inHand}</td>
+            <td class="p-2 text-right ${inHandCls} bg-slate-900/40">${row.inHand}</td>
             <td class="p-2 text-right text-emerald-400">${formatINR(row.value)}</td>
           </tr>
         `;

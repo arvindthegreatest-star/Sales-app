@@ -494,6 +494,45 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
+    } else if (action === "manager_save_stock_audit" || action === "log_stock_audit") {
+      const audit = payload;
+      if (!audit || !audit.id || !audit.rep_id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Missing required stock audit fields." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data, error } = await supabase.from("salesperson_stock_audits").upsert([audit]).select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "manager_delete_stock_audit") {
+      const { id } = payload;
+      const { error } = await supabase.from("salesperson_stock_audits").delete().eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "manager_save_opening_stock") {
+      const opening = payload;
+      if (!opening || !opening.id || !opening.rep_id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Missing required opening stock fields." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data, error } = await supabase.from("salesperson_opening_stock").upsert([opening]).select();
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
     } else {
       return new Response(
         JSON.stringify({ success: false, error: `Unrecognized action: ${action}` }),

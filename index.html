@@ -1517,6 +1517,11 @@
           <i data-lucide="boxes" class="w-4 h-4"></i>
           <span>Stock in Hand & Movement</span>
         </button>
+        <button onclick="setSalespersonSubtab('reports')" id="sp-subtab-btn-reports" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0" title="Periodic Opening/Closing Stock & Executive Sales Performance Reports">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-indigo-600"></i>
+          <span>Stock & Sales Reports</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-100 text-indigo-800">Periodic</span>
+        </button>
       </div>
 
       <!-- ====================================================================
@@ -1754,6 +1759,275 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+      </div>
+      <!-- End of Sub-View 4: Stock Movement -->
+
+      <!-- ====================================================================
+           SUB-VIEW 5: OPENING/CLOSING STOCK & PERIODIC SALES REPORTS
+           ==================================================================== -->
+      <div id="sp-subview-reports" class="hidden space-y-5">
+
+        <!-- Controls & Filter Toolbar -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3.5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div>
+              <h3 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-indigo-600"></i> Rep Stock & Sales Performance Reports
+              </h3>
+              <p class="text-[11px] text-slate-500">Track opening stock, outward dispatches, delivered sales, samples, and month-end closing stock audits across custom timeframes.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="openRecordStockAuditModal()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer" title="Record and lock physical month-end closing stock">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i> Record Month-End Closing Stock
+              </button>
+              <button type="button" onclick="openSetOpeningStockModal()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Set or adjust initial baseline opening stock">
+                <i data-lucide="package-plus" class="w-3.5 h-3.5 text-slate-500"></i> Baseline Opening Stock
+              </button>
+              <button type="button" onclick="printPeriodReport()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Print executive report">
+                <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i> Print
+              </button>
+              <button type="button" onclick="sharePeriodReportWhatsApp()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Share report breakdown to WhatsApp">
+                <i data-lucide="share-2" class="w-3.5 h-3.5 text-emerald-600"></i> WhatsApp
+              </button>
+              <button type="button" onclick="exportPeriodReportCsv()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Export as CSV">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i> CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Timeframe Selector Bar -->
+          <div class="pt-3 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <!-- Rep Selector -->
+            <div class="flex items-center gap-2">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Official:</label>
+              <select id="sp-report-rep-select" onchange="onReportRepOrPeriodChanged()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-indigo-500">
+                <option value="ALL">All Sales Personnel Combined</option>
+              </select>
+            </div>
+
+            <!-- Timeframe Pills: Daily, Weekly, Monthly, Quarterly, Yearly, All Time -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
+              <button type="button" onclick="setReportTimeframe('daily')" id="btn-rep-timeframe-daily" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">Daily</button>
+              <button type="button" onclick="setReportTimeframe('weekly')" id="btn-rep-timeframe-weekly" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">Weekly</button>
+              <button type="button" onclick="setReportTimeframe('monthly')" id="btn-rep-timeframe-monthly" class="px-2.5 py-1 rounded-lg text-xs font-bold transition bg-white text-indigo-700 shadow-2xs">Monthly</button>
+              <button type="button" onclick="setReportTimeframe('quarterly')" id="btn-rep-timeframe-quarterly" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">Quarterly</button>
+              <button type="button" onclick="setReportTimeframe('yearly')" id="btn-rep-timeframe-yearly" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">Yearly</button>
+              <button type="button" onclick="setReportTimeframe('all')" id="btn-rep-timeframe-all" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">All Time</button>
+            </div>
+
+            <!-- Dynamic Date Parameter Controls -->
+            <div id="sp-report-param-container" class="flex items-center gap-2">
+              <!-- Dynamically populated or toggled depending on selected timeframe -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Printable Report Canvas -->
+        <div id="printable-rep-report-canvas" class="space-y-4">
+
+          <!-- Executive Header Strip -->
+          <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-md flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider" id="report-badge-period-type">Monthly Report</span>
+                <span class="text-xs text-slate-400" id="report-badge-date-range">-</span>
+              </div>
+              <h2 class="text-lg font-black tracking-tight text-white mt-1" id="report-title-heading">October 2026 Stock & Sales Ledger</h2>
+              <p class="text-xs text-slate-300" id="report-rep-subtitle">Sales Official: Ramesh Kumar • Route: Yelahanka Beat 1</p>
+            </div>
+            <div class="text-right" id="report-audit-status-badge">
+              <!-- Dynamic: Audited / Reconciled or Real-Time Active -->
+            </div>
+          </div>
+
+          <!-- Executive KPI Cards Strip (8 Cards) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 text-xs">
+            <!-- Opening Stock -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Opening Stock</span>
+              <div class="font-mono font-black text-base text-slate-900" id="rep-kpi-opening-units">0 pk</div>
+              <span class="text-[10px] text-slate-500 font-mono" id="rep-kpi-opening-val">₹0</span>
+            </div>
+            <!-- Inward Dispatched (+) -->
+            <div class="bg-amber-50/60 rounded-2xl p-3 border border-amber-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1">Stock Issued (+)</span>
+              <div class="font-mono font-black text-base text-amber-800" id="rep-kpi-dispatched-units">+0 pk</div>
+              <span class="text-[10px] text-amber-700 font-mono" id="rep-kpi-dispatched-val">₹0</span>
+            </div>
+            <!-- Commercial Sales (-) -->
+            <div class="bg-emerald-50/60 rounded-2xl p-3 border border-emerald-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block mb-1">Units Sold (-)</span>
+              <div class="font-mono font-black text-base text-emerald-700" id="rep-kpi-sold-units">-0 pk</div>
+              <span class="text-[10px] text-emerald-600 font-mono" id="rep-kpi-sold-bills">0 bills</span>
+            </div>
+            <!-- Free Samples (-) -->
+            <div class="bg-blue-50/60 rounded-2xl p-3 border border-blue-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 block mb-1">Samples Given (-)</span>
+              <div class="font-mono font-black text-base text-blue-700" id="rep-kpi-sample-units">-0 pk</div>
+              <span class="text-[10px] text-blue-600 font-mono" id="rep-kpi-sample-val">₹0</span>
+            </div>
+            <!-- Closing Stock (=) -->
+            <div class="bg-indigo-50/60 rounded-2xl p-3 border border-indigo-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-800 block mb-1">Closing Stock (=)</span>
+              <div class="font-mono font-black text-base text-indigo-950" id="rep-kpi-closing-units">0 pk</div>
+              <span class="text-[10px] text-indigo-700 font-mono font-bold" id="rep-kpi-closing-val">₹0</span>
+            </div>
+            <!-- Variance -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs" id="rep-kpi-variance-card">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Audit Variance</span>
+              <div class="font-mono font-black text-base text-slate-700" id="rep-kpi-variance-units">0 pk</div>
+              <span class="text-[10px] text-slate-400 font-mono" id="rep-kpi-variance-val">Reconciled</span>
+            </div>
+            <!-- Gross Revenue -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Total Sales (₹)</span>
+              <div class="font-mono font-black text-base text-emerald-700" id="rep-kpi-revenue">₹0</div>
+              <span class="text-[10px] text-slate-500 font-mono" id="rep-kpi-collected">₹0 Cash/UPI</span>
+            </div>
+            <!-- Commission -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Commission</span>
+              <div class="font-mono font-black text-base text-indigo-700" id="rep-kpi-commission">₹0</div>
+              <span class="text-[10px] text-slate-500 font-mono" id="rep-kpi-target-pct">0% Target</span>
+            </div>
+          </div>
+
+          <!-- SKU-Wise Stock Flow Reconciliation Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h4 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                  <i data-lucide="boxes" class="w-4 h-4 text-emerald-600"></i> Itemized SKU Stock Flow Reconciliation
+                </h4>
+                <p class="text-[11px] text-slate-500">Mathematical formula: Closing Stock = Opening Stock + Stock Issued - Units Sold - Samples Given.</p>
+              </div>
+              <div class="text-xs text-slate-500 font-mono font-bold" id="report-sku-count-label">
+                0 Products
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">SKU & Product</th>
+                    <th class="p-2.5">Packaging</th>
+                    <th class="p-2.5 text-right">Base Rate</th>
+                    <th class="p-2.5 text-right font-bold text-slate-900 bg-slate-100/50">Opening Stock</th>
+                    <th class="p-2.5 text-right font-bold text-amber-800 bg-amber-50/40">Issued (+)</th>
+                    <th class="p-2.5 text-right font-bold text-emerald-700 bg-emerald-50/40">Sold (-)</th>
+                    <th class="p-2.5 text-right font-bold text-blue-700 bg-blue-50/40">Samples (-)</th>
+                    <th class="p-2.5 text-right font-black text-indigo-950 bg-indigo-50/60">Calculated Closing</th>
+                    <th class="p-2.5 text-right font-black text-slate-900">Physical Count</th>
+                    <th class="p-2.5 text-center font-bold">Variance</th>
+                    <th class="p-2.5 text-right font-bold text-emerald-700">Closing Value (₹)</th>
+                  </tr>
+                </thead>
+                <tbody id="report-sku-flow-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
+                  <!-- Populated dynamically by JS -->
+                </tbody>
+                <tfoot class="bg-slate-50 font-bold border-t-2 border-slate-900 text-xs font-mono">
+                  <tr id="report-sku-flow-tfoot">
+                    <!-- Populated dynamically by JS -->
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Commercial & Payment Collection Summary -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Payment & Credit Analysis -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+              <h4 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i> Cash Flow & Credit Breakdown
+              </h4>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                  <span class="text-slate-600 font-bold">Total Gross Sales Billed:</span>
+                  <span class="font-mono font-black text-slate-900" id="report-fin-gross">₹0</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-emerald-50 text-emerald-950">
+                  <span class="font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Cash / UPI Received:</span>
+                  <span class="font-mono font-black text-emerald-700" id="report-fin-collected">₹0</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-rose-50 text-rose-950">
+                  <span class="font-bold flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-rose-600"></i> Udhaar / Credit Given:</span>
+                  <span class="font-mono font-black text-rose-700" id="report-fin-udhaar">₹0</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-indigo-50 text-indigo-950">
+                  <span class="font-bold flex items-center gap-1"><i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i> Sales Commission Earned:</span>
+                  <span class="font-mono font-black text-indigo-700" id="report-fin-commission">₹0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stores & Delivery Performance -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+              <h4 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="truck" class="w-4 h-4 text-indigo-600"></i> Order Fulfillment & Strike Rate
+              </h4>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                  <span class="text-slate-600 font-bold">Bills Logged in Period:</span>
+                  <span class="font-mono font-black text-slate-900" id="report-perf-bills">0 bills</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                  <span class="text-slate-600 font-bold">Delivered on Spot / Fulfilled:</span>
+                  <span class="font-mono font-black text-emerald-700" id="report-perf-delivered">0 bills</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                  <span class="text-slate-600 font-bold">Pending Delivery:</span>
+                  <span class="font-mono font-black text-amber-600" id="report-perf-pending">0 bills</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                  <span class="text-slate-600 font-bold">Average Order Value (AOV):</span>
+                  <span class="font-mono font-black text-slate-900" id="report-perf-aov">₹0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Finalized Historical Audits Archive Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h4 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
+                  <i data-lucide="archive" class="w-4 h-4 text-slate-700"></i> Recorded Month-End Closing Stock Audits
+                </h4>
+                <p class="text-[11px] text-slate-500">Official archived reports locked by management at month-end. These closing numbers automatically roll over as the next month's opening stock.</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">Period</th>
+                    <th class="p-2.5">Sales Official</th>
+                    <th class="p-2.5">Audit Date</th>
+                    <th class="p-2.5 text-right">Opening Units</th>
+                    <th class="p-2.5 text-right text-amber-800">Inward (+)</th>
+                    <th class="p-2.5 text-right text-emerald-700">Sold (-)</th>
+                    <th class="p-2.5 text-right text-blue-700">Samples (-)</th>
+                    <th class="p-2.5 text-right font-black text-indigo-950">Closing Stock</th>
+                    <th class="p-2.5 text-right font-black text-slate-900">Closing Value (₹)</th>
+                    <th class="p-2.5 text-center">Variance</th>
+                    <th class="p-2.5">Auditor Notes</th>
+                    <th class="p-2.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="report-audits-archive-tbody" class="divide-y divide-slate-100">
+                  <!-- Populated dynamically by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -2227,6 +2501,135 @@
             </tr>
           </tfoot>
         </table>
+      </div>
+    </div>
+  <!-- MODAL: RECORD & LOCK MONTH-END CLOSING STOCK AUDIT -->
+  <div id="modal-record-stock-audit" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[94vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-md">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base text-slate-900">Record & Lock Month-End Closing Stock</h3>
+            <p class="text-xs text-slate-500">Reconcile physical stock count with calculated movement. Automatically rolls over as next month's opening stock.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeRecordStockAuditModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Controls: Rep & Month Selection -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 shrink-0 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Sales Official *</label>
+          <select id="audit-modal-rep-select" onchange="onAuditModalRepOrMonthChanged()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none">
+            <!-- Reps populated by JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Audit Month *</label>
+          <select id="audit-modal-month-select" onchange="onAuditModalRepOrMonthChanged()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none">
+            <!-- Past and current months populated by JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Audited By / Sign-Off</label>
+          <input type="text" id="audit-modal-auditor" placeholder="Manager Name" value="Manager" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-semibold outline-none">
+        </div>
+      </div>
+
+      <!-- Audit SKU Entry Table -->
+      <div class="overflow-y-auto flex-1 border border-slate-200 rounded-2xl">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0">
+            <tr>
+              <th class="p-2.5">SKU & Product</th>
+              <th class="p-2.5">Unit Size</th>
+              <th class="p-2.5 text-right text-slate-800">Opening</th>
+              <th class="p-2.5 text-right text-amber-800">Issued (+)</th>
+              <th class="p-2.5 text-right text-emerald-700">Sold (-)</th>
+              <th class="p-2.5 text-right text-blue-700">Samples (-)</th>
+              <th class="p-2.5 text-right font-black text-indigo-900 bg-indigo-50/50">Expected</th>
+              <th class="p-2.5 text-center font-black text-emerald-800 bg-emerald-50/40 w-32">Actual Physical Count</th>
+              <th class="p-2.5 text-center">Variance</th>
+            </tr>
+          </thead>
+          <tbody id="audit-modal-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
+            <!-- Rendered dynamically by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer Notes & Save Action -->
+      <div class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 text-xs">
+        <div class="flex-1">
+          <input type="text" id="audit-modal-notes" placeholder="Optional audit notes / physical stock check remarks (e.g. 1 damaged pouch in bag)..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none">
+        </div>
+        <div class="flex items-center gap-2 justify-end">
+          <button type="button" onclick="closeRecordStockAuditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="button" onclick="saveMonthStockAudit()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold shadow-md transition cursor-pointer flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i> Save & Lock Closing Stock
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SET BASELINE OPENING STOCK FOR REPRESENTATIVE -->
+  <div id="modal-set-opening-stock" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-5 space-y-4 border border-slate-200 my-auto max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-bold">
+            <i data-lucide="package-plus" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">Set Baseline Opening Stock</h3>
+            <p class="text-xs text-slate-500">Configure initial stock holdings assigned to representative before outward tracking.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSetOpeningStockModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3 shrink-0 text-xs">
+        <label class="font-bold text-slate-600 uppercase text-[10px]">Sales Official:</label>
+        <select id="opening-stock-rep-select" onchange="onOpeningStockRepChanged()" class="p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 outline-none flex-1">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <div class="overflow-y-auto flex-1 border border-slate-200 rounded-2xl">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0">
+            <tr>
+              <th class="p-2.5">SKU & Product Name</th>
+              <th class="p-2.5">Packaging</th>
+              <th class="p-2.5 text-right">Base Rate</th>
+              <th class="p-2.5 text-center w-32">Opening Units</th>
+            </tr>
+          </thead>
+          <tbody id="opening-stock-modal-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pt-3 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
+        <span class="text-xs text-slate-500">Baseline opening stock forms starting balance for historical calculations.</span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeSetOpeningStockModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">Cancel</button>
+          <button type="button" onclick="saveBaselineOpeningStock()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center gap-1.5">
+            <i data-lucide="save" class="w-4 h-4"></i> Save Baseline Opening Stock
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -4684,6 +5087,22 @@
           .on('postgres_changes', { event: '*', schema: 'public', table: 'company_settings' }, async () => {
             await fetchCompanySettingsFromServer();
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'salesperson_stock_audits' }, async () => {
+            const { data } = await supabaseClient.from('salesperson_stock_audits').select('*').order('created_at', { ascending: false });
+            if (data) {
+              stockAudits = data;
+              saveStockAuditsLocally();
+              if (currentSalespersonSubtab === 'reports') renderSalespersonReportsView();
+            }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'salesperson_opening_stock' }, async () => {
+            const { data } = await supabaseClient.from('salesperson_opening_stock').select('*');
+            if (data) {
+              data.forEach(o => { repOpeningStockMap[`${o.rep_id}_${o.period_key}`] = o; });
+              saveRepOpeningStockLocally();
+              if (currentSalespersonSubtab === 'reports') renderSalespersonReportsView();
+            }
+          })
           .subscribe();
 
         // Auto-reconnect & sync immediately when tab becomes visible or phone screen unlocks
@@ -4818,6 +5237,24 @@
         } catch (e) {
           console.warn("Salespeople table fetch note:", e);
         }
+
+        try {
+          const { data: dbAudits } = await supabaseClient.from('salesperson_stock_audits').select('*').order('created_at', { ascending: false });
+          if (dbAudits && dbAudits.length > 0) {
+            stockAudits = dbAudits;
+            saveStockAuditsLocally();
+          }
+        } catch (e) {}
+
+        try {
+          const { data: dbOpening } = await supabaseClient.from('salesperson_opening_stock').select('*');
+          if (dbOpening && dbOpening.length > 0) {
+            dbOpening.forEach(o => {
+              repOpeningStockMap[`${o.rep_id}_${o.period_key}`] = o;
+            });
+            saveRepOpeningStockLocally();
+          }
+        } catch (e) {}
 
         await fetchCompanySettingsFromServer();
         updateCompanyBrandingUI();
@@ -12445,7 +12882,7 @@
 
     function setSalespersonSubtab(tabName) {
       currentSalespersonSubtab = tabName;
-      ['performance', 'transactions', 'samples', 'stock'].forEach(t => {
+      ['performance', 'transactions', 'samples', 'stock', 'reports'].forEach(t => {
         const view = document.getElementById(`sp-subview-${t}`);
         const btn = document.getElementById(`sp-subtab-btn-${t}`);
         if (view) view.classList.toggle('hidden', t !== tabName);
@@ -12652,6 +13089,8 @@
         renderSalespersonSamplesTable(filteredSamples);
       } else if (currentSalespersonSubtab === 'stock') {
         renderSalespersonStockTable();
+      } else if (currentSalespersonSubtab === 'reports') {
+        renderSalespersonReportsView();
       }
 
       if (window.lucide) lucide.createIcons();
@@ -13573,6 +14012,1088 @@
 
       const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
+    }
+
+    // 8B. OPENING STOCK, CLOSING STOCK AUDITS & PERIODIC REPORTS (DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY, ALL TIME)
+    let stockAudits = [];
+    let repOpeningStockMap = {};
+    let currentReportRepId = 'ALL';
+    let currentReportTimeframe = 'monthly';
+    let currentReportDate = new Date().toISOString().split('T')[0];
+    let currentReportMonth = currentReportDate.substring(0, 7); // 'YYYY-MM'
+    let currentReportYear = new Date().getFullYear();
+    let currentReportQuarter = Math.floor((new Date().getMonth() + 3) / 3);
+
+    // Initial local load
+    try {
+      const savedAudits = localStorage.getItem('sg_stock_audits');
+      if (savedAudits) stockAudits = JSON.parse(savedAudits);
+      const savedOpening = localStorage.getItem('sg_opening_stock');
+      if (savedOpening) repOpeningStockMap = JSON.parse(savedOpening);
+    } catch(e) {}
+
+    function saveStockAuditsLocally() {
+      try { localStorage.setItem('sg_stock_audits', JSON.stringify(stockAudits)); } catch(e) {}
+    }
+
+    function saveRepOpeningStockLocally() {
+      try { localStorage.setItem('sg_opening_stock', JSON.stringify(repOpeningStockMap)); } catch(e) {}
+    }
+
+    function formatDisplayDate(dStr) {
+      if (!dStr) return '-';
+      try {
+        const parts = dStr.split('-');
+        if (parts.length === 3) {
+          const d = new Date(parts[0], parseInt(parts[1], 10) - 1, parts[2]);
+          return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      } catch(e) {}
+      return dStr;
+    }
+
+    function getMondayOfDate(dStr) {
+      const d = new Date(dStr);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      return monday.toISOString().split('T')[0];
+    }
+
+    function getSundayOfDate(dStr) {
+      const mondayStr = getMondayOfDate(dStr);
+      const m = new Date(mondayStr);
+      m.setDate(m.getDate() + 6);
+      return m.toISOString().split('T')[0];
+    }
+
+    function getMonthDateRange(yearMonth) {
+      const parts = (yearMonth || '').split('-');
+      const y = parseInt(parts[0], 10) || new Date().getFullYear();
+      const m = parseInt(parts[1], 10) || (new Date().getMonth() + 1);
+      const firstDay = `${y}-${String(m).padStart(2, '0')}-01`;
+      const lastDate = new Date(y, m, 0).getDate();
+      const lastDay = `${y}-${String(m).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`;
+      return { start: firstDay, end: lastDay };
+    }
+
+    function getQuarterDateRange(year, quarter) {
+      const y = parseInt(year, 10) || new Date().getFullYear();
+      const q = parseInt(quarter, 10) || 1;
+      let startMonth = 1;
+      let endMonth = 3;
+      if (q === 2) { startMonth = 4; endMonth = 6; }
+      else if (q === 3) { startMonth = 7; endMonth = 9; }
+      else if (q === 4) { startMonth = 10; endMonth = 12; }
+      const start = `${y}-${String(startMonth).padStart(2, '0')}-01`;
+      const lastDate = new Date(y, endMonth, 0).getDate();
+      const end = `${y}-${String(endMonth).padStart(2, '0')}-${String(lastDate).padStart(2, '0')}`;
+      return { start, end };
+    }
+
+    function getReportCurrentParams() {
+      return {
+        date: currentReportDate,
+        month: currentReportMonth,
+        year: currentReportYear,
+        quarter: currentReportQuarter
+      };
+    }
+
+    function setReportTimeframe(tf) {
+      currentReportTimeframe = tf;
+      ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'all'].forEach(t => {
+        const btn = document.getElementById(`btn-rep-timeframe-${t}`);
+        if (btn) {
+          if (t === tf) {
+            btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition bg-white text-indigo-700 shadow-2xs";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+          }
+        }
+      });
+      renderReportDateControls();
+      renderSalespersonReportsView();
+    }
+
+    function renderReportDateControls() {
+      const container = document.getElementById('sp-report-param-container');
+      if (!container) return;
+
+      const tf = currentReportTimeframe;
+      if (tf === 'daily') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Date:</span>
+            <input type="date" value="${currentReportDate}" onchange="currentReportDate=this.value; renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+          </div>
+        `;
+      } else if (tf === 'weekly') {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Week of:</span>
+            <input type="date" value="${currentReportDate}" onchange="currentReportDate=this.value; renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+          </div>
+        `;
+      } else if (tf === 'monthly') {
+        const now = new Date();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let opts = '';
+        for (let i = 0; i < 18; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const label = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+          const isSel = (val === currentReportMonth) ? 'selected' : '';
+          opts += `<option value="${val}" ${isSel}>${label}</option>`;
+        }
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Month:</span>
+            <select onchange="currentReportMonth=this.value; renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+              ${opts}
+            </select>
+          </div>
+        `;
+      } else if (tf === 'quarterly') {
+        const currentY = new Date().getFullYear();
+        let yrOpts = '';
+        for (let y = currentY; y >= currentY - 3; y--) {
+          yrOpts += `<option value="${y}" ${y === currentReportYear ? 'selected' : ''}>${y}</option>`;
+        }
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Quarter:</span>
+            <select onchange="currentReportQuarter=parseInt(this.value,10); renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+              <option value="1" ${currentReportQuarter === 1 ? 'selected' : ''}>Q1 (Jan - Mar)</option>
+              <option value="2" ${currentReportQuarter === 2 ? 'selected' : ''}>Q2 (Apr - Jun)</option>
+              <option value="3" ${currentReportQuarter === 3 ? 'selected' : ''}>Q3 (Jul - Sep)</option>
+              <option value="4" ${currentReportQuarter === 4 ? 'selected' : ''}>Q4 (Oct - Dec)</option>
+            </select>
+            <select onchange="currentReportYear=parseInt(this.value,10); renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+              ${yrOpts}
+            </select>
+          </div>
+        `;
+      } else if (tf === 'yearly') {
+        const currentY = new Date().getFullYear();
+        let yrOpts = '';
+        for (let y = currentY; y >= currentY - 3; y--) {
+          yrOpts += `<option value="${y}" ${y === currentReportYear ? 'selected' : ''}>Year ${y}</option>`;
+        }
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Year:</span>
+            <select onchange="currentReportYear=parseInt(this.value,10); renderSalespersonReportsView();" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+              ${yrOpts}
+            </select>
+          </div>
+        `;
+      } else { // 'all'
+        container.innerHTML = `
+          <div class="text-[11px] text-slate-500 font-bold bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+            ⚡ Full Cumulative Historical Records
+          </div>
+        `;
+      }
+    }
+
+    function onReportRepOrPeriodChanged() {
+      const select = document.getElementById('sp-report-rep-select');
+      if (select) currentReportRepId = select.value;
+      renderSalespersonReportsView();
+    }
+
+    function computeSalespersonPeriodReport(repId, timeframe = 'monthly', customParams = {}) {
+      let startDate = '';
+      let endDate = '';
+      let periodLabel = '';
+      let periodKey = '';
+
+      if (timeframe === 'daily') {
+        const d = customParams.date || currentReportDate || new Date().toISOString().split('T')[0];
+        startDate = d;
+        endDate = d;
+        periodKey = d;
+        periodLabel = `Daily: ${formatDisplayDate(d)}`;
+      } else if (timeframe === 'weekly') {
+        const baseD = customParams.date || currentReportDate || new Date().toISOString().split('T')[0];
+        startDate = getMondayOfDate(baseD);
+        endDate = getSundayOfDate(baseD);
+        periodKey = `${startDate}_to_${endDate}`;
+        periodLabel = `Weekly: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}`;
+      } else if (timeframe === 'monthly') {
+        const ym = customParams.month || currentReportMonth || new Date().toISOString().substring(0, 7);
+        const range = getMonthDateRange(ym);
+        startDate = range.start;
+        endDate = range.end;
+        periodKey = ym;
+        const [y, m] = ym.split('-');
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        periodLabel = `${monthNames[parseInt(m, 10) - 1] || ym} ${y}`;
+      } else if (timeframe === 'quarterly') {
+        const y = customParams.year || currentReportYear || new Date().getFullYear();
+        const q = customParams.quarter || currentReportQuarter || 1;
+        const range = getQuarterDateRange(y, q);
+        startDate = range.start;
+        endDate = range.end;
+        periodKey = `${y}-Q${q}`;
+        periodLabel = `${y} Quarter ${q} (${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)})`;
+      } else if (timeframe === 'yearly') {
+        const y = customParams.year || currentReportYear || new Date().getFullYear();
+        startDate = `${y}-01-01`;
+        endDate = `${y}-12-31`;
+        periodKey = `${y}`;
+        periodLabel = `Yearly: ${y}`;
+      } else { // 'all'
+        startDate = '2020-01-01';
+        endDate = '2099-12-31';
+        periodKey = 'ALL';
+        periodLabel = 'All Time Full History';
+      }
+
+      const repsToConsider = (repId === 'ALL' || !repId)
+        ? (salespeople || []).filter(s => s.active !== false)
+        : (salespeople || []).filter(s => String(s.id) === String(repId));
+
+      const sp = (repsToConsider.length === 1) ? repsToConsider[0] : null;
+
+      // Filter Dispatches, Orders, Samples in this period vs before this period
+      const dispatchesInPeriod = (outwardDispatches || []).filter(d => {
+        const repMatch = (repId === 'ALL') || (String(d.rep_id) === String(repId));
+        return repMatch && d.date >= startDate && d.date <= endDate;
+      });
+      const dispatchesPrior = (outwardDispatches || []).filter(d => {
+        const repMatch = (repId === 'ALL') || (String(d.rep_id) === String(repId));
+        return repMatch && d.date < startDate;
+      });
+
+      const ordersInPeriod = (orders || []).filter(o => {
+        const repMatch = (repId === 'ALL') || (sp ? isOrderFromSalesperson(o, sp) : false);
+        return repMatch && o.date >= startDate && o.date <= endDate;
+      });
+      const ordersPrior = (orders || []).filter(o => {
+        const repMatch = (repId === 'ALL') || (sp ? isOrderFromSalesperson(o, sp) : false);
+        return repMatch && o.date < startDate;
+      });
+
+      const samplesInPeriod = (sampleGiveaways || []).filter(s => {
+        const repMatch = (repId === 'ALL') || (sp ? isSampleFromSalesperson(s, sp) : false);
+        return repMatch && s.date >= startDate && s.date <= endDate;
+      });
+      const samplesPrior = (sampleGiveaways || []).filter(s => {
+        const repMatch = (repId === 'ALL') || (sp ? isSampleFromSalesperson(s, sp) : false);
+        return repMatch && s.date < startDate;
+      });
+
+      // Check if there is a saved stock audit for this exact period & rep
+      let matchedAudit = null;
+      if (repId !== 'ALL') {
+        matchedAudit = (stockAudits || []).find(a => String(a.rep_id) === String(repId) && (a.period_key === periodKey || (a.id && a.id.includes(periodKey))));
+      }
+
+      const skuMap = {};
+      products.forEach(p => {
+        skuMap[p.sku] = {
+          product: p,
+          sku: p.sku,
+          name: p.name,
+          unitSize: p.unitSize || '1kg pack',
+          rate: Number(p.baseRate || 0),
+          openingUnits: 0,
+          dispatchedUnits: 0,
+          soldUnits: 0,
+          sampleUnits: 0,
+          expectedClosingUnits: 0,
+          actualClosingUnits: 0,
+          varianceUnits: 0,
+          closingValue: 0
+        };
+      });
+
+      // 1. Calculate Baseline Opening
+      repsToConsider.forEach(r => {
+        const baseKey = `${r.id}_BASE`;
+        const baseItems = repOpeningStockMap[baseKey]?.items || {};
+        Object.keys(baseItems).forEach(sku => {
+          if (skuMap[sku]) {
+            skuMap[sku].openingUnits += Number(baseItems[sku]?.qty || baseItems[sku] || 0);
+          }
+        });
+      });
+
+      // Add prior dispatches to opening
+      dispatchesPrior.forEach(d => {
+        if (Array.isArray(d.items)) {
+          d.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].openingUnits += Number(it.qty || 0);
+          });
+        }
+      });
+      // Deduct prior sales from opening
+      ordersPrior.forEach(o => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].openingUnits -= Number(it.qty || 0);
+          });
+        }
+      });
+      // Deduct prior samples from opening
+      samplesPrior.forEach(s => {
+        const sku = s.product_sku;
+        if (skuMap[sku]) skuMap[sku].openingUnits -= Number(s.quantity_units || s.quantity || 0);
+      });
+
+      // 2. In-Period Movements
+      dispatchesInPeriod.forEach(d => {
+        if (Array.isArray(d.items)) {
+          d.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].dispatchedUnits += Number(it.qty || 0);
+          });
+        }
+      });
+
+      ordersInPeriod.forEach(o => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach(it => {
+            if (skuMap[it.sku]) skuMap[it.sku].soldUnits += Number(it.qty || 0);
+          });
+        }
+      });
+
+      samplesInPeriod.forEach(s => {
+        const sku = s.product_sku;
+        if (skuMap[sku]) skuMap[sku].sampleUnits += Number(s.quantity_units || s.quantity || 0);
+      });
+
+      // 3. Closing Stock & Variance
+      let totalOpeningUnits = 0;
+      let totalOpeningVal = 0;
+      let totalDispatchedUnits = 0;
+      let totalDispatchedVal = 0;
+      let totalSoldUnits = 0;
+      let totalSampleUnits = 0;
+      let totalSampleVal = 0;
+      let totalExpectedClosingUnits = 0;
+      let totalActualClosingUnits = 0;
+      let totalVarianceUnits = 0;
+      let totalClosingVal = 0;
+
+      Object.values(skuMap).forEach(row => {
+        row.expectedClosingUnits = row.openingUnits + row.dispatchedUnits - row.soldUnits - row.sampleUnits;
+
+        if (matchedAudit && matchedAudit.actual_closing_stock && matchedAudit.actual_closing_stock[row.sku] !== undefined) {
+          row.actualClosingUnits = Number(matchedAudit.actual_closing_stock[row.sku]);
+        } else {
+          row.actualClosingUnits = row.expectedClosingUnits;
+        }
+
+        row.varianceUnits = row.actualClosingUnits - row.expectedClosingUnits;
+        row.closingValue = Math.max(0, row.actualClosingUnits) * row.rate;
+
+        totalOpeningUnits += row.openingUnits;
+        totalOpeningVal += Math.max(0, row.openingUnits) * row.rate;
+        totalDispatchedUnits += row.dispatchedUnits;
+        totalDispatchedVal += row.dispatchedUnits * row.rate;
+        totalSoldUnits += row.soldUnits;
+        totalSampleUnits += row.sampleUnits;
+        totalSampleVal += row.sampleUnits * row.rate;
+        totalExpectedClosingUnits += row.expectedClosingUnits;
+        totalActualClosingUnits += row.actualClosingUnits;
+        totalVarianceUnits += row.varianceUnits;
+        totalClosingVal += row.closingValue;
+      });
+
+      // 4. Commercial & Financials
+      let totalGrossRevenue = 0;
+      let totalCollected = 0;
+      let totalUdhaar = 0;
+      let deliveredOrdersCount = 0;
+      let pendingOrdersCount = 0;
+
+      ordersInPeriod.forEach(o => {
+        const net = Number(o.netPayable || 0);
+        totalGrossRevenue += net;
+        const paid = Number(o.amountPaid || 0);
+        totalCollected += paid;
+        totalUdhaar += Math.max(0, net - paid);
+        if (o.status === 'Delivered') deliveredOrdersCount++;
+        else pendingOrdersCount++;
+      });
+
+      const ordersCount = ordersInPeriod.length;
+      const aov = ordersCount > 0 ? Math.round(totalGrossRevenue / ordersCount) : 0;
+      const commPct = sp ? Number(sp.commissionPct || 3.0) : 3.0;
+      const totalCommission = Math.round(totalGrossRevenue * (commPct / 100));
+      const target = sp ? Number(sp.monthlyTarget || 150000) : 150000 * Math.max(1, repsToConsider.length);
+      const targetPct = target > 0 ? Math.round((totalGrossRevenue / target) * 100) : 0;
+
+      return {
+        rep: sp,
+        repId,
+        repName: sp ? sp.name : 'All Sales Personnel Combined',
+        route: sp ? (sp.assignedRoute || 'General Beat') : 'All Routes Combined',
+        timeframe,
+        periodKey,
+        periodLabel,
+        startDate,
+        endDate,
+        matchedAudit,
+        isAudited: Boolean(matchedAudit),
+        skuMap,
+        skuList: Object.values(skuMap),
+        totalOpeningUnits,
+        totalOpeningVal,
+        totalDispatchedUnits,
+        totalDispatchedVal,
+        totalSoldUnits,
+        totalSampleUnits,
+        totalSampleVal,
+        totalExpectedClosingUnits,
+        totalActualClosingUnits,
+        totalVarianceUnits,
+        totalClosingVal,
+        totalGrossRevenue,
+        totalCollected,
+        totalUdhaar,
+        ordersCount,
+        deliveredOrdersCount,
+        pendingOrdersCount,
+        aov,
+        commPct,
+        totalCommission,
+        target,
+        targetPct
+      };
+    }
+
+    function renderSalespersonReportsView() {
+      const repSelect = document.getElementById('sp-report-rep-select');
+      if (repSelect && repSelect.children.length <= 1) {
+        const opts = ['<option value="ALL">All Sales Personnel Combined</option>'];
+        (salespeople || []).forEach(sp => {
+          opts.push(`<option value="${sp.id}">${escapeHtml(sp.name)} (${escapeHtml(sp.assignedRoute || 'Beat')})</option>`);
+        });
+        repSelect.innerHTML = opts.join('');
+        if (currentReportRepId) repSelect.value = currentReportRepId;
+      }
+
+      renderReportDateControls();
+
+      const report = computeSalespersonPeriodReport(currentReportRepId, currentReportTimeframe, getReportCurrentParams());
+
+      // 1. Update Header Banner
+      const bType = document.getElementById('report-badge-period-type');
+      if (bType) bType.innerText = `${report.timeframe.toUpperCase()} REPORT`;
+
+      const bDate = document.getElementById('report-badge-date-range');
+      if (bDate) bDate.innerText = `${formatDisplayDate(report.startDate)} to ${formatDisplayDate(report.endDate)}`;
+
+      const tHeading = document.getElementById('report-title-heading');
+      if (tHeading) tHeading.innerText = `${report.periodLabel} Stock & Sales Ledger`;
+
+      const tSub = document.getElementById('report-rep-subtitle');
+      if (tSub) tSub.innerText = `Sales Official: ${report.repName} • Beat: ${report.route}`;
+
+      const bStatus = document.getElementById('report-audit-status-badge');
+      if (bStatus) {
+        if (report.isAudited) {
+          bStatus.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i> Locked Month-End Audit
+            </span>
+            <div class="text-[10px] text-slate-400 mt-1">Audited by ${escapeHtml(report.matchedAudit?.audited_by || 'Manager')}</div>
+          `;
+        } else {
+          bStatus.innerHTML = `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold text-xs">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Live Reconciled
+            </span>
+            <div class="text-[10px] text-slate-400 mt-1">Realtime Cloud Synced</div>
+          `;
+        }
+      }
+
+      // 2. Update KPI Cards
+      document.getElementById('rep-kpi-opening-units').innerText = `${report.totalOpeningUnits} pk`;
+      document.getElementById('rep-kpi-opening-val').innerText = formatINR(report.totalOpeningVal);
+
+      document.getElementById('rep-kpi-dispatched-units').innerText = `+${report.totalDispatchedUnits} pk`;
+      document.getElementById('rep-kpi-dispatched-val').innerText = formatINR(report.totalDispatchedVal);
+
+      document.getElementById('rep-kpi-sold-units').innerText = `-${report.totalSoldUnits} pk`;
+      document.getElementById('rep-kpi-sold-bills').innerText = `${report.ordersCount} bills`;
+
+      document.getElementById('rep-kpi-sample-units').innerText = `-${report.totalSampleUnits} pk`;
+      document.getElementById('rep-kpi-sample-val').innerText = formatINR(report.totalSampleVal);
+
+      document.getElementById('rep-kpi-closing-units').innerText = `${report.totalActualClosingUnits} pk`;
+      document.getElementById('rep-kpi-closing-val').innerText = formatINR(report.totalClosingVal);
+
+      const varCard = document.getElementById('rep-kpi-variance-card');
+      const varUnitsEl = document.getElementById('rep-kpi-variance-units');
+      const varValEl = document.getElementById('rep-kpi-variance-val');
+      if (varUnitsEl && varValEl) {
+        if (report.totalVarianceUnits === 0) {
+          varUnitsEl.innerText = "0 pk";
+          varUnitsEl.className = "font-mono font-black text-base text-emerald-600";
+          varValEl.innerText = "Reconciled (100%)";
+          varValEl.className = "text-[10px] text-emerald-600 font-bold";
+        } else if (report.totalVarianceUnits > 0) {
+          varUnitsEl.innerText = `+${report.totalVarianceUnits} pk`;
+          varUnitsEl.className = "font-mono font-black text-base text-blue-600";
+          varValEl.innerText = "Surplus Stock";
+          varValEl.className = "text-[10px] text-blue-600 font-bold";
+        } else {
+          varUnitsEl.innerText = `${report.totalVarianceUnits} pk`;
+          varUnitsEl.className = "font-mono font-black text-base text-rose-600";
+          varValEl.innerText = "Shortfall / Variance";
+          varValEl.className = "text-[10px] text-rose-600 font-bold";
+        }
+      }
+
+      document.getElementById('rep-kpi-revenue').innerText = formatINR(report.totalGrossRevenue);
+      document.getElementById('rep-kpi-collected').innerText = `${formatINR(report.totalCollected)} Cash/UPI`;
+
+      document.getElementById('rep-kpi-commission').innerText = formatINR(report.totalCommission);
+      document.getElementById('rep-kpi-target-pct').innerText = `${report.targetPct}% Target`;
+
+      // 3. SKU Flow Table
+      const skuCountLbl = document.getElementById('report-sku-count-label');
+      if (skuCountLbl) skuCountLbl.innerText = `${report.skuList.length} Products Cataloged`;
+
+      const tbody = document.getElementById('report-sku-flow-tbody');
+      if (tbody) {
+        if (report.skuList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400 italic">No products registered.</td></tr>`;
+        } else {
+          tbody.innerHTML = report.skuList.map(r => {
+            const hasActivity = r.openingUnits !== 0 || r.dispatchedUnits !== 0 || r.soldUnits !== 0 || r.sampleUnits !== 0 || r.actualClosingUnits !== 0;
+            const rowClass = hasActivity ? 'hover:bg-slate-50 transition' : 'hover:bg-slate-50/50 text-slate-400 opacity-70';
+            const varDisplay = (r.varianceUnits === 0)
+              ? `<span class="text-slate-400 font-normal">0</span>`
+              : (r.varianceUnits > 0)
+                ? `<span class="text-blue-600 font-black">+${r.varianceUnits}</span>`
+                : `<span class="text-rose-600 font-black">${r.varianceUnits}</span>`;
+
+            return `
+              <tr class="${rowClass}">
+                <td class="p-2.5">
+                  <div class="font-bold text-slate-900">${escapeHtml(r.name)}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(r.sku)}</div>
+                </td>
+                <td class="p-2.5 text-slate-500 font-sans">${escapeHtml(r.unitSize || '-')}</td>
+                <td class="p-2.5 text-right font-mono text-slate-600">${formatINR(r.rate)}</td>
+                <td class="p-2.5 text-right font-bold text-slate-800 bg-slate-50/80">${r.openingUnits}</td>
+                <td class="p-2.5 text-right font-bold text-amber-700 bg-amber-50/30">+${r.dispatchedUnits}</td>
+                <td class="p-2.5 text-right font-bold text-emerald-700 bg-emerald-50/30">-${r.soldUnits}</td>
+                <td class="p-2.5 text-right font-bold text-blue-700 bg-blue-50/30">-${r.sampleUnits}</td>
+                <td class="p-2.5 text-right font-black text-indigo-950 bg-indigo-50/50">${r.expectedClosingUnits}</td>
+                <td class="p-2.5 text-right font-black text-slate-900">${r.actualClosingUnits}</td>
+                <td class="p-2.5 text-center">${varDisplay}</td>
+                <td class="p-2.5 text-right font-black text-emerald-700">${formatINR(r.closingValue)}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // Foot totals
+      const tfoot = document.getElementById('report-sku-flow-tfoot');
+      if (tfoot) {
+        tfoot.innerHTML = `
+          <td colspan="3" class="p-2.5 pl-4 text-slate-900 font-black uppercase text-[10px]">Net Periodic Totals:</td>
+          <td class="p-2.5 text-right text-slate-900 font-black">${report.totalOpeningUnits} pk</td>
+          <td class="p-2.5 text-right text-amber-800 font-black">+${report.totalDispatchedUnits} pk</td>
+          <td class="p-2.5 text-right text-emerald-700 font-black">-${report.totalSoldUnits} pk</td>
+          <td class="p-2.5 text-right text-blue-700 font-black">-${report.totalSampleUnits} pk</td>
+          <td class="p-2.5 text-right text-indigo-950 font-black bg-indigo-50/50">${report.totalExpectedClosingUnits} pk</td>
+          <td class="p-2.5 text-right text-slate-900 font-black">${report.totalActualClosingUnits} pk</td>
+          <td class="p-2.5 text-center text-slate-900 font-black">${report.totalVarianceUnits > 0 ? '+' : ''}${report.totalVarianceUnits}</td>
+          <td class="p-2.5 text-right text-emerald-700 font-black">${formatINR(report.totalClosingVal)}</td>
+        `;
+      }
+
+      // 4. Financial & Fulfillment Breakdown
+      document.getElementById('report-fin-gross').innerText = formatINR(report.totalGrossRevenue);
+      document.getElementById('report-fin-collected').innerText = formatINR(report.totalCollected);
+      document.getElementById('report-fin-udhaar').innerText = formatINR(report.totalUdhaar);
+      document.getElementById('report-fin-commission').innerText = `${formatINR(report.totalCommission)} (${report.commPct}%)`;
+
+      document.getElementById('report-perf-bills').innerText = `${report.ordersCount} orders`;
+      document.getElementById('report-perf-delivered').innerText = `${report.deliveredOrdersCount} orders`;
+      document.getElementById('report-perf-pending').innerText = `${report.pendingOrdersCount} orders`;
+      document.getElementById('report-perf-aov').innerText = formatINR(report.aov);
+
+      // 5. Finalized Historical Audits Archive
+      renderAuditsArchiveTable();
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderAuditsArchiveTable() {
+      const tbody = document.getElementById('report-audits-archive-tbody');
+      if (!tbody) return;
+
+      const filteredAudits = (currentReportRepId === 'ALL')
+        ? (stockAudits || [])
+        : (stockAudits || []).filter(a => String(a.rep_id) === String(currentReportRepId));
+
+      if (filteredAudits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400 italic">No finalized month-end stock audits archived yet. Click <b>Record Month-End Closing Stock</b> above.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredAudits.map(a => {
+        const varTxt = (a.total_variance_units === 0)
+          ? '<span class="text-emerald-600 font-bold">0 (Reconciled)</span>'
+          : (a.total_variance_units > 0)
+            ? `<span class="text-blue-600 font-black">+${a.total_variance_units}</span>`
+            : `<span class="text-rose-600 font-black">${a.total_variance_units}</span>`;
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
+            <td class="p-2.5 font-bold text-slate-900">${escapeHtml(a.period_label || a.period_key)}</td>
+            <td class="p-2.5 font-medium text-slate-800">${escapeHtml(a.rep_name)}</td>
+            <td class="p-2.5 text-slate-500 font-mono text-[11px]">${formatDisplayDate(a.created_at?.split('T')[0])}</td>
+            <td class="p-2.5 text-right font-mono font-bold">${a.total_opening_units || 0}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-amber-700">+${a.total_dispatched_units || 0}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-emerald-700">-${a.total_sold_units || 0}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-blue-700">-${a.total_sample_units || 0}</td>
+            <td class="p-2.5 text-right font-mono font-black text-indigo-950">${a.total_actual_closing_units || 0} pk</td>
+            <td class="p-2.5 text-right font-mono font-black text-emerald-700">${formatINR(a.total_closing_value || 0)}</td>
+            <td class="p-2.5 text-center">${varTxt}</td>
+            <td class="p-2.5 text-slate-500 truncate max-w-xs">${escapeHtml(a.notes || '-')}</td>
+            <td class="p-2.5 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" onclick="loadArchivedAuditIntoView('${escapeHtml(a.id)}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition cursor-pointer" title="Load into Report View">
+                  View
+                </button>
+                <button type="button" onclick="deleteStockAuditConfirm('${escapeHtml(a.id)}')" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer" title="Delete audit record">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function loadArchivedAuditIntoView(auditId) {
+      const a = (stockAudits || []).find(x => x.id === auditId);
+      if (!a) return;
+      currentReportRepId = a.rep_id;
+      const select = document.getElementById('sp-report-rep-select');
+      if (select) select.value = a.rep_id;
+      currentReportTimeframe = 'monthly';
+      currentReportMonth = a.period_key;
+      setReportTimeframe('monthly');
+      showToast(`📑 Loaded audit report for ${a.rep_name} (${a.period_label})`);
+    }
+
+    async function deleteStockAuditConfirm(auditId) {
+      if (!confirm("Are you sure you want to delete this archived stock audit record? This will un-lock closing stock for this month.")) return;
+      stockAudits = (stockAudits || []).filter(a => a.id !== auditId);
+      saveStockAuditsLocally();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('salesperson_stock_audits').delete().eq('id', auditId);
+        } catch(e) {}
+      }
+
+      showToast("🗑️ Stock audit record deleted.");
+      renderSalespersonReportsView();
+    }
+
+    // Modal: Record Month-End Stock Audit
+    function openRecordStockAuditModal(repId, monthKey) {
+      const modal = document.getElementById('modal-record-stock-audit');
+      if (!modal) return;
+
+      const repSelect = document.getElementById('audit-modal-rep-select');
+      if (repSelect) {
+        repSelect.innerHTML = (salespeople || []).map(sp =>
+          `<option value="${sp.id}" ${(repId && String(sp.id) === String(repId)) ? 'selected' : ''}>${escapeHtml(sp.name)} (${escapeHtml(sp.assignedRoute || 'Beat')})</option>`
+        ).join('');
+        if (repId && repId !== 'ALL') repSelect.value = repId;
+      }
+
+      const monthSelect = document.getElementById('audit-modal-month-select');
+      if (monthSelect) {
+        const monthOptions = [];
+        const now = new Date();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        for (let i = 0; i < 18; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const label = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+          monthOptions.push(`<option value="${val}">${label}</option>`);
+        }
+        monthSelect.innerHTML = monthOptions.join('');
+        if (monthKey) monthSelect.value = monthKey;
+        else if (currentReportMonth) monthSelect.value = currentReportMonth;
+      }
+
+      onAuditModalRepOrMonthChanged();
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeRecordStockAuditModal() {
+      document.getElementById('modal-record-stock-audit')?.classList.add('hidden');
+    }
+
+    function onAuditModalRepOrMonthChanged() {
+      const repId = document.getElementById('audit-modal-rep-select')?.value;
+      const monthKey = document.getElementById('audit-modal-month-select')?.value;
+      const tbody = document.getElementById('audit-modal-tbody');
+      if (!repId || !monthKey || !tbody) return;
+
+      const report = computeSalespersonPeriodReport(repId, 'monthly', { month: monthKey });
+      tbody.innerHTML = report.skuList.map(r => {
+        const defaultVal = r.actualClosingUnits;
+        const diff = defaultVal - r.expectedClosingUnits;
+        return `
+          <tr class="hover:bg-slate-50 transition" id="audit-row-${escapeHtml(r.sku)}">
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900">${escapeHtml(r.name)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(r.sku)}</div>
+            </td>
+            <td class="p-2.5 text-slate-500">${escapeHtml(r.unitSize || '-')}</td>
+            <td class="p-2.5 text-right font-bold text-slate-700">${r.openingUnits}</td>
+            <td class="p-2.5 text-right font-bold text-amber-700">+${r.dispatchedUnits}</td>
+            <td class="p-2.5 text-right font-bold text-emerald-700">-${r.soldUnits}</td>
+            <td class="p-2.5 text-right font-bold text-blue-700">-${r.sampleUnits}</td>
+            <td class="p-2.5 text-right font-black text-indigo-950 bg-indigo-50/40" id="audit-exp-${escapeHtml(r.sku)}">${r.expectedClosingUnits}</td>
+            <td class="p-2.5 text-center bg-emerald-50/20">
+              <input type="number" step="1"
+                     id="audit-input-${escapeHtml(r.sku)}"
+                     data-audit-sku="${escapeHtml(r.sku)}"
+                     data-audit-expected="${r.expectedClosingUnits}"
+                     data-audit-rate="${r.rate}"
+                     value="${defaultVal}"
+                     oninput="onAuditRowInputChanged(this)"
+                     class="w-24 p-1.5 bg-white border border-slate-300 rounded-lg text-center font-bold text-emerald-900 outline-none focus:ring-1 focus:ring-emerald-500">
+            </td>
+            <td class="p-2.5 text-center font-bold" id="audit-variance-${escapeHtml(r.sku)}">
+              ${(diff === 0)
+                ? '<span class="text-emerald-600 font-bold">0 (Reconciled)</span>'
+                : `<span class="${diff > 0 ? 'text-blue-600' : 'text-rose-600'} font-black">${diff > 0 ? '+' : ''}${diff}</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function onAuditRowInputChanged(inputEl) {
+      const sku = inputEl.getAttribute('data-audit-sku');
+      const expected = parseInt(inputEl.getAttribute('data-audit-expected'), 10) || 0;
+      const actual = parseInt(inputEl.value, 10) || 0;
+      const diff = actual - expected;
+
+      const varEl = document.getElementById(`audit-variance-${sku}`);
+      if (varEl) {
+        if (diff === 0) {
+          varEl.innerHTML = '<span class="text-emerald-600 font-bold">0 (Reconciled)</span>';
+        } else if (diff > 0) {
+          varEl.innerHTML = `<span class="text-blue-600 font-black">+${diff}</span>`;
+        } else {
+          varEl.innerHTML = `<span class="text-rose-600 font-black">${diff}</span>`;
+        }
+      }
+    }
+
+    async function saveMonthStockAudit() {
+      const repId = document.getElementById('audit-modal-rep-select')?.value;
+      const monthKey = document.getElementById('audit-modal-month-select')?.value;
+      const auditor = document.getElementById('audit-modal-auditor')?.value || 'Manager';
+      const notes = document.getElementById('audit-modal-notes')?.value || '';
+
+      if (!repId || !monthKey) {
+        alert("Please select sales official and audit month.");
+        return;
+      }
+
+      const sp = (salespeople || []).find(s => s.id === repId);
+      const report = computeSalespersonPeriodReport(repId, 'monthly', { month: monthKey });
+
+      const inputs = document.querySelectorAll('#audit-modal-tbody input[data-audit-sku]');
+      const actualClosingStock = {};
+      const varianceStock = {};
+      let totalActualUnits = 0;
+      let totalVarianceUnits = 0;
+      let totalClosingVal = 0;
+
+      inputs.forEach(inp => {
+        const sku = inp.getAttribute('data-audit-sku');
+        const expected = parseInt(inp.getAttribute('data-audit-expected'), 10) || 0;
+        const rate = parseFloat(inp.getAttribute('data-audit-rate')) || 0;
+        const actual = parseInt(inp.value, 10) || 0;
+        const variance = actual - expected;
+
+        actualClosingStock[sku] = actual;
+        varianceStock[sku] = variance;
+        totalActualUnits += actual;
+        totalVarianceUnits += variance;
+        totalClosingVal += Math.max(0, actual) * rate;
+      });
+
+      const auditRecord = {
+        id: `AUDIT-${repId}-${monthKey}`,
+        rep_id: repId,
+        rep_name: sp ? sp.name : repId,
+        period_type: 'monthly',
+        period_key: monthKey,
+        period_label: report.periodLabel,
+        opening_stock: Object.fromEntries(report.skuList.map(r => [r.sku, r.openingUnits])),
+        dispatched_stock: Object.fromEntries(report.skuList.map(r => [r.sku, r.dispatchedUnits])),
+        sold_stock: Object.fromEntries(report.skuList.map(r => [r.sku, r.soldUnits])),
+        sample_stock: Object.fromEntries(report.skuList.map(r => [r.sku, r.sampleUnits])),
+        expected_closing_stock: Object.fromEntries(report.skuList.map(r => [r.sku, r.expectedClosingUnits])),
+        actual_closing_stock: actualClosingStock,
+        variance_stock: varianceStock,
+        total_opening_units: report.totalOpeningUnits,
+        total_dispatched_units: report.totalDispatchedUnits,
+        total_sold_units: report.totalSoldUnits,
+        total_sample_units: report.totalSampleUnits,
+        total_expected_closing_units: report.totalExpectedClosingUnits,
+        total_actual_closing_units: totalActualUnits,
+        total_variance_units: totalVarianceUnits,
+        total_closing_value: totalClosingVal,
+        total_revenue: report.totalGrossRevenue,
+        total_collected: report.totalCollected,
+        total_udhaar: report.totalUdhaar,
+        status: 'Finalized',
+        notes: notes,
+        audited_by: auditor,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // 1. Update local stockAudits array
+      const existingIdx = stockAudits.findIndex(a => a.id === auditRecord.id);
+      if (existingIdx >= 0) stockAudits[existingIdx] = auditRecord;
+      else stockAudits.unshift(auditRecord);
+      saveStockAuditsLocally();
+
+      // 2. Persist to Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('salesperson_stock_audits').upsert([auditRecord]);
+        } catch (dbErr) {
+          console.warn("Stock audit direct supabase upsert note:", dbErr);
+        }
+      }
+
+      closeRecordStockAuditModal();
+      showToast(`🔒 ${report.periodLabel} Closing Stock Audit for ${sp ? sp.name : repId} successfully locked!`);
+      renderSalespersonReportsView();
+    }
+
+    // Modal: Baseline Opening Stock
+    function openSetOpeningStockModal(repId) {
+      const modal = document.getElementById('modal-set-opening-stock');
+      if (!modal) return;
+
+      const select = document.getElementById('opening-stock-rep-select');
+      if (select) {
+        select.innerHTML = (salespeople || []).map(sp =>
+          `<option value="${sp.id}" ${(repId && String(sp.id) === String(repId)) ? 'selected' : ''}>${escapeHtml(sp.name)} (${escapeHtml(sp.assignedRoute || 'Beat')})</option>`
+        ).join('');
+        if (repId && repId !== 'ALL') select.value = repId;
+      }
+
+      onOpeningStockRepChanged();
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeSetOpeningStockModal() {
+      document.getElementById('modal-set-opening-stock')?.classList.add('hidden');
+    }
+
+    function onOpeningStockRepChanged() {
+      const repId = document.getElementById('opening-stock-rep-select')?.value;
+      const tbody = document.getElementById('opening-stock-modal-tbody');
+      if (!repId || !tbody) return;
+
+      const baseKey = `${repId}_BASE`;
+      const baseItems = repOpeningStockMap[baseKey]?.items || {};
+
+      tbody.innerHTML = products.map(p => {
+        const currentQty = baseItems[p.sku]?.qty || baseItems[p.sku] || 0;
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(p.sku)}</div>
+            </td>
+            <td class="p-2.5 text-slate-500">${escapeHtml(p.unitSize || '-')}</td>
+            <td class="p-2.5 text-right font-mono text-slate-600">${formatINR(p.baseRate || 0)}</td>
+            <td class="p-2.5 text-center">
+              <input type="number" min="0" step="1"
+                     data-opening-sku="${escapeHtml(p.sku)}"
+                     data-opening-rate="${p.baseRate || 0}"
+                     value="${currentQty}"
+                     class="w-24 p-1.5 bg-white border border-slate-300 rounded-lg text-center font-bold text-slate-900 outline-none focus:ring-1 focus:ring-indigo-500">
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function saveBaselineOpeningStock() {
+      const repId = document.getElementById('opening-stock-rep-select')?.value;
+      if (!repId) return;
+      const sp = (salespeople || []).find(s => s.id === repId);
+
+      const inputs = document.querySelectorAll('#opening-stock-modal-tbody input[data-opening-sku]');
+      const items = {};
+      let totalUnits = 0;
+      let totalVal = 0;
+
+      inputs.forEach(inp => {
+        const sku = inp.getAttribute('data-opening-sku');
+        const rate = parseFloat(inp.getAttribute('data-opening-rate')) || 0;
+        const qty = parseInt(inp.value, 10) || 0;
+        items[sku] = { qty, rate, value: qty * rate };
+        totalUnits += qty;
+        totalVal += qty * rate;
+      });
+
+      const baseRecord = {
+        id: `OP-${repId}-BASE`,
+        rep_id: repId,
+        rep_name: sp ? sp.name : repId,
+        period_key: 'BASE',
+        items,
+        total_units: totalUnits,
+        total_value: totalVal,
+        recorded_by: 'Manager',
+        updated_at: new Date().toISOString()
+      };
+
+      repOpeningStockMap[`${repId}_BASE`] = baseRecord;
+      saveRepOpeningStockLocally();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('salesperson_opening_stock').upsert([baseRecord]);
+        } catch(e) {}
+      }
+
+      closeSetOpeningStockModal();
+      showToast(`📦 Baseline opening stock saved for ${sp ? sp.name : repId}!`);
+      renderSalespersonReportsView();
+    }
+
+    function sharePeriodReportWhatsApp() {
+      const report = computeSalespersonPeriodReport(currentReportRepId, currentReportTimeframe, getReportCurrentParams());
+      const repName = report.repName;
+      let msg = `*SRI GOVINDA FOOD PRODUCTS*\n` +
+        `*STOCK & SALES AUDIT REPORT: ${report.periodLabel.toUpperCase()}*\n` +
+        `Representative: *${repName}*\n` +
+        `Route / Beat: *${report.route}*\n` +
+        `Audit Status: *${report.isAudited ? '🔒 AUDITED & LOCKED' : '⚡ LIVE RECONCILED'}*\n\n` +
+        `📦 *STOCK MOVEMENT RECONCILIATION:*\n` +
+        `• Opening Stock: *${report.totalOpeningUnits} packs* (${formatINR(report.totalOpeningVal)})\n` +
+        `• Stock Issued (+): *${report.totalDispatchedUnits} packs* (${formatINR(report.totalDispatchedVal)})\n` +
+        `• Delivered Sales (-): *${report.totalSoldUnits} packs*\n` +
+        `• Free Samples (-): *${report.totalSampleUnits} packs*\n` +
+        `• Expected Closing: *${report.totalExpectedClosingUnits} packs*\n` +
+        `• Actual Physical Count: *${report.totalActualClosingUnits} packs*\n` +
+        `• Variance / Shrinkage: *${report.totalVarianceUnits > 0 ? '+' : ''}${report.totalVarianceUnits} packs*\n` +
+        `• Closing Stock Valuation: *${formatINR(report.totalClosingVal)}*\n\n` +
+        `💰 *COMMERCIAL PERFORMANCE:*\n` +
+        `• Gross Sales Billed: *${formatINR(report.totalGrossRevenue)}* (${report.ordersCount} bills)\n` +
+        `• Cash / UPI Collected: *${formatINR(report.totalCollected)}*\n` +
+        `• Credit / Udhaar Balance: *${formatINR(report.totalUdhaar)}*\n` +
+        `• Commission Earned: *${formatINR(report.totalCommission)}* (${report.commPct}%)\n` +
+        `• Target Progress: *${report.targetPct}%* (Target: ${formatINR(report.target)})\n\n` +
+        `📋 *TOP SKU IN-HAND:*\n`;
+
+      const topSkus = report.skuList.filter(r => r.actualClosingUnits > 0 || r.soldUnits > 0).slice(0, 6);
+      topSkus.forEach(r => {
+        msg += `• ${r.name}: Sold ${r.soldUnits} | In-Hand: *${r.actualClosingUnits} pk*\n`;
+      });
+
+      msg += `\nGenerated via Sri Govinda Central Manager Portal.`;
+
+      const cleanPhone = (report.rep?.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const waUrl = phoneToUse
+        ? `https://web.whatsapp.com/send?phone=${phoneToUse}&text=${encodeURIComponent(msg)}`
+        : `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+      window.open(waUrl, '_blank');
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast("📋 Report copied to clipboard & WhatsApp opened!");
+      }).catch(() => {});
+    }
+
+    function printPeriodReport() {
+      const origTitle = document.title;
+      document.title = `Sri_Govinda_Report_${currentReportTimeframe}_${new Date().toISOString().split('T')[0]}`;
+      window.print();
+      document.title = origTitle;
+    }
+
+    function exportPeriodReportCsv() {
+      const report = computeSalespersonPeriodReport(currentReportRepId, currentReportTimeframe, getReportCurrentParams());
+      const headers = [
+        "Product SKU",
+        "Product Name",
+        "Unit Size",
+        "Base Rate (INR)",
+        "Opening Stock (Packs)",
+        "Stock Issued (Packs)",
+        "Delivered Sales (Packs)",
+        "Free Samples (Packs)",
+        "Calculated Closing (Packs)",
+        "Actual Physical Closing (Packs)",
+        "Variance (Packs)",
+        "Closing Valuation (INR)"
+      ];
+
+      const rows = report.skuList.map(r => [
+        `"${r.sku}"`,
+        `"${r.name}"`,
+        `"${r.unitSize}"`,
+        r.rate,
+        r.openingUnits,
+        r.dispatchedUnits,
+        r.soldUnits,
+        r.sampleUnits,
+        r.expectedClosingUnits,
+        r.actualClosingUnits,
+        r.varianceUnits,
+        r.closingValue
+      ]);
+
+      rows.push([
+        '"TOTAL"',
+        '"Net Summary"',
+        '""',
+        '""',
+        report.totalOpeningUnits,
+        report.totalDispatchedUnits,
+        report.totalSoldUnits,
+        report.totalSampleUnits,
+        report.totalExpectedClosingUnits,
+        report.totalActualClosingUnits,
+        report.totalVarianceUnits,
+        report.totalClosingVal
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Sri_Govinda_Stock_Report_${report.repName.replace(/\s+/g, '_')}_${report.periodKey}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("📊 Stock report exported to CSV!");
     }
 
     // 9. REFRESH & REALTIME SYNC
