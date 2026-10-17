@@ -1,19 +1,9 @@
-// Service Worker for Sri Govinda Sales Portal PWA
-const CACHE_NAME = 'sg-sales-cache-v18';
+// Service Worker for Sri Govinda Sales & Field Representative Portal PWAs
+const CACHE_NAME = 'sg-sales-cache-v20';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './sales_portal_template.html',
-  './config.js',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './salespeople.json',
-  './sales_ramesh.html',
-  './sales_pradhish.html',
-  './sales_nagaraju.html',
-  './sales_salesofficial4.html',
-  './sales_kavitha.html'
+  '/config.js',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

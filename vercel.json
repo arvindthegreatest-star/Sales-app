@@ -14,7 +14,7 @@
       ]
     },
     {
-      "source": "/manifest(.*).json",
+      "source": "/(.*)manifest(.*).json",
       "headers": [
         {
           "key": "Content-Type",
@@ -26,6 +26,69 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "ramesh\\..*"
+        }
+      ],
+      "destination": "/rep/ramesh/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "pradhish\\..*"
+        }
+      ],
+      "destination": "/rep/pradhish/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "nagaraju\\..*"
+        }
+      ],
+      "destination": "/rep/nagaraju/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "salesofficial4\\..*"
+        }
+      ],
+      "destination": "/rep/salesofficial4/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "kavitha\\..*"
+        }
+      ],
+      "destination": "/rep/kavitha/:path*"
+    },
+    {
+      "source": "/manager",
+      "destination": "/manager/index.html"
+    },
+    {
+      "source": "/sales_:slug.html",
+      "destination": "/rep/:slug/index.html"
+    },
+    {
+      "source": "/rep/:slug",
+      "destination": "/rep/:slug/index.html"
+    }
   ]
 }
-

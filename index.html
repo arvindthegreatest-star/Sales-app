@@ -6,13 +6,13 @@
   <title>Sri Govinda Sales & Inventory</title>
 
   <!-- PWA Meta Tags & Web App Manifest -->
-  <link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#020617">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SG Sales">
-  <link rel="apple-touch-icon" href="./icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="SG Manager">
+  <link rel="apple-touch-icon" href="/icon-192.png">
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13109,7 +13109,7 @@
       grid.innerHTML = repsList.map(sp => {
         const m = getSalespersonMetrics(sp, currentSalespersonTimeframe);
         const slug = sp.slug || sp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const portalUrl = `sales_${slug}.html`;
+        const portalUrl = `/rep/${slug}/`;
 
         const initials = sp.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const isOnline = sp.active !== false;
@@ -13271,15 +13271,17 @@
 
       const cleanPhone = (sp.phone || '').replace(/\D/g, '');
       const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
-      const waMsg = `*SRI GOVINDA FIELD SALES PORTAL FILE*\n` +
+      const liveUrl = `${window.location.origin}/rep/${slug}/`;
+      const waMsg = `*SRI GOVINDA FIELD SALES PORTAL*\n` +
         `Hello *${sp.name}*!\n` +
-        `Here is your offline order booking portal file (*${fileName}*).\n\n` +
+        `Here is your dedicated personal sales order & billing app link:\n` +
+        `🔗 *${liveUrl}*\n\n` +
         `Beat: *${sp.assignedRoute || 'General Beat'}*\n` +
         `Monthly Target: ₹${sp.monthlyTarget || 150000}\n\n` +
-        `📱 *Instructions for Phone (PWA App):*\n` +
-        `1. Save/open this file in Chrome (Android) or Safari (iPhone).\n` +
-        `2. Tap *"Install App"* on the banner or browser menu (⋮ ➔ *Add to Home screen* on Android, or Share ➔ *Add to Home Screen* on iPhone).\n` +
-        `3. You will have a dedicated *Sri Govinda* app icon on your phone that works offline and syncs live!`;
+        `📱 *How to Install as App on your Phone:*\n` +
+        `1. Tap the link above in Chrome (Android) or Safari (iPhone).\n` +
+        `2. Tap *"Install App"* on the banner (or browser menu ⋮ ➔ *"Add to Home screen"*).\n` +
+        `3. Your dedicated *${sp.name} Portal* app icon will be installed on your phone, working offline and syncing live!`;
 
       // 2. Check if mobile Web Share API with Files is supported (e.g. mobile phones)
       if (htmlContent && navigator.canShare) {
@@ -13446,7 +13448,7 @@
             <td class="p-2.5 text-right font-mono font-bold text-rose-600">${formatINR(m.udhaar)}</td>
             <td class="p-2.5 text-right font-mono font-black text-indigo-700">${formatINR(m.commission)}</td>
             <td class="p-2.5 text-right">
-              <a href="/sales_${slug}.html" target="_blank" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold inline-flex items-center gap-1 transition">
+              <a href="/rep/${slug}/" target="_blank" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold inline-flex items-center gap-1 transition">
                 Portal <i data-lucide="external-link" class="w-3 h-3"></i>
               </a>
             </td>
@@ -15223,11 +15225,22 @@
 
     // 19. BOOTSTRAP
     window.addEventListener('DOMContentLoaded', async () => {
-      // Register Service Worker for PWA Offline App Experience
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered:', reg.scope))
-          .catch(err => console.warn('Service Worker registration skipped:', err));
+      // Register Service Worker for PWA Offline App Experience with dedicated /manager/ scope
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        // Unregister any legacy root service worker (scope '/') that hijacked the entire domain
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => {
+            const rootScope = window.location.origin + '/';
+            if (reg.scope === rootScope) {
+              console.log('Unregistering legacy domain-wide root service worker:', reg.scope);
+              reg.unregister();
+            }
+          });
+        }).catch(() => {});
+
+        navigator.serviceWorker.register('/sw.js', { scope: '/manager/' })
+          .then(reg => console.log('Manager Service Worker registered:', reg.scope))
+          .catch(err => console.warn('Manager Service Worker registration skipped:', err));
       }
 
       setTab('dashboard');

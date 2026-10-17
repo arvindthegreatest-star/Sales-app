@@ -42,6 +42,11 @@ function generateSalesPortalFile(salesperson) {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
 
+  const repBaseDir = path.join(ROOT_DIR, 'rep');
+  if (!fs.existsSync(repBaseDir)) fs.mkdirSync(repBaseDir, { recursive: true });
+  const repDir = path.join(repBaseDir, slug);
+  if (!fs.existsSync(repDir)) fs.mkdirSync(repDir, { recursive: true });
+
   const fileName = `sales_${slug}.html`;
   const filePath = path.join(ROOT_DIR, fileName);
 
@@ -56,30 +61,53 @@ function generateSalesPortalFile(salesperson) {
     .replace(/{{DAILY_TARGET}}/g, String(salesperson.dailyOrderTarget || 6))
     .replace(/{{VEHICLE}}/g, salesperson.vehicleType || 'Two-Wheeler');
 
-  fs.writeFileSync(filePath, content, 'utf8');
-  console.log(`Generated dedicated sales portal: ${fileName} for ${salesperson.name}`);
+  // 1. Write dedicated /rep/<slug>/index.html
+  fs.writeFileSync(path.join(repDir, 'index.html'), content, 'utf8');
 
-  // Generate dedicated PWA manifest for salesperson
+  // 2. Generate dedicated isolated PWA manifest for salesperson
   try {
+    const firstName = (salesperson.name || 'Rep').split(' ')[0];
     const manifestData = {
+      id: `/rep/${slug}/`,
       name: `Sri Govinda - ${salesperson.name}`,
-      short_name: `${(salesperson.name || 'Rep').split(' ')[0]} Portal`,
+      short_name: `${firstName} Portal`,
       description: `Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for ${salesperson.name}`,
-      start_url: `./sales_${slug}.html`,
-      scope: "./",
+      start_url: `/rep/${slug}/`,
+      scope: `/rep/${slug}/`,
       display: "standalone",
       orientation: "portrait",
       background_color: "#020617",
       theme_color: "#020617",
       icons: [
-        { src: "./icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-        { src: "./icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+        { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+        { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
       ]
     };
+    fs.writeFileSync(path.join(repDir, 'manifest.json'), JSON.stringify(manifestData, null, 2), 'utf8');
     fs.writeFileSync(path.join(ROOT_DIR, `manifest_${slug}.json`), JSON.stringify(manifestData, null, 2), 'utf8');
   } catch(e) {}
 
-  return { fileName, filePath, slug, url: `/${fileName}` };
+  // 3. Write root sales_<slug>.html with auto-redirect to /rep/<slug>/
+  const redirectHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=/rep/${slug}/">
+  <script>window.location.replace('/rep/${slug}/');</script>
+  <title>Opening ${salesperson.name} Portal...</title>
+</head>
+<body style="background:#020617;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;">
+    <h2 style="font-size:18px;margin-bottom:8px;">Opening ${salesperson.name} Portal...</h2>
+    <p><a href="/rep/${slug}/" style="color:#10b981;font-weight:bold;text-decoration:none;">Click here if not redirected automatically</a></p>
+  </div>
+</body>
+</html>`;
+  fs.writeFileSync(filePath, redirectHtml, 'utf8');
+
+  console.log(`Generated dedicated sales portal: /rep/${slug}/ for ${salesperson.name}`);
+  return { fileName, filePath, slug, url: `/rep/${slug}/` };
 }
 
 function ensureAllSalesPortalsExist() {
@@ -103,6 +131,34 @@ function ensureAllSalesPortalsExist() {
     const res = generateSalesPortalFile(sp);
     if (res) generated.push(res);
   });
+
+  // Ensure manager portal directory and isolated manifest exist
+  try {
+    const managerDir = path.join(ROOT_DIR, 'manager');
+    if (!fs.existsSync(managerDir)) fs.mkdirSync(managerDir, { recursive: true });
+    const managerManifestData = {
+      id: "/manager/",
+      name: "Sri Govinda Manager Hub",
+      short_name: "SG Manager",
+      description: "Sri Govinda Food Products - Management, Dispatch, Inventory & Executive Analytics Console",
+      start_url: "/manager/",
+      scope: "/manager/",
+      display: "standalone",
+      orientation: "portrait",
+      background_color: "#020617",
+      theme_color: "#020617",
+      icons: [
+        { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+        { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      ]
+    };
+    fs.writeFileSync(path.join(managerDir, 'manifest.json'), JSON.stringify(managerManifestData, null, 2), 'utf8');
+    fs.writeFileSync(path.join(ROOT_DIR, 'manifest.json'), JSON.stringify(managerManifestData, null, 2), 'utf8');
+    if (fs.existsSync(path.join(ROOT_DIR, 'index.html'))) {
+      fs.copyFileSync(path.join(ROOT_DIR, 'index.html'), path.join(managerDir, 'index.html'));
+    }
+  } catch(e) {}
+
   return generated;
 }
 
@@ -267,12 +323,54 @@ function requestHandler(req, res) {
     return;
   }
 
-  // If root, serve index.html (Manager Hub)
+  // 1. Subdomain routing (e.g. ramesh.domain.com or ramesh.localhost:3005)
+  const host = (req.headers.host || '').toLowerCase();
+  const hostNoPort = host.split(':')[0];
+  const hostParts = hostNoPort.split('.');
+  if (hostParts.length >= 2) {
+    const sub = hostParts[0];
+    if (sub !== 'www' && sub !== 'app' && sub !== 'sales' && sub !== 'localhost') {
+      const repIndexPath = path.join(ROOT_DIR, 'rep', sub, 'index.html');
+      if (fs.existsSync(repIndexPath)) {
+        if (pathname === '/' || pathname === '' || pathname === '/index.html') {
+          return serveFile(repIndexPath, res);
+        }
+        if (pathname === '/manifest.json') {
+          return serveFile(path.join(ROOT_DIR, 'rep', sub, 'manifest.json'), res);
+        }
+      }
+    }
+  }
+
+  // 2. Manager Hub routing (/manager/ or /manager)
+  if (pathname === '/manager' || pathname === '/manager/' || pathname === '/manager/index.html') {
+    const managerIndex = path.join(ROOT_DIR, 'manager', 'index.html');
+    if (fs.existsSync(managerIndex)) return serveFile(managerIndex, res);
+    return serveFile(path.join(ROOT_DIR, 'index.html'), res);
+  }
+
+  // 3. Isolated Representative directory routing (/rep/<slug>/)
+  if (pathname.startsWith('/rep/')) {
+    const subPath = pathname.substring(5); // after /rep/
+    const parts = subPath.split('/').filter(Boolean);
+    if (parts.length === 1 && !pathname.endsWith('/')) {
+      res.writeHead(301, { Location: `/rep/${parts[0]}/` });
+      return res.end();
+    }
+    const slug = parts[0];
+    const targetFile = parts.length > 1 ? parts.slice(1).join('/') : 'index.html';
+    const repFilePath = path.join(ROOT_DIR, 'rep', slug, targetFile);
+    if (fs.existsSync(repFilePath)) {
+      return serveFile(repFilePath, res);
+    }
+  }
+
+  // 4. Root "/" serves index.html (Manager Hub)
   if (pathname === '/' || pathname === '') {
     return serveFile(path.join(ROOT_DIR, 'index.html'), res);
   }
 
-  // Check if requesting an existing file in directory (e.g. sales_ramesh.html, icon.png, config.js)
+  // 5. Existing static file check
   const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
   const filePath = path.join(ROOT_DIR, safePath);
 
@@ -281,11 +379,12 @@ function requestHandler(req, res) {
       return serveFile(filePath, res);
     }
 
-    // Dynamic Sales Official Slug URL (e.g. /ramesh -> serves sales_ramesh.html)
-    const cleanSlug = pathname.replace(/^\/+/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const directSalesFile = path.join(ROOT_DIR, `sales_${cleanSlug}.html`);
-    if (fs.existsSync(directSalesFile)) {
-      return serveFile(directSalesFile, res);
+    // Dynamic Sales Official Slug URL (e.g. /ramesh or /sales_ramesh.html -> redirect to /rep/ramesh/)
+    const cleanSlug = pathname.replace(/^\/+/, '').replace(/^sales_/, '').replace(/\.html$/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const directRepFile = path.join(ROOT_DIR, 'rep', cleanSlug, 'index.html');
+    if (fs.existsSync(directRepFile)) {
+      res.writeHead(302, { Location: `/rep/${cleanSlug}/` });
+      return res.end();
     }
 
     // Default Fallback: Serve index.html
@@ -295,7 +394,10 @@ function requestHandler(req, res) {
 
 function serveFile(filePath, res) {
   const ext = path.extname(filePath).toLowerCase();
-  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+  let contentType = MIME_TYPES[ext] || 'application/octet-stream';
+  if (path.basename(filePath) === 'manifest.json' || filePath.includes('manifest')) {
+    contentType = 'application/manifest+json; charset=utf-8';
+  }
 
   fs.readFile(filePath, (err, content) => {
     if (err) {
@@ -303,11 +405,18 @@ function serveFile(filePath, res) {
       res.end(`500 Server Error: ${err.message}`);
       return;
     }
-    res.writeHead(200, {
+
+    const headers = {
       'Content-Type': contentType,
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
-    });
+      'Cache-Control': (ext === '.html' || filePath.endsWith('sw.js')) ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600'
+    };
+
+    if (filePath.endsWith('sw.js')) {
+      headers['Service-Worker-Allowed'] = '/';
+    }
+
+    res.writeHead(200, headers);
     res.end(content);
   });
 }

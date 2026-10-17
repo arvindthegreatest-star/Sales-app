@@ -1,22 +1,23 @@
 {
+  "id": "/rep/kavitha/",
   "name": "Sri Govinda - Kavitha",
   "short_name": "Kavitha Portal",
   "description": "Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for Kavitha",
-  "start_url": "./sales_kavitha.html",
-  "scope": "./",
+  "start_url": "/rep/kavitha/",
+  "scope": "/rep/kavitha/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#020617",
   "theme_color": "#020617",
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

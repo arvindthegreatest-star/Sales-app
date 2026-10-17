@@ -10,18 +10,18 @@
   <meta name="apple-mobile-web-app-title" content="{{NAME}} Portal">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#020617">
-  <link rel="icon" type="image/png" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-  <link rel="manifest" id="manifest-link" href="manifest_{{SLUG}}.json">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+  <link rel="manifest" id="manifest-link" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
+  <script src="/config.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -967,40 +967,62 @@
     }
 
     function initPwaFeatures() {
-      // 1. Setup dynamic fallback manifest (for offline file:// or direct download)
+      // 1. Unregister any legacy root service worker (scope '/') that might have hijacked the entire domain
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => {
+            const rootScope = window.location.origin + '/';
+            if (reg.scope === rootScope) {
+              console.log('Unregistering legacy domain-wide root service worker:', reg.scope);
+              reg.unregister();
+            }
+          });
+        }).catch(() => {});
+      }
+
+      // 2. Setup dynamic fallback manifest (for offline file:// or direct download)
       try {
+        const isSubdomain = window.location.hostname.startsWith(AGENT.slug + '.');
+        const repScope = isSubdomain ? '/' : `/rep/${AGENT.slug}/`;
+        const repStartUrl = isSubdomain ? '/' : `/rep/${AGENT.slug}/`;
+        const repId = `/rep/${AGENT.slug}/`;
+
         const pwaManifest = {
+          id: repId,
           name: `Sri Govinda - ${AGENT.name}`,
           short_name: `${AGENT.name.split(' ')[0]} Portal`,
           description: `Sri Govinda Food Products - Field Sales Order Entry & Instant Billing Terminal for ${AGENT.name}`,
-          start_url: window.location.href || `./sales_${AGENT.slug}.html`,
-          scope: "./",
+          start_url: repStartUrl,
+          scope: repScope,
           display: "standalone",
           orientation: "portrait",
           background_color: "#020617",
           theme_color: "#020617",
           icons: [
-            { src: "./icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-            { src: "./icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+            { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+            { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
           ]
         };
         const mLink = document.getElementById('manifest-link');
-        if (mLink && window.location.protocol === 'file:') {
+        if (mLink && (window.location.protocol === 'file:' || !mLink.getAttribute('href'))) {
           const blob = new Blob([JSON.stringify(pwaManifest)], { type: 'application/manifest+json' });
           mLink.href = URL.createObjectURL(blob);
         }
       } catch(e) {}
 
-      // 2. Register Service Worker for offline PWA
+      // 3. Register Service Worker with isolated representative scope
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('PWA ServiceWorker active:', reg.scope))
+          const isSubdomain = window.location.hostname.startsWith(AGENT.slug + '.');
+          const swScope = isSubdomain ? '/' : `/rep/${AGENT.slug}/`;
+
+          navigator.serviceWorker.register('/sw.js', { scope: swScope })
+            .then(reg => console.log('PWA ServiceWorker active for rep scope:', reg.scope))
             .catch(err => console.log('PWA ServiceWorker skipped:', err));
         });
       }
 
-      // 3. Update PWA UI State
+      // 4. Update PWA UI State
       updatePwaUiVisibility();
     }
 
