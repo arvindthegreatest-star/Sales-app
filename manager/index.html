@@ -4869,6 +4869,14 @@
       salespeople = DEFAULT_SALESPEOPLE;
     }
 
+    function getActiveSalespeople() {
+      if (Array.isArray(salespeople) && salespeople.length > 0) {
+        const active = salespeople.filter(s => s && s.active !== false);
+        if (active.length > 0) return active;
+      }
+      return DEFAULT_SALESPEOPLE;
+    }
+
     function saveSalespeopleLocally() {
       try {
         localStorage.setItem('sg_salespeople', JSON.stringify(salespeople));
@@ -8604,11 +8612,29 @@
             ${(() => {
               const assignedName = o.repName || o.salespersonName || '';
               const isAssigned = Boolean((o.repId && o.repId !== 'null') || (o.salespersonId && o.salespersonId !== 'null') || (assignedName && assignedName !== 'Manager' && assignedName !== 'Field Sales'));
-              if (isAssigned) {
-                return `<button type="button" onclick="openQuickTagModal('${o.id}')" class="text-[9px] font-sans font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 mt-1 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 transition shadow-2xs cursor-pointer" title="Assigned to ${escapeHtml(assignedName)} - Click to reassign salesperson"><i data-lucide="user-check" class="w-2.5 h-2.5 text-indigo-600"></i> ${escapeHtml(assignedName)} <i data-lucide="edit-2" class="w-2 h-2 text-indigo-400 ml-0.5"></i></button>`;
-              } else {
-                return `<button type="button" onclick="openQuickTagModal('${o.id}')" class="text-[9px] font-sans font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 mt-1 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 transition shadow-2xs cursor-pointer" title="Untagged bill - Click to tag salesperson"><i data-lucide="user-plus" class="w-2.5 h-2.5 text-amber-600"></i> + Tag Rep</button>`;
-              }
+              const curRepId = isAssigned ? (o.repId || o.salespersonId || '') : '';
+              const curRepName = isAssigned ? assignedName.toLowerCase().trim() : '';
+
+              const allReps = getActiveSalespeople();
+              let optionsHtml = `<option value="">+ Tag Rep (Select)...</option>`;
+              optionsHtml += `<option value="__manager__" ${!isAssigned ? 'selected' : ''}>-- No Rep (Company Direct) --</option>`;
+              allReps.forEach(sp => {
+                const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
+                                (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
+                optionsHtml += `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>👤 ${escapeHtml(sp.name)} (${sp.id})</option>`;
+              });
+
+              return `
+              <div class="mt-1 flex items-center gap-1">
+                <select onchange="handleInlineTagSalesperson('${o.id}', this.value)" 
+                  class="text-[10px] font-bold py-1 px-1.5 rounded-lg border transition outline-none cursor-pointer max-w-[135px] sm:max-w-[155px] ${isAssigned ? 'bg-indigo-50 border-indigo-300 text-indigo-950 hover:bg-indigo-100' : 'bg-amber-50 border-amber-400 text-amber-950 hover:bg-amber-100 ring-1 ring-amber-300/60 font-black'}"
+                  title="Directly select and tag salesperson for Order #${o.id}">
+                  ${optionsHtml}
+                </select>
+                <button type="button" onclick="openQuickTagModal('${o.id}')" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer" title="Open detailed tagging dialog">
+                  <i data-lucide="external-link" class="w-3 h-3"></i>
+                </button>
+              </div>`;
             })()}
           </td>
           <td class="p-3">
@@ -8695,6 +8721,83 @@
     // =========================================================================
     // QUICK TAG SALESPERSON MODAL & FAST ATTRIBUTION ENGINE
     // =========================================================================
+    async function handleInlineTagSalesperson(orderId, selectedValue) {
+      if (!orderId) return;
+      const orderIndex = orders.findIndex(x => String(x.id).trim().toLowerCase() === String(orderId).trim().toLowerCase());
+      if (orderIndex === -1) {
+        alert(`Order #${orderId} could not be located in local memory.`);
+        return;
+      }
+
+      const origOrder = orders[orderIndex];
+      let newRepId = null;
+      let newRepName = null;
+
+      if (selectedValue && selectedValue !== '__manager__') {
+        const allReps = getActiveSalespeople();
+        const found = allReps.find(s => String(s.id).toLowerCase() === String(selectedValue).toLowerCase());
+        newRepId = found ? found.id : selectedValue;
+        newRepName = found ? found.name : selectedValue;
+      }
+
+      const updatedRecord = {
+        ...origOrder,
+        repId: newRepId,
+        repName: newRepName,
+        salespersonId: newRepId,
+        salespersonName: newRepName
+      };
+
+      orders[orderIndex] = updatedRecord;
+
+      // 1. LocalStorage persist
+      try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+
+      // 2. Realtime broadcast across tabs
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ORDER_UPDATED', repId: newRepId || origOrder.repId, order: updatedRecord });
+        }
+      } catch(e) {}
+
+      // 3. Elevated Cloud Persistence via Edge Function
+      try {
+        const edgeRes = await callManagerEdgeFunction('manager_update_order', {
+          id: orderId,
+          repId: newRepId,
+          repName: newRepName,
+          salespersonId: newRepId,
+          salespersonName: newRepName
+        });
+        if (edgeRes && edgeRes.success && edgeRes.data && edgeRes.data[0]) {
+          orders[orderIndex] = { ...updatedRecord, ...edgeRes.data[0] };
+          try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+        }
+      } catch (err) {
+        console.warn("Manager edge function update note:", err);
+      }
+
+      // 4. Non-blocking client fallback
+      if (supabaseClient) {
+        try {
+          supabaseClient.from('orders').update({
+            repId: newRepId,
+            repName: newRepName,
+            salespersonId: newRepId,
+            salespersonName: newRepName
+          }).eq('id', orderId).then(() => {}).catch(() => {});
+        } catch(e) {}
+      }
+
+      renderOrdersHistoryTable();
+      renderDashboard();
+      if (typeof renderSalespersonReportsView === 'function') {
+        renderSalespersonReportsView();
+      }
+      showToast(`✓ Order #${orderId} tagged to ${newRepName || 'Company Direct'}!`);
+    }
+
     function openQuickTagModal(orderId) {
       if (!orderId) return;
       const o = orders.find(x => String(x.id).trim().toLowerCase() === String(orderId).trim().toLowerCase());
@@ -8731,7 +8834,7 @@
         const curRepName = isUntagged ? '' : (o.repName || o.salespersonName || '').toLowerCase().trim();
 
         let opts = `<option value="">-- No Rep / Company Direct (Manager) --</option>`;
-        const activeSalespeople = (salespeople || []).filter(s => s.active !== false);
+        const activeSalespeople = getActiveSalespeople();
         activeSalespeople.forEach(sp => {
           const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
                           (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
@@ -8994,7 +9097,7 @@
         const curRepId = isUntagged ? '' : (o.repId || o.salespersonId || '');
         const curRepName = isUntagged ? '' : (o.repName || o.salespersonName || '').toLowerCase().trim();
         repSelect.innerHTML = `<option value="">-- No Rep / Company Direct (Manager) --</option>` +
-          (salespeople || []).filter(s => s.active !== false).map(sp => {
+          getActiveSalespeople().map(sp => {
             const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
                             (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
             return `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>${escapeHtml(sp.name)} (${sp.id}) • ${escapeHtml(sp.assignedRoute || 'Beat')}</option>`;
@@ -11493,7 +11596,7 @@
         const curRepId = isUntagged ? '' : (d.repId || d.salespersonId || '');
         const curRepName = isUntagged ? '' : (d.repName || d.salespersonName || '').toLowerCase().trim();
         invRepSelect.innerHTML = `<option value="">-- No Rep (Company Direct) --</option>` +
-          (salespeople || []).filter(s => s.active !== false).map(sp => {
+          getActiveSalespeople().map(sp => {
             const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
                             (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
             return `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>${escapeHtml(sp.name)} (${sp.id})</option>`;
