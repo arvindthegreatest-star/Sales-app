@@ -1083,6 +1083,16 @@
           banner.classList.remove('hidden');
         }
         if (btnHdr) btnHdr.classList.remove('hidden');
+
+        // Automatically pop up install guide on phone if not installed
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '') || (window.innerWidth < 768);
+        const autoShown = sessionStorage.getItem(`pwa_auto_popup_${AGENT.slug}`);
+        if (isMobile && !autoShown && !isDismissed) {
+          sessionStorage.setItem(`pwa_auto_popup_${AGENT.slug}`, 'true');
+          setTimeout(() => {
+            openPwaInstallModal();
+          }, 1200);
+        }
       }
     }
 

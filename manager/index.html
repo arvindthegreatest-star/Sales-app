@@ -123,6 +123,10 @@
           <button type="button" onclick="manualRefreshData()" id="btn-manual-refresh" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition active:scale-95" title="Refresh Live Cloud Data">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           </button>
+          <button type="button" id="btn-install-app-header" onclick="triggerPwaInstallPopup(true)" class="hidden px-2.5 py-1 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 transition active:scale-95" title="Install App to Home Screen">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span class="text-[10px]">Install</span>
+          </button>
           <button type="button" onclick="setTab('order')" class="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition active:scale-95" title="Create New Order">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
             <span class="text-[11px]">Order</span>
@@ -185,6 +189,10 @@
         <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-emerald-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-emerald-500 shadow-xs cursor-pointer ml-1 shrink-0" title="Manage Official Bank Account & UPI QR Code">
           <i data-lucide="landmark" class="w-3.5 h-3.5 text-emerald-400"></i>
           <span>Bank & QR</span>
+        </button>
+        <button type="button" id="btn-install-app-desktop" onclick="triggerPwaInstallPopup(true)" class="hidden px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-emerald-300 hover:text-white bg-emerald-950/50 border border-emerald-500/40 hover:border-emerald-500 shadow-xs cursor-pointer ml-1 shrink-0" title="Install Sri Govinda to Desktop / Home Screen">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Install App</span>
         </button>
       </nav>
     </div>
@@ -4684,6 +4692,87 @@
             Done
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: AUTOMATIC PWA INSTALL POPUP (Mobile phone not installed)
+       ============================================================================== -->
+  <div id="modal-pwa-install-popup" class="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 hidden animate-in fade-in duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 space-y-4 border border-slate-200 transform transition-all animate-in slide-in-from-bottom duration-300" onclick="event.stopPropagation();">
+      
+      <!-- Top Brand Strip & Dismiss -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-indigo-600 to-slate-900 flex items-center justify-center text-white shadow-md p-1.5 shrink-0 border border-emerald-400/40">
+            <img src="/icon-192.png" alt="App Icon" class="w-full h-full object-contain rounded-xl" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">
+            <i data-lucide="package" class="w-6 h-6 hidden"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="font-black text-sm text-slate-900 tracking-tight" id="pwa-install-popup-appname">Sri Govinda Manager</h3>
+              <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-black rounded-full border border-emerald-300 uppercase">App</span>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium">Fast Offline Field App</p>
+          </div>
+        </div>
+        <button type="button" onclick="dismissPwaInstallPopup()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition cursor-pointer" title="Close">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Feature Badges -->
+      <div class="grid grid-cols-3 gap-1.5 py-1 text-center">
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="text-base">⚡</div>
+          <div class="text-[10px] font-extrabold text-slate-800 leading-tight mt-0.5">1-Tap Open</div>
+          <div class="text-[9px] text-slate-400">Home icon</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="text-base">📶</div>
+          <div class="text-[10px] font-extrabold text-slate-800 leading-tight mt-0.5">Offline Ready</div>
+          <div class="text-[9px] text-slate-400">Works always</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="text-base">📱</div>
+          <div class="text-[10px] font-extrabold text-slate-800 leading-tight mt-0.5">Full Screen</div>
+          <div class="text-[9px] text-slate-400">No browser bar</div>
+        </div>
+      </div>
+
+      <!-- Android / Chromium Direct Install Prompt View -->
+      <div id="pwa-install-android-view" class="space-y-2">
+        <button type="button" onclick="executePwaInstall()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Install App on Phone</span>
+        </button>
+        <p class="text-[10px] text-center text-slate-400">Installs directly to your home screen—no Play Store needed.</p>
+      </div>
+
+      <!-- iOS Safari Instructions View (Visible automatically on iPhone/iPad) -->
+      <div id="pwa-install-ios-view" class="hidden space-y-2 bg-slate-50 border border-slate-200 rounded-2xl p-3">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5">
+          <i data-lucide="share" class="w-4 h-4 text-indigo-600"></i>
+          <span>Install on iPhone / iPad (Safari)</span>
+        </div>
+        <ol class="text-[11px] text-slate-600 space-y-1.5 pl-4 list-decimal font-medium">
+          <li>Tap the <b class="text-slate-900 font-bold">Share</b> button <span class="px-1.5 py-0.5 bg-slate-200 rounded text-slate-900 text-xs">⎋</span> at the bottom of Safari.</li>
+          <li>Scroll down and tap <b class="text-slate-900 font-bold">"Add to Home Screen"</b> <span class="px-1.5 py-0.5 bg-slate-200 rounded text-slate-900 text-xs">⊞</span>.</li>
+          <li>Tap <b class="text-emerald-700 font-bold">"Add"</b> in the top-right corner!</li>
+        </ol>
+      </div>
+
+      <!-- Fallback manual instruction -->
+      <div id="pwa-install-fallback-view" class="hidden text-center text-[10px] text-slate-400">
+        Tap browser menu (<b class="text-slate-700">⋮</b>) and choose <b class="text-slate-700">"Install app"</b> or <b class="text-slate-700">"Add to Home screen"</b>.
+      </div>
+
+      <!-- Secondary Dismiss Action -->
+      <div class="text-center pt-1 border-t border-slate-100">
+        <button type="button" onclick="dismissPwaInstallPopup()" class="text-xs font-bold text-slate-400 hover:text-slate-600 py-1 transition cursor-pointer">
+          Continue in Browser
+        </button>
       </div>
     </div>
   </div>
@@ -16102,6 +16191,127 @@
       });
     }
 
+    // =========================================================================
+    // AUTOMATIC PWA INSTALLATION POP-UP LOGIC (Phone browser detection)
+    // =========================================================================
+    let deferredPwaPrompt = null;
+
+    function isRunningStandalone() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true ||
+             document.referrer.includes('android-app://');
+    }
+
+    function isMobilePhone() {
+      const ua = navigator.userAgent || '';
+      return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) || (window.innerWidth < 768);
+    }
+
+    function isIosDevice() {
+      const ua = navigator.userAgent || '';
+      return /iPhone|iPad|iPod/i.test(ua) && !window.MSStream;
+    }
+
+    // Capture beforeinstallprompt event on Android/Chrome/Edge
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      const androidView = document.getElementById('pwa-install-android-view');
+      if (androidView) androidView.classList.remove('hidden');
+      checkAndShowPwaInstallPopup();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPwaPrompt = null;
+      hidePwaInstallPopup();
+      console.log('Sri Govinda App successfully installed!');
+    });
+
+    function checkAndShowPwaInstallPopup() {
+      if (isRunningStandalone()) {
+        hidePwaInstallPopup();
+        return;
+      }
+
+      // Show header & desktop install buttons if not installed
+      const hdrBtn = document.getElementById('btn-install-app-header');
+      if (hdrBtn) hdrBtn.classList.remove('hidden');
+      const deskBtn = document.getElementById('btn-install-app-desktop');
+      if (deskBtn) deskBtn.classList.remove('hidden');
+
+      if (!isMobilePhone()) return;
+
+      const dismissed = sessionStorage.getItem('sg_pwa_install_dismissed');
+      if (dismissed) return;
+
+      // Pop up after 1s delay for smooth non-blocking entry
+      setTimeout(() => {
+        triggerPwaInstallPopup(false);
+      }, 1000);
+    }
+
+    function triggerPwaInstallPopup(forced = false) {
+      if (!forced && isRunningStandalone()) return;
+
+      const modal = document.getElementById('modal-pwa-install-popup');
+      if (!modal) return;
+
+      const androidView = document.getElementById('pwa-install-android-view');
+      const iosView = document.getElementById('pwa-install-ios-view');
+      const fallbackView = document.getElementById('pwa-install-fallback-view');
+
+      if (isIosDevice()) {
+        if (androidView) androidView.classList.add('hidden');
+        if (iosView) iosView.classList.remove('hidden');
+        if (fallbackView) fallbackView.classList.add('hidden');
+      } else {
+        if (iosView) iosView.classList.add('hidden');
+        if (androidView) androidView.classList.remove('hidden');
+        if (fallbackView) fallbackView.classList.remove('hidden');
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function dismissPwaInstallPopup() {
+      sessionStorage.setItem('sg_pwa_install_dismissed', '1');
+      hidePwaInstallPopup();
+    }
+
+    function hidePwaInstallPopup() {
+      const modal = document.getElementById('modal-pwa-install-popup');
+      if (modal) modal.classList.add('hidden');
+      if (isRunningStandalone()) {
+        const hdrBtn = document.getElementById('btn-install-app-header');
+        if (hdrBtn) hdrBtn.classList.add('hidden');
+        const deskBtn = document.getElementById('btn-install-app-desktop');
+        if (deskBtn) deskBtn.classList.add('hidden');
+      }
+    }
+
+    async function executePwaInstall() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        try {
+          const choice = await deferredPwaPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            dismissPwaInstallPopup();
+          }
+        } catch(err) {}
+        deferredPwaPrompt = null;
+      } else if (isIosDevice()) {
+        const iosView = document.getElementById('pwa-install-ios-view');
+        if (iosView) iosView.classList.remove('hidden');
+      } else {
+        alert("To install Sri Govinda on your phone:\n\n1. Tap your browser menu (⋮) in the top-right.\n2. Tap 'Install app' or 'Add to Home screen'.\n3. Tap 'Install' to add the app icon to your phone launcher!");
+      }
+    }
+
+    function initPwaInstallation() {
+      checkAndShowPwaInstallPopup();
+    }
+
     // ==============================================================================
     // 18. INITIALIZATION & STUBS (PURE MANAGERIAL ACCESS)
     // ==============================================================================
@@ -16163,6 +16373,7 @@
       setupSalespersonRealtimeListeners();
       populateSalespersonDropdowns();
       await initSupabase();
+      initPwaInstallation();
     });
   </script>
 </body>
