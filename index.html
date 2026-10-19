@@ -3119,7 +3119,10 @@
         <button type="button" id="success-btn-fulfill-now" onclick="closeOrderSuccessModal(); if(latestOrder) openDeliveryConfirmModal(latestOrder.id);" class="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
           <i data-lucide="truck" class="w-4 h-4"></i> Confirm Delivery Now
         </button>
-        <button onclick="closeOrderSuccessModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+        <button type="button" onclick="closeOrderSuccessModal(); setTab('orders');" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i> View in Order History
+        </button>
+        <button onclick="closeOrderSuccessModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer">
           Done / Next Order
         </button>
       </div>
@@ -5271,7 +5274,7 @@
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
             const { data } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
             if (data) { 
-              orders = data.map(o => {
+              const cloudOrders = data.map(o => {
                 const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
                 const breakdown = getOrderPaymentBreakdown(o);
                 return {
@@ -5281,6 +5284,11 @@
                   balanceDue: breakdown.balanceDue
                 };
               });
+              const cloudIds = new Set(cloudOrders.map(o => o.id));
+              const localOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
+              const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(o.id));
+              orders = [...localUnsynced, ...cloudOrders];
+              try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
               debouncedRefreshAllUI(100); 
             }
           })
@@ -5418,6 +5426,13 @@
           const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(o.id));
           orders = [...localUnsynced, ...cloudOrders];
           try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+
+          // Background auto-sync of any unsynced local orders to cloud
+          if (localUnsynced.length > 0) {
+            localUnsynced.forEach(unsyncedOrd => {
+              callManagerEdgeFunction('submit_order', unsyncedOrd).catch(() => {});
+            });
+          }
         }
 
         const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
@@ -6241,25 +6256,29 @@
 
     function sanitizeOrderForSupabase(ord) {
       if (!ord) return null;
+      const status = ord.status || getOrderStatus(ord) || 'Pending Delivery';
       return {
-        id: ord.id,
+        id: String(ord.id),
         repId: ord.repId || null,
         repName: ord.repName || 'Manager',
-        buyerId: ord.buyerId || null,
-        buyerName: ord.buyerName || '',
-        buyerPhone: ord.buyerPhone || '',
-        buyerTier: ord.buyerTier || null,
+        buyerId: ord.buyerId ? String(ord.buyerId) : null,
+        buyerName: String(ord.buyerName || ''),
+        buyerPhone: String(ord.buyerPhone || ''),
+        buyerTier: ord.buyerTier || 'Retail',
         buyerHomeRoute: ord.buyerHomeRoute || null,
+        buyerAddress: ord.buyerAddress || null,
         dispatchRoute: ord.dispatchRoute || '',
         date: ord.date,
         time: ord.time || '',
-        items: ord.items || [],
+        items: Array.isArray(ord.items) ? ord.items : [],
         totalUnits: Number(ord.totalUnits || 0),
         itemsSubtotal: Number(ord.itemsSubtotal || 0),
         logisticsFee: Number(ord.logisticsFee || 0),
         extraRebate: Number(ord.extraRebate || 0),
         netPayable: Number(ord.netPayable || 0),
         paymentMode: ord.paymentMode || 'Cash',
+        status: status,
+        deliveredAt: ord.deliveredAt || (status === 'Delivered' ? new Date().toISOString() : null),
         notes: ord.notes || ''
       };
     }
@@ -6370,6 +6389,9 @@
         buyerId: cust.id,
         buyerName: cust.name,
         buyerPhone: cust.phone,
+        buyerTier: cust.tier || 'Retail',
+        buyerHomeRoute: cust.homeRoute || route,
+        buyerAddress: cust.address || '',
         dispatchRoute: route,
         date: now.toISOString().split('T')[0],
         time: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -6387,24 +6409,59 @@
 
       orders.unshift(orderRecord);
 
-      // UPDATE CUSTOMER LEDGER:
-      // Any unpaid balance goes straight to customer pendingUdhaar
+      // 1. Immediately persist to localStorage so order is permanently preserved locally
+      try {
+        localStorage.setItem('sg_orders', JSON.stringify(orders));
+      } catch (e) {
+        console.warn("Could not save sg_orders to localStorage:", e);
+      }
+
+      // 2. Broadcast order creation to all open browser tabs and field terminals
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ORDER_CREATED', repId: '__manager__', repName: 'Manager', order: orderRecord });
+        }
+      } catch (e) {}
+
+      // 3. Update customer ledger
       if (balanceDue > 0) {
         cust.pendingUdhaar = Number(cust.pendingUdhaar || 0) + balanceDue;
       }
+      saveCustomersLocally();
 
-      if (supabaseClient) {
+      // 4. Secure Cloud Persistence via Edge Function (admin service_role)
+      let syncedToCloud = false;
+      try {
+        const edgeRes = await callManagerEdgeFunction('submit_order', orderRecord);
+        if (edgeRes && edgeRes.success) {
+          syncedToCloud = true;
+          console.log("✅ Manager order synced to cloud via Secure Edge Function:", orderId);
+          if (edgeRes.order) {
+            const idx = orders.findIndex(x => x.id === orderId);
+            if (idx >= 0) {
+              orders[idx] = { ...orderRecord, ...edgeRes.order };
+              try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch (e) {}
+            }
+          }
+        }
+      } catch (edgeErr) {
+        console.warn("Edge Function sync warning:", edgeErr);
+      }
+
+      // Direct fallback if Edge Function was unreachable
+      if (!syncedToCloud && supabaseClient) {
         try {
           const payload = sanitizeOrderForSupabase(orderRecord);
-          await supabaseClient.from('orders').insert([payload]);
-          if (balanceDue > 0) {
+          const { error: insErr } = await supabaseClient.from('orders').insert([payload]);
+          if (!insErr && balanceDue > 0) {
             await supabaseClient.from('buyers').update({ pendingUdhaar: cust.pendingUdhaar }).eq('id', cust.id);
           }
         } catch (e) {
-          console.error("Supabase order insert error:", e);
+          console.warn("Direct Supabase fallback error:", e);
         }
       }
-      saveCustomersLocally();
+      showToast(`✅ Order #${orderId} booked successfully!`);
 
       latestOrder = orderRecord;
       if (directAction === 'open_bill') {
@@ -8738,13 +8795,20 @@
     // 11. ORDERS HISTORY DATABASE
     function renderOrdersHistoryTable() {
       const tbody = document.getElementById('orders-table-body');
+      if (!tbody) return;
       const q = (document.getElementById('order-history-search')?.value || '').toLowerCase().trim();
 
       const filtered = orders.filter(o => {
+        if (!o || !o.id) return false;
         const status = getOrderStatus(o);
         if (currentOrdersStatusFilter !== 'all' && status !== currentOrdersStatusFilter) return false;
 
-        return !q || o.id.toLowerCase().includes(q) || o.buyerName.toLowerCase().includes(q) || (o.dispatchRoute && o.dispatchRoute.toLowerCase().includes(q)) || (o.repName && o.repName.toLowerCase().includes(q));
+        if (!q) return true;
+        const idMatch = String(o.id || '').toLowerCase().includes(q);
+        const buyerMatch = String(o.buyerName || '').toLowerCase().includes(q);
+        const routeMatch = String(o.dispatchRoute || '').toLowerCase().includes(q);
+        const repMatch = String(o.repName || o.salespersonName || '').toLowerCase().includes(q);
+        return idMatch || buyerMatch || routeMatch || repMatch;
       });
 
       if (filtered.length === 0) {
