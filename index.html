@@ -355,9 +355,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Select Customer *</label>
-                <select id="order-customer-select" onchange="onOrderCustomerChanged()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500 text-xs">
-                  <!-- Populated by JS -->
-                </select>
+                <div class="space-y-1.5">
+                  <input type="text" id="order-customer-search" oninput="filterOrderCustomerDropdown()" placeholder="🔍 Quick search customer by name or phone..." class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:ring-1 focus:ring-emerald-500 font-semibold">
+                  <select id="order-customer-select" onchange="onOrderCustomerChanged()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold outline-none focus:ring-1 focus:ring-emerald-500 text-xs">
+                    <!-- Populated by JS -->
+                  </select>
+                </div>
               </div>
               <div>
                 <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Dispatch Route Beat</label>
@@ -5688,45 +5691,114 @@
 
     // 7. ORDER BOOKING & CATALOG WITH LIVE STOCK DEDUCTION
     function populateDropdowns() {
-      // Order customer select
+      // Order customer select - ALWAYS preserve selected customer
       const custSelect = document.getElementById('order-customer-select');
-      if (customers.length === 0) {
-        custSelect.innerHTML = `<option value="">-- No customers registered yet --</option>`;
-      } else {
-        custSelect.innerHTML = customers.map(c => `
-          <option value="${c.id}">${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]</option>
-        `).join('');
+      if (custSelect) {
+        const currentCustVal = custSelect.value;
+        const searchInput = document.getElementById('order-customer-search');
+        const q = (searchInput?.value || '').trim().toLowerCase();
+        const filteredCustomers = q 
+          ? customers.filter(c => 
+              (c.name || '').toLowerCase().includes(q) || 
+              (c.phone || '').includes(q) || 
+              (c.homeRoute || '').toLowerCase().includes(q)
+            )
+          : customers;
+
+        if (customers.length === 0) {
+          custSelect.innerHTML = `<option value="">-- No customers registered yet --</option>`;
+        } else {
+          custSelect.innerHTML = `
+            <option value="">-- Choose Customer (${filteredCustomers.length}) --</option>
+            ${filteredCustomers.map(c => `
+              <option value="${c.id}">${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]${c.phone ? ' (' + escapeHtml(c.phone) + ')' : ''}</option>
+            `).join('')}
+          `;
+          // Restore previously chosen customer if still present
+          if (currentCustVal && filteredCustomers.some(c => String(c.id) === String(currentCustVal))) {
+            custSelect.value = currentCustVal;
+          }
+        }
       }
 
       // Datalist for Sample customer name
       const sampleCustList = document.getElementById('sample-customers-list');
-      sampleCustList.innerHTML = customers.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
-
-      // Route select
-      const routeSelect = document.getElementById('order-route-select');
-      if (routes.length === 0) {
-        routeSelect.innerHTML = `<option value="General Route">General Delivery Route</option>`;
-      } else {
-        routeSelect.innerHTML = routes.map(r => `
-          <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
-        `).join('');
+      if (sampleCustList) {
+        sampleCustList.innerHTML = customers.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
       }
 
-      // Sample product select
-      const sampleProdSelect = document.getElementById('sample-product-select');
-      sampleProdSelect.innerHTML = products.map(p => `
-        <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
-      `).join('');
+      // Route select - preserve route selection
+      const routeSelect = document.getElementById('order-route-select');
+      if (routeSelect) {
+        const currentRouteVal = routeSelect.value;
+        if (routes.length === 0) {
+          routeSelect.innerHTML = `<option value="General Route">General Delivery Route</option>`;
+        } else {
+          routeSelect.innerHTML = routes.map(r => `
+            <option value="${escapeHtml(r.name)}">${escapeHtml(r.name)}</option>
+          `).join('');
+          if (currentRouteVal && routes.some(r => r.name === currentRouteVal)) {
+            routeSelect.value = currentRouteVal;
+          }
+        }
+      }
 
-      // Inward product select
+      // Sample product select - preserve selection
+      const sampleProdSelect = document.getElementById('sample-product-select');
+      if (sampleProdSelect) {
+        const currentSampleVal = sampleProdSelect.value;
+        sampleProdSelect.innerHTML = products.map(p => `
+          <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
+        `).join('');
+        if (currentSampleVal && products.some(p => p.sku === currentSampleVal)) {
+          sampleProdSelect.value = currentSampleVal;
+        }
+      }
+
+      // Inward product select - preserve selection
       const inwardProdSelect = document.getElementById('inward-product-select');
       if (inwardProdSelect) {
+        const currentInwardVal = inwardProdSelect.value;
         inwardProdSelect.innerHTML = products.map(p => `
           <option value="${p.sku}">${escapeHtml(p.name)} (${escapeHtml(p.sku)} - ${escapeHtml(p.unitSize)})</option>
         `).join('');
+        if (currentInwardVal && products.some(p => p.sku === currentInwardVal)) {
+          inwardProdSelect.value = currentInwardVal;
+        }
       }
 
       onOrderCustomerChanged();
+    }
+
+    function filterOrderCustomerDropdown() {
+      const q = (document.getElementById('order-customer-search')?.value || '').trim().toLowerCase();
+      const select = document.getElementById('order-customer-select');
+      if (!select) return;
+      const currentVal = select.value;
+
+      const filtered = q
+        ? customers.filter(c =>
+            (c.name || '').toLowerCase().includes(q) ||
+            (c.phone || '').includes(q) ||
+            (c.homeRoute || '').toLowerCase().includes(q)
+          )
+        : customers;
+
+      select.innerHTML = `
+        <option value="">-- Choose Customer (${filtered.length}) --</option>
+        ${filtered.map(c => `
+          <option value="${c.id}">${escapeHtml(c.name)} [${escapeHtml(c.tier || 'Retail')}]${c.phone ? ' (' + escapeHtml(c.phone) + ')' : ''}</option>
+        `).join('')}
+      `;
+
+      if (currentVal && filtered.some(c => String(c.id) === String(currentVal))) {
+        select.value = currentVal;
+      } else if (filtered.length === 1 && q.length >= 2) {
+        select.value = filtered[0].id;
+        onOrderCustomerChanged();
+      } else if (!currentVal) {
+        onOrderCustomerChanged();
+      }
     }
 
     function onOrderCustomerChanged() {
@@ -6265,6 +6337,10 @@
       if (paidInput) paidInput.value = '0';
       const payModeSelect = document.getElementById('order-payment-mode');
       if (payModeSelect) payModeSelect.value = 'Cash';
+      const custSelect = document.getElementById('order-customer-select');
+      if (custSelect) { custSelect.value = ''; onOrderCustomerChanged(); }
+      const custSearchInput = document.getElementById('order-customer-search');
+      if (custSearchInput) custSearchInput.value = '';
       updateOrderPaymentUI(0);
       
       // Real-time stock refresh: order units are instantly deducted!
