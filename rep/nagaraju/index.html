@@ -133,6 +133,29 @@
   </div>
 
   <!-- ==============================================================================
+       SALES REPRESENTATIVE NOTIFICATIONS & REMINDERS BAR
+       ============================================================================== -->
+  <aside id="agent-notifications-bar" class="w-full bg-slate-900 border-b border-slate-800 text-white shadow-md">
+    <div class="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 space-y-2">
+      <!-- Quick Ticker Pills -->
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div id="agent-notif-pills" class="flex items-center gap-1.5 flex-wrap text-xs">
+          <!-- Dynamic notifications rendered by JS -->
+        </div>
+        <button type="button" onclick="toggleAgentNotifDrawer()" id="btn-toggle-agent-notif" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer">
+          <span id="agent-notif-btn-label">View Alerts</span>
+          <i id="agent-notif-btn-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+        </button>
+      </div>
+
+      <!-- Collapsible Detailed List -->
+      <div id="agent-notif-drawer" class="hidden pt-2 border-t border-slate-800 space-y-2 max-h-[300px] overflow-y-auto">
+        <!-- Notification cards rendered by JS -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==============================================================================
        NAVIGATION TABS (Sticky Mobile Bottom Bar + Desktop Header)
        ============================================================================== -->
   <div class="bg-slate-950/80 border-b border-slate-800 hidden md:block">
@@ -1508,6 +1531,7 @@
       renderOrdersHistory();
       renderSampleProductDropdown();
       renderRouteShops();
+      renderAgentNotifications();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -1701,8 +1725,16 @@
         creditLimit: 25000,
         pendingUdhaar: 0,
         address: address,
-        gstin: gstin
+        gstin: gstin,
+        assignedRepId: AGENT.id,
+        assignedRepName: AGENT.name
       };
+
+      try {
+        const repMap = JSON.parse(localStorage.getItem('sg_customer_rep_assignments') || '{}');
+        repMap[custId] = AGENT.id;
+        localStorage.setItem('sg_customer_rep_assignments', JSON.stringify(repMap));
+      } catch (e) {}
 
       // 1. Optimistic local update
       customers.unshift(newCustomer);
@@ -1803,7 +1835,18 @@
       renderAgentStockSheet();
     }
 
-    function getAgentStockSummary(tf = agentStockTimeframe) {
+    function isOrderSuppliedBySalesperson(order, agent) {
+  if (!order || !agent) return false;
+  const aid = String(agent.id || '').toLowerCase().trim();
+  const aname = String(agent.name || '').toLowerCase().trim();
+  const sRepId = String(order.supplyRepId || order.salespersonId || order.repId || '').toLowerCase().trim();
+  const sRepName = String(order.supplyRepName || order.salespersonName || order.repName || '').toLowerCase().trim();
+  if (aid && sRepId && aid === sRepId) return true;
+  if (aname && sRepName && (aname === sRepName || sRepName.includes(aname) || aname.includes(sRepName))) return true;
+  return false;
+}
+
+function getAgentStockSummary(tf = agentStockTimeframe) {
       const todayStr = new Date().toISOString().split('T')[0];
       let startDate = '2020-01-01';
       let endDate = '2099-12-31';
@@ -1849,7 +1892,7 @@
         String(d.rep_slug || '').toLowerCase() === String(AGENT.slug || '').toLowerCase() ||
         (d.rep_name && d.rep_name.toLowerCase() === (AGENT.name || '').toLowerCase())
       );
-      const repOrders = orders || [];
+      const repOrders = (orders || []).filter(o => isOrderSuppliedBySalesperson(o, AGENT));
       const repSamples = (sampleGiveaways || []).filter(s => 
         String(s.rep_id || '').toLowerCase() === String(AGENT.id || '').toLowerCase() || 
         (s.rep_name && s.rep_name.toLowerCase() === (AGENT.name || '').toLowerCase()) ||
@@ -2023,18 +2066,29 @@
       if (!tbody) return;
 
       tbody.innerHTML = summary.skuBreakdown.map(row => {
-        const inHandCls = row.inHand < 0 ? 'text-rose-400 font-black' : row.inHand === 0 ? 'text-slate-500' : 'text-emerald-400 font-black';
+        const isDeficit = row.inHand < 0;
+        const rowCls = isDeficit
+          ? 'bg-rose-950/40 border-l-2 border-rose-500 font-semibold'
+          : 'hover:bg-slate-800/40';
+
+        const inHandBadge = isDeficit
+          ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-900/90 text-rose-200 border border-rose-600 text-[10px] font-black animate-pulse">⚠️ ${row.inHand} pk (Deficit)</span>`
+          : `<span class="${row.inHand === 0 ? 'text-slate-500' : 'text-emerald-400 font-black'}">${row.inHand}</span>`;
+
         return `
-          <tr class="hover:bg-slate-800/40">
+          <tr class="${rowCls}">
             <td class="p-2">
-              <div class="font-bold text-white font-sans">${escapeHtml(row.name)}</div>
+              <div class="font-bold text-white font-sans flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(row.name)}</span>
+                ${isDeficit ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-900/80 text-rose-300 border border-rose-700">Unissued Deficit</span>` : ''}
+              </div>
               <div class="text-[9px] text-slate-400 font-mono">${escapeHtml(row.sku)} • ${escapeHtml(row.unitSize || '-')}</div>
             </td>
             <td class="p-2 text-right text-slate-300 font-bold">${row.opening}</td>
             <td class="p-2 text-right text-amber-400 font-bold">+${row.received}</td>
             <td class="p-2 text-right text-rose-400">-${row.sold}</td>
             <td class="p-2 text-right text-blue-400">-${row.samples}</td>
-            <td class="p-2 text-right ${inHandCls} bg-slate-900/40">${row.inHand}</td>
+            <td class="p-2 text-right bg-slate-900/40">${inHandBadge}</td>
             <td class="p-2 text-right text-emerald-400">${formatINR(row.value)}</td>
           </tr>
         `;
@@ -2391,6 +2445,20 @@
         ? `Field booking by ${AGENT.name} | ${notes} ${payTag} ${statusTag} ${repTag}` 
         : `Field booking by ${AGENT.name} ${payTag} ${statusTag} ${repTag}`;
 
+      // Resolve Customer Account Owner (for commission & target attribution)
+      let customerRepId = activeCustomer.assignedRepId;
+      let customerRepName = activeCustomer.assignedRepName;
+      if (!customerRepId) {
+        try {
+          const repMap = JSON.parse(localStorage.getItem('sg_customer_rep_assignments') || '{}');
+          if (repMap[activeCustomer.id]) customerRepId = repMap[activeCustomer.id];
+        } catch (e) {}
+      }
+      if (!customerRepId) {
+        customerRepId = AGENT.id;
+        customerRepName = AGENT.name;
+      }
+
       const newOrder = {
         id: orderId,
         date: dateStr,
@@ -2406,6 +2474,10 @@
         repName: AGENT.name,
         salespersonId: AGENT.id,
         salespersonName: AGENT.name,
+        customerRepId: customerRepId,
+        customerRepName: customerRepName,
+        supplyRepId: AGENT.id,
+        supplyRepName: AGENT.name,
         dispatchRoute: AGENT.assignedRoute,
         items,
         itemsSubtotal: subtotal,
@@ -3006,6 +3078,137 @@
       if (rem) parts.push(numToWordsUnderThousand(rem));
       return 'Rupees ' + parts.join(' ') + ' Only';
     }
+  
+    // ==============================================================================
+    // SALES REPRESENTATIVE NOTIFICATIONS & REMINDERS LOGIC
+    // ==============================================================================
+    let isAgentNotifOpen = false;
+
+    function toggleAgentNotifDrawer() {
+      isAgentNotifOpen = !isAgentNotifOpen;
+      const drawer = document.getElementById('agent-notif-drawer');
+      const label = document.getElementById('agent-notif-btn-label');
+      const icon = document.getElementById('agent-notif-btn-icon');
+      if (drawer) drawer.classList.toggle('hidden', !isAgentNotifOpen);
+      if (label) label.innerText = isAgentNotifOpen ? 'Hide Alerts' : 'View Alerts';
+      if (icon) icon.classList.toggle('rotate-180', isAgentNotifOpen);
+    }
+
+    function renderAgentNotifications() {
+      const container = document.getElementById('agent-notif-pills');
+      const drawer = document.getElementById('agent-notif-drawer');
+      if (!container || !drawer) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const stockSummary = getAgentStockSummary();
+      const deficits = (stockSummary.skuBreakdown || []).filter(r => r.inHand < 0);
+      const hasDeficit = deficits.length > 0 || stockSummary.totalInHand < 0;
+
+      // Agent's customers with pending dues
+      const beat = (AGENT.assignedRoute || '').toLowerCase().trim();
+      const myCustomers = (customers || []).filter(c => {
+        if (c.assignedRepId && String(c.assignedRepId).toLowerCase() === String(AGENT.id).toLowerCase()) return true;
+        if (c.homeRoute && beat && c.homeRoute.toLowerCase().includes(beat)) return true;
+        return false;
+      });
+      const paymentDues = myCustomers.filter(c => Number(c.pendingUdhaar || 0) > 0);
+
+      // Orders due today
+      const todayDeliveries = (orders || []).filter(o => {
+        const status = o.status || '';
+        return status !== 'Delivered' && (o.date === today || o.deliveryDate === today);
+      });
+
+      // Daily goal nudge
+      const target = Number(AGENT.dailyOrderTarget || 6);
+      const todayBooked = (orders || []).filter(o => o.date === today && (o.customerRepId === AGENT.id || isOrderSuppliedBySalesperson(o, AGENT))).length;
+      const remaining = Math.max(0, target - todayBooked);
+
+      let pills = [];
+      let cards = [];
+
+      // 1. Stock Deficit Warning
+      if (hasDeficit) {
+        pills.push(`
+          <button type="button" onclick="openAgentStockSheetModal()" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-950/80 text-rose-300 border border-rose-600 flex items-center gap-1 animate-pulse cursor-pointer">
+            ⚠️ Stock Deficit (${deficits.length} SKU)
+          </button>
+        `);
+        cards.push(`
+          <div class="p-2.5 rounded-xl bg-rose-950/60 border border-rose-700 text-xs text-rose-200 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 shrink-0"></i>
+              <div>
+                <b>Stock Deficit Alert:</b> You delivered ${deficits.map(d => `${Math.abs(d.inHand)} pk ${d.name}`).join(', ')} exceeding issued outward custody.
+              </div>
+            </div>
+            <button onclick="openAgentStockSheetModal()" class="px-2 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded font-bold text-[10px] shrink-0 cursor-pointer">
+              View Sheet
+            </button>
+          </div>
+        `);
+      }
+
+      // 2. Payments Due
+      if (paymentDues.length > 0) {
+        const totalDue = paymentDues.reduce((sum, c) => sum + Number(c.pendingUdhaar || 0), 0);
+        pills.push(`
+          <button type="button" onclick="toggleAgentNotifDrawer()" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600 flex items-center gap-1 cursor-pointer">
+            💰 ${paymentDues.length} Payments Due (${formatINR(totalDue)})
+          </button>
+        `);
+        paymentDues.slice(0, 5).forEach(c => {
+          cards.push(`
+            <div class="p-2 rounded-xl bg-amber-950/40 border border-amber-800/80 text-xs flex items-center justify-between gap-2">
+              <div>
+                <span class="font-bold text-amber-200">${escapeHtml(c.name)}</span>: <span class="font-mono text-white font-bold">${formatINR(c.pendingUdhaar)}</span> due
+              </div>
+              <button onclick="sendAgentCustomerPaymentReminderWa('${c.id}')" class="px-2 py-0.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded font-bold text-[10px] flex items-center gap-1 shrink-0 cursor-pointer">
+                <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
+              </button>
+            </div>
+          `);
+        });
+      }
+
+      // 3. Deliveries Due
+      if (todayDeliveries.length > 0) {
+        pills.push(`
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-950/80 text-blue-300 border border-blue-600 flex items-center gap-1">
+            🚚 ${todayDeliveries.length} Delivery Due Today
+          </span>
+        `);
+      }
+
+      // 4. Daily Goal Nudge
+      const isGoalMet = todayBooked >= target;
+      pills.push(`
+        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isGoalMet ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600' : 'bg-indigo-950/80 text-indigo-300 border border-indigo-600'} flex items-center gap-1">
+          🎯 Goal: ${todayBooked}/${target} (${isGoalMet ? '🎉 Smashed!' : `${remaining} to hit goal`})
+        </span>
+      `);
+
+      container.innerHTML = pills.join('');
+      drawer.innerHTML = cards.length > 0 ? cards.join('') : `<div class="p-2 text-center text-xs text-slate-400">All customer payments and deliveries up to date!</div>`;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function sendAgentCustomerPaymentReminderWa(custId) {
+      const c = (customers || []).find(x => String(x.id) === String(custId));
+      if (!c) return;
+      const cleanPhone = (c.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const text = `*SRI GOVINDA FOOD PRODUCTS - PAYMENT REMINDER*\n\n` +
+        `Namaste *${c.name}*,\n` +
+        `This is *${AGENT.name}* from Sri Govinda Food Products.\n` +
+        `A gentle reminder regarding your pending balance: *₹${c.pendingUdhaar || 0}*.\n\n` +
+        `Kindly keep the payment ready for today's beat visit, or pay via UPI.\n` +
+        `Thank you for your continuous support!\n` +
+        `_${AGENT.name} • Sri Govinda Food Products_`;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
   </script>
 </body>
 </html>

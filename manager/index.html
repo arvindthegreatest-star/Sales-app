@@ -120,6 +120,10 @@
 
         <!-- Quick Mobile Header Action Buttons -->
         <div class="flex items-center gap-1.5 md:hidden">
+          <button type="button" onclick="toggleNotificationsPanel()" id="btn-notifications-mobile" class="relative p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:text-white transition active:scale-95" title="Operational Reminders & Rep Nudges">
+            <i data-lucide="bell" class="w-4 h-4 text-amber-400"></i>
+            <span id="notif-badge-mobile" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white font-black text-[9px] flex items-center justify-center animate-pulse shadow-xs">0</span>
+          </button>
           <button type="button" onclick="manualRefreshData()" id="btn-manual-refresh" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition active:scale-95" title="Refresh Live Cloud Data">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           </button>
@@ -186,6 +190,11 @@
           <i data-lucide="map" class="w-3.5 h-3.5"></i>
           <span>Routes</span>
         </button>
+        <button type="button" onclick="toggleNotificationsPanel()" id="btn-notifications-desktop" class="relative px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-amber-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-amber-500 shadow-xs cursor-pointer ml-1 shrink-0" title="Operational Reminders & Rep Nudges">
+          <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Alerts</span>
+          <span id="notif-badge-desktop" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-600 text-white animate-pulse">0</span>
+        </button>
         <button type="button" onclick="openCompanySettingsModal()" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-emerald-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-emerald-500 shadow-xs cursor-pointer ml-1 shrink-0" title="Manage Official Bank Account & UPI QR Code">
           <i data-lucide="landmark" class="w-3.5 h-3.5 text-emerald-400"></i>
           <span>Bank & QR</span>
@@ -197,6 +206,63 @@
       </nav>
     </div>
   </header>
+
+  <!-- ==============================================================================
+       EXECUTIVE NOTIFICATIONS & REMINDERS BAR / CENTER
+       ============================================================================== -->
+  <aside id="executive-notifications-bar" class="w-full bg-slate-900 border-b border-slate-800 text-white shadow-md transition-all duration-200">
+    <div class="max-w-6xl mx-auto px-3 sm:px-6 py-2">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <!-- Left: Summary Ticker Pills -->
+        <div id="notif-summary-pills" class="flex items-center gap-1.5 flex-wrap text-xs">
+          <span class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 shrink-0">
+            <i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Action Reminders:</span>
+          </span>
+          <span class="text-xs text-slate-400">Scanning stock custody, payments & goals...</span>
+        </div>
+        <!-- Right: Toggle Drawer Button -->
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="toggleNotificationsPanel()" id="btn-toggle-notif-panel" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+            <span id="notif-panel-toggle-label">View Reminders</span>
+            <i id="notif-panel-toggle-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable Notification Center Drawer -->
+      <div id="notifications-drawer" class="hidden mt-3 pt-3 border-t border-slate-800/80 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <!-- Filter Tabs -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="notif-filter-tabs">
+            <button type="button" onclick="filterExecutiveNotifs('ALL')" id="flt-notif-ALL" class="notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs">
+              All Alerts (<span id="count-notif-all">0</span>)
+            </button>
+            <button type="button" onclick="filterExecutiveNotifs('DEFICIT')" id="flt-notif-DEFICIT" class="notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-rose-400 hover:bg-slate-700">
+              ⚠️ Stock Deficits (<span id="count-notif-deficit">0</span>)
+            </button>
+            <button type="button" onclick="filterExecutiveNotifs('PAYMENT')" id="flt-notif-PAYMENT" class="notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-amber-400 hover:bg-slate-700">
+              💰 Payment Due (<span id="count-notif-payment">0</span>)
+            </button>
+            <button type="button" onclick="filterExecutiveNotifs('DELIVERY')" id="flt-notif-DELIVERY" class="notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-blue-400 hover:bg-slate-700">
+              🚚 Delivery Due (<span id="count-notif-delivery">0</span>)
+            </button>
+            <button type="button" onclick="filterExecutiveNotifs('NUDGE')" id="flt-notif-NUDGE" class="notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-emerald-400 hover:bg-slate-700">
+              🎯 Daily Nudges (<span id="count-notif-nudge">0</span>)
+            </button>
+          </div>
+          <button type="button" onclick="toggleNotificationsPanel(false)" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i> Close
+          </button>
+        </div>
+
+        <!-- Card Grid / Scroll Container -->
+        <div id="notif-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[420px] overflow-y-auto pr-1">
+          <!-- Dynamically populated notification cards -->
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <!-- ==============================================================================
        MAIN WORKSPACE AREA
@@ -572,6 +638,7 @@
             <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
               <tr>
                 <th class="p-3">Store Name & Address</th>
+                <th class="p-3">Account Owner (Commission)</th>
                 <th class="p-3">Contact Person</th>
                 <th class="p-3">Tier</th>
                 <th class="p-3">Route Beat</th>
@@ -2131,9 +2198,16 @@
         </div>
         <div>
           <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Assigned Route Beat</label>
-          <select id="cust-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold">
+          <select id="cust-route" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold" onchange="onCustomerModalRouteChange(this.value)">
             <!-- Routes populated by JS -->
           </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Assigned Salesperson (Account Owner / Commission) *</label>
+          <select id="cust-salesperson" class="w-full p-2 bg-indigo-50/60 border border-indigo-200 rounded-xl font-bold text-indigo-950 outline-none focus:ring-1 focus:ring-indigo-500">
+            <!-- Populated by JS -->
+          </select>
+          <p class="text-[10px] text-slate-400 mt-0.5">This salesperson landed the customer and earns target accomplishment & sales commission for all orders.</p>
         </div>
         <div>
           <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Customer Address / Area</label>
@@ -2499,6 +2573,9 @@
         <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
         <input type="text" id="rep-sheet-search" oninput="filterRepStockSheetRows()" placeholder="Search product or SKU in this rep's custody..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-emerald-600">
       </div>
+
+      <!-- Stock Deficit Warning Alert Container -->
+      <div id="rep-sheet-deficit-alert-container"></div>
 
       <!-- Itemized Table -->
       <div class="overflow-y-auto flex-1">
@@ -5009,6 +5086,127 @@
       customers = [];
     }
 
+    // ==============================================================================
+    // CUSTOMER-TO-SALESPERSON ASSIGNMENT ENGINE (ACCOUNT OWNERSHIP & COMMISSION)
+    // ==============================================================================
+    function getCustomerAssignedRep(customerOrId) {
+      if (!customerOrId) return null;
+      let cust = null;
+      if (typeof customerOrId === 'object') {
+        cust = customerOrId;
+      } else {
+        const idStr = String(customerOrId).trim().toLowerCase();
+        cust = (customers || []).find(c => 
+          String(c.id).toLowerCase() === idStr || 
+          (c.name && c.name.toLowerCase().trim() === idStr)
+        );
+      }
+      if (!cust) return null;
+
+      // 1. Explicitly assigned on customer object
+      if (cust.assignedRepId) {
+        const sp = (salespeople || []).find(s => s.id === cust.assignedRepId);
+        if (sp) return sp;
+      }
+      if (cust.assignedRepName) {
+        const sp = (salespeople || []).find(s => s.name && s.name.toLowerCase() === cust.assignedRepName.toLowerCase());
+        if (sp) return sp;
+      }
+
+      // 2. Local mapping sg_customer_rep_assignments
+      try {
+        const repMap = JSON.parse(localStorage.getItem('sg_customer_rep_assignments') || '{}');
+        if (repMap[cust.id]) {
+          const sp = (salespeople || []).find(s => s.id === repMap[cust.id]);
+          if (sp) return sp;
+        }
+      } catch (e) {}
+
+      // 3. Fallback: match customer.homeRoute with salesperson.assignedRoute
+      if (cust.homeRoute) {
+        const cRoute = cust.homeRoute.toLowerCase().trim();
+        const spMatch = (salespeople || []).find(s => {
+          if (!s.assignedRoute) return false;
+          const sRoute = s.assignedRoute.toLowerCase().trim();
+          return cRoute === sRoute || sRoute.includes(cRoute) || cRoute.includes(sRoute);
+        });
+        if (spMatch) return spMatch;
+      }
+
+      // 4. Default: fallback to first active rep or round-robin
+      const activeReps = getActiveSalespeople();
+      if (activeReps.length > 0) {
+        let hash = 0;
+        const key = String(cust.id || cust.name || '0');
+        for (let i = 0; i < key.length; i++) hash += key.charCodeAt(i);
+        return activeReps[hash % activeReps.length];
+      }
+      return null;
+    }
+
+    function setCustomerAssignedRep(customerId, repId) {
+      const cust = (customers || []).find(c => String(c.id) === String(customerId));
+      const rep = (salespeople || []).find(s => String(s.id) === String(repId));
+      if (cust) {
+        cust.assignedRepId = rep ? rep.id : '';
+        cust.assignedRepName = rep ? rep.name : '';
+        saveCustomersLocally();
+      }
+      try {
+        const repMap = JSON.parse(localStorage.getItem('sg_customer_rep_assignments') || '{}');
+        if (repId) repMap[customerId] = repId;
+        else delete repMap[customerId];
+        localStorage.setItem('sg_customer_rep_assignments', JSON.stringify(repMap));
+      } catch (e) {}
+    }
+
+    function applyCustomerRepAssignments(custsList) {
+      if (!Array.isArray(custsList) || custsList.length === 0) return;
+      let repMap = {};
+      try {
+        repMap = JSON.parse(localStorage.getItem('sg_customer_rep_assignments') || '{}');
+      } catch (e) {}
+
+      custsList.forEach(c => {
+        const rep = getCustomerAssignedRep(c);
+        if (rep) {
+          c.assignedRepId = rep.id;
+          c.assignedRepName = rep.name;
+          repMap[c.id] = rep.id;
+        }
+      });
+
+      try {
+        localStorage.setItem('sg_customer_rep_assignments', JSON.stringify(repMap));
+      } catch (e) {}
+    }
+
+    function handleInlineAssignCustomerRep(custId, repId) {
+      setCustomerAssignedRep(custId, repId);
+      renderCustomersTable();
+      debouncedRefreshAllUI(100);
+      const cust = customers.find(c => String(c.id) === String(custId));
+      const rep = (salespeople || []).find(s => String(s.id) === String(repId));
+      showToast(`✅ Assigned ${cust ? cust.name : 'Customer'} to ${rep ? rep.name : 'Salesperson'} (Account Owner)!`);
+    }
+
+    function onCustomerModalRouteChange(selectedRoute) {
+      const repSelect = document.getElementById('cust-salesperson');
+      if (!repSelect || !selectedRoute) return;
+      const sRoute = selectedRoute.toLowerCase().trim();
+      const matchedRep = (salespeople || []).find(s => {
+        if (!s.assignedRoute) return false;
+        const r = s.assignedRoute.toLowerCase().trim();
+        return sRoute === r || r.includes(sRoute) || sRoute.includes(r);
+      });
+      if (matchedRep) {
+        repSelect.value = matchedRep.id;
+      }
+    }
+
+    // Apply customer rep assignments immediately on initial load
+    applyCustomerRepAssignments(customers);
+
     function saveCustomersLocally() {
       try {
         localStorage.setItem('sg_customers', JSON.stringify(customers));
@@ -5388,6 +5586,7 @@
         const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
         if (dbBuyers && dbBuyers.length > 0) {
           customers = dbBuyers;
+          applyCustomerRepAssignments(customers);
           saveCustomersLocally();
         } else if (customers.length === 0) {
           const localSaved = localStorage.getItem('sg_customers');
@@ -5571,8 +5770,9 @@
     }
 
     function refreshAllUI(forceAll = false) {
-      // 1. Always keep dashboard metrics fresh
+      // 1. Always keep dashboard metrics and executive notifications fresh
       renderDashboard();
+      renderExecutiveNotifications();
 
       // 2. Keep salesperson active count up to date
       const spBadge = document.getElementById('nav-salespersonnel-badge');
@@ -6378,10 +6578,18 @@
       const activeRepName = 'Manager';
       const activeRepId = null;
 
+      const custRep = getCustomerAssignedRep(cust.id);
+
       const orderRecord = {
         id: orderId,
         repName: activeRepName,
         repId: activeRepId,
+        salespersonId: activeRepId,
+        salespersonName: activeRepName,
+        customerRepId: custRep ? custRep.id : null,
+        customerRepName: custRep ? custRep.name : null,
+        supplyRepId: activeRepId,
+        supplyRepName: activeRepName,
         buyerId: cust.id,
         buyerName: cust.name,
         buyerPhone: cust.phone,
@@ -7352,7 +7560,8 @@
     function getSalespersonStock(repId) {
       const sp = (salespeople || []).find(s => s.id === repId);
       const repDispatches = (outwardDispatches || []).filter(d => d.rep_id === repId);
-      const repOrders = (orders || []).filter(o => isOrderFromSalesperson(o, sp));
+      // Deduct stock from the representative who physically delivered/supplied the items
+      const repOrders = (orders || []).filter(o => isOrderSuppliedBySalesperson(o, sp));
       const repSamples = (sampleGiveaways || []).filter(s => isSampleFromSalesperson(s, sp));
 
       const skuMap = {};
@@ -7950,8 +8159,11 @@
         const initials = (sp.name || 'R').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
         let statusBadge = '';
-        if (stock.totalInHand <= 0) {
-          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-200">Zero Stock</span>`;
+        const hasDeficit = stock.totalInHand < 0 || (stock.skuBreakdown || []).some(r => r.inHand < 0);
+        if (hasDeficit) {
+          statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-600 text-white border border-rose-700 shadow-xs animate-pulse">⚠️ DEFICIT (${stock.totalInHand < 0 ? stock.totalInHand + ' pk' : 'SKU Deficit'})</span>`;
+        } else if (stock.totalInHand === 0) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">Zero Stock</span>`;
         } else if (stock.totalInHand <= 20) {
           statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Low Stock (${stock.totalInHand})</span>`;
         } else {
@@ -7959,7 +8171,7 @@
         }
 
         return `
-          <tr class="hover:bg-slate-50 transition">
+          <tr class="hover:bg-slate-50 transition ${hasDeficit ? 'bg-rose-50/70 border-l-4 border-rose-600 font-semibold' : ''}">
             <td class="p-3">
               <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg bg-slate-900 text-amber-400 font-black text-xs flex items-center justify-center shrink-0">
@@ -8257,6 +8469,30 @@
 
       renderRepStockSheetRows(stock.skuBreakdown);
 
+      // Check for negative stock deficit and render alert banner
+      const alertContainer = document.getElementById('rep-sheet-deficit-alert-container');
+      if (alertContainer) {
+        const deficitSkus = (stock.skuBreakdown || []).filter(r => r.inHand < 0);
+        if (deficitSkus.length > 0 || stock.totalInHand < 0) {
+          alertContainer.innerHTML = `
+            <div class="m-3 p-3 bg-rose-50 border-2 border-rose-400 rounded-2xl text-rose-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-600 text-white font-black flex items-center justify-center shrink-0">⚠️</div>
+                <div>
+                  <div class="font-black text-xs text-rose-900">Negative Stock Custody Warning!</div>
+                  <p class="text-[11px] text-rose-800">This salesperson delivered ${deficitSkus.map(s => `<b>${Math.abs(s.inHand)} pk ${escapeHtml(s.name)}</b>`).join(', ')} exceeding officially issued custody. Outward stock issue needed to balance.</p>
+                </div>
+              </div>
+              <button type="button" onclick="selectRepForOutward('${repId}'); closeRepStockSheetModal();" class="px-3.5 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 active:scale-95 text-white font-bold text-xs shrink-0 transition shadow-xs cursor-pointer">
+                + Issue Outward Stock
+              </button>
+            </div>
+          `;
+        } else {
+          alertContainer.innerHTML = '';
+        }
+      }
+
       document.getElementById('rep-sheet-total-packs').innerText = `${stock.totalInHand} packs`;
       document.getElementById('rep-sheet-total-val').innerText = formatINR(stock.totalValue);
 
@@ -8277,20 +8513,34 @@
         return;
       }
 
-      tbody.innerHTML = filtered.map(r => `
-        <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${r.inHand > 0 ? '' : 'opacity-40'}">
-          <td class="p-2.5 pl-4">
-            <div class="font-sans font-bold text-slate-900">${escapeHtml(r.name)}</div>
-            <div class="text-[10px] text-slate-400">${escapeHtml(r.sku)}</div>
-          </td>
-          <td class="p-2.5 text-slate-600">${escapeHtml(r.unitSize || '-')}</td>
-          <td class="p-2.5 text-right font-bold text-amber-800">+${r.received}</td>
-          <td class="p-2.5 text-right font-bold text-rose-700">-${r.sold}</td>
-          <td class="p-2.5 text-right font-bold text-blue-700">-${r.samples}</td>
-          <td class="p-2.5 text-right font-black text-sm ${r.inHand <= 0 ? 'text-slate-400' : 'text-slate-900'}">${r.inHand}</td>
-          <td class="p-2.5 pr-4 text-right font-bold text-emerald-700">${formatINR(r.value)}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = filtered.map(r => {
+        const isDeficit = r.inHand < 0;
+        const rowClass = isDeficit
+          ? 'bg-rose-50/95 border-l-4 border-rose-600 font-semibold'
+          : (r.inHand === 0 ? 'opacity-40 text-slate-400 border-b border-slate-100' : 'hover:bg-slate-50 transition border-b border-slate-100');
+
+        const inHandBadge = isDeficit
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-rose-600 text-white shadow-xs animate-pulse">⚠️ ${r.inHand} pk (DEFICIT)</span>`
+          : `<span class="font-black text-sm ${r.inHand === 0 ? 'text-slate-400' : 'text-slate-900'}">${r.inHand}</span>`;
+
+        return `
+          <tr class="${rowClass}">
+            <td class="p-2.5 pl-4">
+              <div class="font-sans font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                <span>${escapeHtml(r.name)}</span>
+                ${isDeficit ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-300">Over-Billed / Unissued Deficit</span>` : ''}
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(r.sku)}</div>
+            </td>
+            <td class="p-2.5 text-slate-600 font-mono">${escapeHtml(r.unitSize || '-')}</td>
+            <td class="p-2.5 text-right font-bold text-amber-800 font-mono">+${r.received}</td>
+            <td class="p-2.5 text-right font-bold text-rose-700 font-mono">-${r.sold}</td>
+            <td class="p-2.5 text-right font-bold text-blue-700 font-mono">-${r.samples}</td>
+            <td class="p-2.5 text-right">${inHandBadge}</td>
+            <td class="p-2.5 pr-4 text-right font-bold text-emerald-700 font-mono">${formatINR(r.value)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function filterRepStockSheetRows() {
@@ -8381,7 +8631,7 @@
       const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.address && c.address.toLowerCase().includes(q)) || (c.contactPerson && c.contactPerson.toLowerCase().includes(q)));
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
         return;
       }
 
@@ -8389,6 +8639,9 @@
       let rowsHtml = displayed.map(c => {
         const specialCount = contractPricing.filter(cp => String(cp.buyerId) === String(c.id)).length;
         const activeQuote = customerQuotations.find(q => String(q.customerId) === String(c.id) && q.isCurrentActive);
+
+        const assignedRep = getCustomerAssignedRep(c);
+        const allReps = getActiveSalespeople();
 
         return `
         <tr class="hover:bg-slate-50 transition">
@@ -8407,6 +8660,19 @@
                 </span>` : ''}
             </div>
             <div class="text-[10px] text-slate-400">${escapeHtml(c.address || 'Address not listed')}</div>
+          </td>
+          <td class="p-3">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs" title="Customer Representative (Earns Commission & Target)">
+                <i data-lucide="user-check" class="w-3 h-3 text-indigo-600"></i> ${escapeHtml(assignedRep ? assignedRep.name : 'Unassigned')}
+              </span>
+              <select onchange="handleInlineAssignCustomerRep('${escapeHtml(c.id)}', this.value)" 
+                      class="text-[10px] font-bold py-0.5 px-1 bg-white border border-slate-300 rounded-lg text-slate-700 outline-none cursor-pointer hover:bg-slate-50"
+                      title="Quick Reassign Customer Account Owner">
+                ${allReps.map(sp => `<option value="${sp.id}" ${(assignedRep && assignedRep.id === sp.id) ? 'selected' : ''}>👤 ${escapeHtml(sp.name)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="text-[9px] text-slate-400 mt-0.5 font-medium">Earns Target & Commission</div>
           </td>
           <td class="p-3">
             <div class="font-semibold text-slate-800">${escapeHtml(c.contactPerson || '-')}</div>
@@ -8455,7 +8721,7 @@
         const remaining = filtered.length - customersTableLimit;
         rowsHtml += `
           <tr id="customers-load-more-row">
-            <td colspan="7" class="p-4 text-center bg-slate-50 border-t border-slate-200">
+            <td colspan="8" class="p-4 text-center bg-slate-50 border-t border-slate-200">
               <button type="button" onclick="loadMoreCustomers()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-2">
                 <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 <span>Load More Customers (${remaining} remaining)</span>
@@ -8487,6 +8753,15 @@
         `).join('');
       }
 
+      // Populate salesperson select
+      const repSelect = document.getElementById('cust-salesperson');
+      if (repSelect) {
+        const activeReps = getActiveSalespeople();
+        repSelect.innerHTML = `<option value="">-- Select Assigned Salesperson --</option>` + activeReps.map(sp => `
+          <option value="${sp.id}">👤 ${escapeHtml(sp.name)} (${sp.id}) - Beat: ${escapeHtml(sp.assignedRoute || 'General')}</option>
+        `).join('');
+      }
+
       if (editId) {
         const c = customers.find(x => String(x.id) === String(editId));
         if (c) {
@@ -8502,6 +8777,8 @@
           document.getElementById('cust-address').value = c.address || '';
           document.getElementById('cust-credit-limit').value = c.creditLimit || 50000;
           document.getElementById('cust-pending-due').value = c.pendingUdhaar || 0;
+          const assigned = getCustomerAssignedRep(c);
+          if (repSelect && assigned) repSelect.value = assigned.id;
         }
       } else {
         document.getElementById('modal-customer-title').innerText = "Add New Customer";
@@ -8509,6 +8786,10 @@
         document.getElementById('cust-contact-person').value = '';
         document.getElementById('cust-contact-role').value = '';
         document.getElementById('cust-contact-phone').value = '';
+        if (repSelect) {
+          const activeReps = getActiveSalespeople();
+          if (activeReps.length > 0) repSelect.value = activeReps[0].id;
+        }
       }
 
       renderCustomerPricingInputs(editId);
@@ -8668,6 +8949,9 @@
       const contactRole = (document.getElementById('cust-contact-role')?.value || '').trim();
       const contactPhone = (document.getElementById('cust-contact-phone')?.value || '').trim();
 
+      const assignedRepId = document.getElementById('cust-salesperson')?.value || '';
+      const assignedRep = (salespeople || []).find(s => s.id === assignedRepId);
+
       const record = {
         id: custId,
         name,
@@ -8680,8 +8964,11 @@
         homeRoute,
         address,
         creditLimit,
-        pendingUdhaar
+        pendingUdhaar,
+        assignedRepId: assignedRep ? assignedRep.id : '',
+        assignedRepName: assignedRep ? assignedRep.name : ''
       };
+      setCustomerAssignedRep(custId, assignedRepId);
 
       if (editId) {
         customers = customers.map(c => c.id === editId ? record : c);
@@ -8834,30 +9121,37 @@
           <td class="p-3 font-mono font-bold text-slate-800">
             #${o.id}<br><span class="text-[10px] text-slate-400 font-normal">${o.date} ${o.time}</span>
             ${(() => {
-              const assignedName = o.repName || o.salespersonName || '';
-              const isAssigned = Boolean((o.repId && o.repId !== 'null') || (o.salespersonId && o.salespersonId !== 'null') || (assignedName && assignedName !== 'Manager' && assignedName !== 'Field Sales'));
-              const curRepId = isAssigned ? (o.repId || o.salespersonId || '') : '';
-              const curRepName = isAssigned ? assignedName.toLowerCase().trim() : '';
+              const cRep = getCustomerAssignedRep(o.buyerId || o.buyerName);
+              const sRepName = o.supplyRepName || o.salespersonName || o.repName || '';
+              const sRep = (salespeople || []).find(s => s.id === (o.supplyRepId || o.salespersonId || o.repId) || (s.name && s.name.toLowerCase() === sRepName.toLowerCase()));
 
               const allReps = getActiveSalespeople();
-              let optionsHtml = `<option value="">+ Tag Rep (Select)...</option>`;
-              optionsHtml += `<option value="__manager__" ${!isAssigned ? 'selected' : ''}>-- No Rep (Company Direct) --</option>`;
+              let optionsHtml = `<option value="">+ Tag Supply Rep...</option>`;
+              optionsHtml += `<option value="__manager__" ${(!sRep) ? 'selected' : ''}>-- Company Direct --</option>`;
               allReps.forEach(sp => {
-                const isMatch = (curRepId && String(sp.id).toLowerCase() === String(curRepId).toLowerCase()) ||
-                                (curRepName && sp.name && sp.name.toLowerCase().trim() === curRepName);
+                const isMatch = (sRep && sRep.id === sp.id);
                 optionsHtml += `<option value="${sp.id}" ${isMatch ? 'selected' : ''}>👤 ${escapeHtml(sp.name)} (${sp.id})</option>`;
               });
 
               return `
-              <div class="mt-1 flex items-center gap-1">
-                <select onchange="handleInlineTagSalesperson('${o.id}', this.value)" 
-                  class="text-[10px] font-bold py-1 px-1.5 rounded-lg border transition outline-none cursor-pointer max-w-[135px] sm:max-w-[155px] ${isAssigned ? 'bg-indigo-50 border-indigo-300 text-indigo-950 hover:bg-indigo-100' : 'bg-amber-50 border-amber-400 text-amber-950 hover:bg-amber-100 ring-1 ring-amber-300/60 font-black'}"
-                  title="Directly select and tag salesperson for Order #${o.id}">
-                  ${optionsHtml}
-                </select>
-                <button type="button" onclick="openQuickTagModal('${o.id}')" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer" title="Open detailed tagging dialog">
-                  <i data-lucide="external-link" class="w-3 h-3"></i>
-                </button>
+              <div class="mt-1 space-y-1">
+                <div class="flex items-center gap-1 flex-wrap">
+                  <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-900 border border-indigo-200" title="Account Owner (Commission Credited)">
+                    🎯 Owner: ${escapeHtml(cRep ? cRep.name : (o.customerRepName || 'Direct'))}
+                  </span>
+                  ${(sRep && (!cRep || sRep.id !== cRep.id)) ? `
+                    <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200" title="Supplied By (Van Stock Deducted)">
+                      🚚 Supply: ${escapeHtml(sRep.name)}
+                    </span>
+                  ` : ''}
+                </div>
+                <div class="flex items-center gap-1">
+                  <select onchange="handleInlineTagSalesperson('${o.id}', this.value)" 
+                    class="text-[9px] font-bold py-0.5 px-1 rounded border transition outline-none cursor-pointer max-w-[130px] bg-slate-50 border-slate-300 text-slate-800"
+                    title="Change Delivery / Tagged Salesperson">
+                    ${optionsHtml}
+                  </select>
+                </div>
               </div>`;
             })()}
           </td>
@@ -13933,16 +14227,72 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function isOrderFromSalesperson(order, sp) {
+    // ==============================================================================
+    // COMMISSION & TARGET ATTRIBUTION: Customer Representative (Account Owner)
+    // Calculates target accomplishment and commission based on the customer rep
+    // irrespective of who physically delivers or supplies the stock!
+    // ==============================================================================
+    function isOrderCreditedToSalesperson(order, sp) {
       if (!order || !sp) return false;
-      if (order.salespersonId && String(order.salespersonId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
-      if (order.repId && String(order.repId).trim().toLowerCase() === String(sp.id).trim().toLowerCase()) return true;
-      const oName = (order.salespersonName || order.repName || '').toLowerCase().trim();
-      const spName = (sp.name || '').toLowerCase().trim();
-      if (spName && oName && (oName === spName || oName.includes(spName) || spName.includes(oName))) return true;
-      if (sp.slug && (order.salespersonSlug === sp.slug || oName.includes(sp.slug.toLowerCase()))) return true;
+      const spId = String(sp.id || '').trim().toLowerCase();
+      const spName = String(sp.name || '').trim().toLowerCase();
+
+      // 1. Direct customerRepId / customerRepName stamped on order
+      const cRepId = String(order.customerRepId || '').trim().toLowerCase();
+      const cRepName = String(order.customerRepName || '').trim().toLowerCase();
+      if (spId && cRepId && spId === cRepId) return true;
+      if (spName && cRepName && (spName === cRepName || cRepName.includes(spName) || spName.includes(cRepName))) return true;
+
+      // 2. Resolve via customer account owner
+      const buyerId = order.buyerId || order.customerId;
+      if (buyerId) {
+        const custRep = getCustomerAssignedRep(buyerId);
+        if (custRep) {
+          if (spId && String(custRep.id).toLowerCase() === spId) return true;
+          if (spName && String(custRep.name).toLowerCase() === spName) return true;
+        }
+      }
+      if (order.buyerName) {
+        const custRep = getCustomerAssignedRep(order.buyerName);
+        if (custRep) {
+          if (spId && String(custRep.id).toLowerCase() === spId) return true;
+          if (spName && String(custRep.name).toLowerCase() === spName) return true;
+        }
+      }
+
+      // 3. Fallback: supply rep if customer rep cannot be determined
+      const oRepId = String(order.salespersonId || order.repId || '').trim().toLowerCase();
+      const oRepName = String(order.salespersonName || order.repName || '').trim().toLowerCase();
+      if (spId && oRepId && spId === oRepId) return true;
+      if (spName && oRepName && (spName === oRepName || oRepName.includes(spName) || spName.includes(oRepName))) return true;
+      if (sp.slug && (order.salespersonSlug === sp.slug || oRepName.includes(sp.slug.toLowerCase()))) return true;
       if (order.notes && (order.notes.includes(sp.id) || (sp.name && order.notes.toLowerCase().includes(sp.name.toLowerCase())))) return true;
+
       return false;
+    }
+
+    // ==============================================================================
+    // PHYSICAL VAN INVENTORY DEDUCTION: Supply Representative
+    // Stock is deducted from the representative who physically carried/delivered goods
+    // ==============================================================================
+    function isOrderSuppliedBySalesperson(order, sp) {
+      if (!order || !sp) return false;
+      const spId = String(sp.id || '').trim().toLowerCase();
+      const spName = String(sp.name || '').trim().toLowerCase();
+
+      const sRepId = String(order.supplyRepId || order.salespersonId || order.repId || '').trim().toLowerCase();
+      const sRepName = String(order.supplyRepName || order.salespersonName || order.repName || '').trim().toLowerCase();
+      if (spId && sRepId && spId === sRepId) return true;
+      if (spName && sRepName && (spName === sRepName || sRepName.includes(spName) || spName.includes(sRepName))) return true;
+      if (sp.slug && (order.salespersonSlug === sp.slug || sRepName.includes(sp.slug.toLowerCase()))) return true;
+      if (order.notes && (order.notes.includes(`[REP_ID:${sp.id}]`) || (sp.name && order.notes.includes(`[REP_NAME:${sp.name}]`)))) return true;
+
+      return false;
+    }
+
+    // Default legacy method delegates to Commission & Target Owner
+    function isOrderFromSalesperson(order, sp) {
+      return isOrderCreditedToSalesperson(order, sp);
     }
 
     function isSampleFromSalesperson(sample, sp) {
@@ -16432,6 +16782,325 @@
       await initSupabase();
       initPwaInstallation();
     });
+  
+    // ==============================================================================
+    // EXECUTIVE NOTIFICATIONS & REMINDER CENTER ENGINE
+    // ==============================================================================
+    let currentExecutiveNotifFilter = 'ALL';
+    let isNotificationsPanelOpen = false;
+
+    function toggleNotificationsPanel(forceState) {
+      isNotificationsPanelOpen = (typeof forceState === 'boolean') ? forceState : !isNotificationsPanelOpen;
+      const drawer = document.getElementById('notifications-drawer');
+      const icon = document.getElementById('notif-panel-toggle-icon');
+      const label = document.getElementById('notif-panel-toggle-label');
+      if (drawer) {
+        if (isNotificationsPanelOpen) {
+          drawer.classList.remove('hidden');
+          if (icon) icon.classList.add('rotate-180');
+          if (label) label.innerText = 'Hide Reminders';
+        } else {
+          drawer.classList.add('hidden');
+          if (icon) icon.classList.remove('rotate-180');
+          if (label) label.innerText = 'View Reminders';
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function filterExecutiveNotifs(filterKey) {
+      currentExecutiveNotifFilter = filterKey;
+      document.querySelectorAll('.notif-flt-btn').forEach(btn => {
+        btn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700';
+      });
+      const activeBtn = document.getElementById(`flt-notif-${filterKey}`);
+      if (activeBtn) {
+        if (filterKey === 'DEFICIT') activeBtn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-xs';
+        else if (filterKey === 'PAYMENT') activeBtn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white shadow-xs';
+        else if (filterKey === 'DELIVERY') activeBtn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-xs';
+        else if (filterKey === 'NUDGE') activeBtn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs';
+        else activeBtn.className = 'notif-flt-btn px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs';
+      }
+      renderExecutiveNotificationsCards();
+    }
+
+    function computeExecutiveNotifications() {
+      const notifs = {
+        deficits: [],
+        payments: [],
+        deliveries: [],
+        nudges: []
+      };
+
+      const activeReps = getActiveSalespeople();
+
+      // 1. Stock Deficits (Delivered without outward issue)
+      activeReps.forEach(sp => {
+        const stock = getSalespersonStock(sp.id);
+        const deficitSkus = (stock.skuBreakdown || []).filter(r => r.inHand < 0);
+        if (deficitSkus.length > 0 || stock.totalInHand < 0) {
+          notifs.deficits.push({
+            id: `deficit_${sp.id}`,
+            type: 'DEFICIT',
+            rep: sp,
+            deficitPacks: stock.totalInHand < 0 ? Math.abs(stock.totalInHand) : deficitSkus.reduce((acc, r) => acc + Math.abs(r.inHand), 0),
+            deficitSkus,
+            title: `⚠️ Stock Deficit: ${sp.name}`,
+            message: `${sp.name} delivered ${deficitSkus.map(s => `${Math.abs(s.inHand)} pk ${s.name}`).join(', ')} without warehouse outward issue. Custody is negative!`,
+            actionLabel: '+ Issue Stock to Rep',
+            actionFn: `selectRepForOutward('${sp.id}')`
+          });
+        }
+      });
+
+      // 2. Payment Due Date Reminders (Customers with pending udhaar)
+      (customers || []).filter(c => Number(c.pendingUdhaar || 0) > 0).forEach(c => {
+        const rep = getCustomerAssignedRep(c);
+        const amount = Number(c.pendingUdhaar || 0);
+        notifs.payments.push({
+          id: `payment_${c.id}`,
+          type: 'PAYMENT',
+          customer: c,
+          rep,
+          amount,
+          title: `💰 Payment Due: ${c.name}`,
+          message: `Pending Udhaar: ${formatINR(amount)}. Account Owner: ${rep ? rep.name : 'Direct'}. Credit Limit: ${formatINR(c.creditLimit || 50000)}.`,
+          actionLabel: 'WhatsApp Reminder',
+          actionFn: `sendCustomerPaymentReminderWa('${c.id}')`,
+          secondaryLabel: 'Ledger',
+          secondaryFn: `openCustomerLedgerModal('${c.id}')`
+        });
+      });
+      notifs.payments.sort((a, b) => b.amount - a.amount);
+
+      // 3. Order Delivery Due Date Reminders
+      const today = new Date().toISOString().split('T')[0];
+      (orders || []).forEach(o => {
+        const status = getOrderStatus(o);
+        if (status !== 'Delivered') {
+          const isDueToday = o.date === today || o.deliveryDate === today;
+          const isOverdue = (o.date || '') < today;
+          notifs.deliveries.push({
+            id: `delivery_${o.id}`,
+            type: 'DELIVERY',
+            order: o,
+            isDueToday,
+            isOverdue,
+            title: `${isOverdue ? '🚨 Overdue Delivery' : '🚚 Delivery Due'}: #${o.id}`,
+            message: `Store: ${o.buyerName} • Route: ${(o.dispatchRoute || '-').split(':')[0]} • Amount: ${formatINR(o.netPayable || 0)}`,
+            actionLabel: 'Deliver & Bill',
+            actionFn: `openDeliveryConfirmModal('${o.id}')`
+          });
+        }
+      });
+
+      // 4. Daily Nudges based on Daily Goals
+      activeReps.forEach(sp => {
+        const m = getSalespersonMetrics(sp, 'today');
+        const target = Number(sp.dailyOrderTarget || 6);
+        const booked = m.todayOrders;
+        const remaining = Math.max(0, target - booked);
+        const isGoalMet = booked >= target;
+        const repCustCount = (customers || []).filter(c => getCustomerAssignedRep(c)?.id === sp.id).length;
+
+        notifs.nudges.push({
+          id: `nudge_${sp.id}`,
+          type: 'NUDGE',
+          rep: sp,
+          booked,
+          target,
+          remaining,
+          isGoalMet,
+          pct: Math.min(100, Math.round((booked / target) * 100)),
+          title: isGoalMet ? `🎉 Goal Met: ${sp.name}` : `🎯 Daily Nudge: ${sp.name}`,
+          message: isGoalMet 
+            ? `${sp.name} achieved today's goal with ${booked} orders (${booked - target} bonus orders)! Managing ${repCustCount} accounts.`
+            : `${sp.name} has booked ${booked}/${target} orders today (${remaining} more to achieve daily target). Beat: ${sp.assignedRoute || 'General'}.`,
+          actionLabel: 'WhatsApp Nudge',
+          actionFn: `sendRepGoalNudgeWa('${sp.id}')`
+        });
+      });
+
+      return notifs;
+    }
+
+    function renderExecutiveNotifications() {
+      const data = computeExecutiveNotifications();
+      const totalCount = data.deficits.length + data.payments.length + data.deliveries.length + data.nudges.length;
+
+      // Header bell badges
+      const badgeDesktop = document.getElementById('notif-badge-desktop');
+      const badgeMobile = document.getElementById('notif-badge-mobile');
+      if (badgeDesktop) {
+        badgeDesktop.innerText = totalCount;
+        badgeDesktop.classList.toggle('hidden', totalCount === 0);
+      }
+      if (badgeMobile) {
+        badgeMobile.innerText = totalCount;
+        badgeMobile.classList.toggle('hidden', totalCount === 0);
+      }
+
+      // Filter tab counts
+      document.getElementById('count-notif-all') && (document.getElementById('count-notif-all').innerText = totalCount);
+      document.getElementById('count-notif-deficit') && (document.getElementById('count-notif-deficit').innerText = data.deficits.length);
+      document.getElementById('count-notif-payment') && (document.getElementById('count-notif-payment').innerText = data.payments.length);
+      document.getElementById('count-notif-delivery') && (document.getElementById('count-notif-delivery').innerText = data.deliveries.length);
+      document.getElementById('count-notif-nudge') && (document.getElementById('count-notif-nudge').innerText = data.nudges.length);
+
+      // Summary ticker pills
+      const summaryEl = document.getElementById('notif-summary-pills');
+      if (summaryEl) {
+        let pills = [];
+        if (data.deficits.length > 0) {
+          pills.push(`
+            <button type="button" onclick="filterExecutiveNotifs('DEFICIT'); toggleNotificationsPanel(true);" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition flex items-center gap-1 cursor-pointer animate-pulse">
+              <span>⚠️</span> <span>${data.deficits.length} Stock Deficit${data.deficits.length > 1 ? 's' : ''}</span>
+            </button>
+          `);
+        }
+        if (data.payments.length > 0) {
+          const totalDue = data.payments.reduce((acc, p) => acc + p.amount, 0);
+          pills.push(`
+            <button type="button" onclick="filterExecutiveNotifs('PAYMENT'); toggleNotificationsPanel(true);" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition flex items-center gap-1 cursor-pointer">
+              <span>💰</span> <span>${data.payments.length} Payments Due (${formatINR(totalDue)})</span>
+            </button>
+          `);
+        }
+        if (data.deliveries.length > 0) {
+          pills.push(`
+            <button type="button" onclick="filterExecutiveNotifs('DELIVERY'); toggleNotificationsPanel(true);" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition flex items-center gap-1 cursor-pointer">
+              <span>🚚</span> <span>${data.deliveries.length} Deliveries Due</span>
+            </button>
+          `);
+        }
+        if (data.nudges.length > 0) {
+          const metCount = data.nudges.filter(n => n.isGoalMet).length;
+          pills.push(`
+            <button type="button" onclick="filterExecutiveNotifs('NUDGE'); toggleNotificationsPanel(true);" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition flex items-center gap-1 cursor-pointer">
+              <span>🎯</span> <span>Rep Goals (${metCount}/${data.nudges.length} met)</span>
+            </button>
+          `);
+        }
+
+        if (pills.length === 0) {
+          summaryEl.innerHTML = `<span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> All operations smooth! Zero stock deficits, overdue payments, or pending orders.</span>`;
+        } else {
+          summaryEl.innerHTML = `<span class="text-[11px] font-bold text-slate-400 shrink-0 flex items-center gap-1"><i data-lucide="bell" class="w-3.5 h-3.5 text-amber-400"></i> Reminders:</span>` + pills.join('');
+        }
+      }
+
+      renderExecutiveNotificationsCards();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderExecutiveNotificationsCards() {
+      const container = document.getElementById('notif-cards-grid');
+      if (!container) return;
+
+      const data = computeExecutiveNotifications();
+      let list = [];
+      if (currentExecutiveNotifFilter === 'DEFICIT') list = data.deficits;
+      else if (currentExecutiveNotifFilter === 'PAYMENT') list = data.payments;
+      else if (currentExecutiveNotifFilter === 'DELIVERY') list = data.deliveries;
+      else if (currentExecutiveNotifFilter === 'NUDGE') list = data.nudges;
+      else list = [...data.deficits, ...data.payments, ...data.deliveries, ...data.nudges];
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-xs">No notifications found in this category.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        let borderClass = 'border-slate-700 bg-slate-900/90';
+        let badgeColor = 'bg-slate-800 text-slate-300';
+        if (item.type === 'DEFICIT') {
+          borderClass = 'border-l-4 border-rose-500 bg-rose-950/20 border-slate-800';
+          badgeColor = 'bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        } else if (item.type === 'PAYMENT') {
+          borderClass = 'border-l-4 border-amber-500 bg-amber-950/20 border-slate-800';
+          badgeColor = 'bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        } else if (item.type === 'DELIVERY') {
+          borderClass = 'border-l-4 border-blue-500 bg-blue-950/20 border-slate-800';
+          badgeColor = 'bg-blue-500/20 text-blue-300 border border-blue-500/40';
+        } else if (item.type === 'NUDGE') {
+          borderClass = 'border-l-4 border-emerald-500 bg-emerald-950/20 border-slate-800';
+          badgeColor = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        }
+
+        return `
+          <div class="p-3 rounded-2xl border ${borderClass} shadow-xs flex flex-col justify-between gap-2.5">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-extrabold text-xs text-white">${escapeHtml(item.title)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${badgeColor}">${item.type}</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">${item.message}</p>
+            </div>
+            <div class="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-800/60">
+              ${item.secondaryLabel ? `
+                <button type="button" onclick="${item.secondaryFn}" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-bold transition cursor-pointer">
+                  ${item.secondaryLabel}
+                </button>
+              ` : ''}
+              <button type="button" onclick="${item.actionFn}" class="px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs cursor-pointer">
+                ${item.actionLabel}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function sendCustomerPaymentReminderWa(custId) {
+      const c = (customers || []).find(x => String(x.id) === String(custId));
+      if (!c) return;
+      const cleanPhone = (c.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const rep = getCustomerAssignedRep(c);
+      const repName = rep ? rep.name : 'Sri Govinda Sales Team';
+      const text = `*SRI GOVINDA FOOD PRODUCTS - PAYMENT REMINDER*\n\n` +
+        `Namaste *${c.name}*,\n` +
+        `This is a gentle payment reminder regarding your pending balance with Sri Govinda Food Products.\n\n` +
+        `💰 *Outstanding Balance Due:* ${formatINR(c.pendingUdhaar || 0)}\n` +
+        `👤 *Account Representative:* ${repName}\n\n` +
+        `Kindly arrange the payment via UPI or cash to your representative.\n` +
+        `Thank you for your business and partnership!\n` +
+        `_Sri Govinda Food Products_`;
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    function sendRepGoalNudgeWa(repId) {
+      const sp = (salespeople || []).find(x => String(x.id) === String(repId));
+      if (!sp) return;
+      const cleanPhone = (sp.phone || '').replace(/\D/g, '');
+      const phoneToUse = cleanPhone.length === 10 ? ('91' + cleanPhone) : cleanPhone;
+      const m = getSalespersonMetrics(sp, 'today');
+      const target = Number(sp.dailyOrderTarget || 6);
+      const booked = m.todayOrders;
+      const remaining = Math.max(0, target - booked);
+      let text = '';
+      if (booked >= target) {
+        text = `🎉 *CONGRATULATIONS ${sp.name.toUpperCase()}!*\n\n` +
+          `You have achieved your daily order target today!\n` +
+          `📦 *Orders Booked:* ${booked} / ${target}\n` +
+          `💰 *Today's Net Revenue:* ${formatINR(m.revenue)}\n\n` +
+          `Outstanding performance! Keep pushing the momentum! 🚀\n` +
+          `_Sri Govinda Management_`;
+      } else {
+        text = `🎯 *DAILY GOAL NUDGE - ${sp.name.toUpperCase()}*\n\n` +
+          `Hello ${sp.name}!\n` +
+          `Here is your live progress for today:\n` +
+          `📦 *Orders Booked:* ${booked} / ${target}\n` +
+          `🔥 *Orders Remaining to Hit Target:* ${remaining}\n` +
+          `Beat: *${sp.assignedRoute || 'General'}*\n\n` +
+          `Visit your scheduled retail accounts and let's achieve 100% daily target today! 🚀\n` +
+          `_Sri Govinda Management_`;
+      }
+      const url = phoneToUse ? `https://wa.me/${phoneToUse}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
   </script>
 </body>
 </html>
