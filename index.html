@@ -638,7 +638,7 @@
             <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
               <tr>
                 <th class="p-3">Store Name & Address</th>
-                <th class="p-3">Account Owner (Commission)</th>
+                <th class="p-3">Customer RM (Commission)</th>
                 <th class="p-3">Contact Person</th>
                 <th class="p-3">Tier</th>
                 <th class="p-3">Route Beat</th>
@@ -2203,11 +2203,11 @@
           </select>
         </div>
         <div>
-          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Assigned Salesperson (Account Owner / Commission) *</label>
+          <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Assigned Salesperson (Customer RM / Commission) *</label>
           <select id="cust-salesperson" class="w-full p-2 bg-indigo-50/60 border border-indigo-200 rounded-xl font-bold text-indigo-950 outline-none focus:ring-1 focus:ring-indigo-500">
             <!-- Populated by JS -->
           </select>
-          <p class="text-[10px] text-slate-400 mt-0.5">This salesperson landed the customer and earns target accomplishment & sales commission for all orders.</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Customer Relationship Manager (RM) landed the store and earns target accomplishment & sales commission for all orders.</p>
         </div>
         <div>
           <label class="block font-bold text-slate-600 uppercase text-[10px] mb-0.5">Customer Address / Area</label>
@@ -5087,7 +5087,7 @@
     }
 
     // ==============================================================================
-    // CUSTOMER-TO-SALESPERSON ASSIGNMENT ENGINE (ACCOUNT OWNERSHIP & COMMISSION)
+    // CUSTOMER-TO-SALESPERSON ASSIGNMENT ENGINE (CUSTOMER RM & COMMISSION)
     // ==============================================================================
     function getCustomerAssignedRep(customerOrId) {
       if (!customerOrId) return null;
@@ -5187,7 +5187,7 @@
       debouncedRefreshAllUI(100);
       const cust = customers.find(c => String(c.id) === String(custId));
       const rep = (salespeople || []).find(s => String(s.id) === String(repId));
-      showToast(`✅ Assigned ${cust ? cust.name : 'Customer'} to ${rep ? rep.name : 'Salesperson'} (Account Owner)!`);
+      showToast(`✅ Assigned ${cust ? cust.name : 'Customer'} to ${rep ? rep.name : 'Salesperson'} (Customer RM)!`);
     }
 
     function onCustomerModalRouteChange(selectedRoute) {
@@ -8668,11 +8668,11 @@
               </span>
               <select onchange="handleInlineAssignCustomerRep('${escapeHtml(c.id)}', this.value)" 
                       class="text-[10px] font-bold py-0.5 px-1 bg-white border border-slate-300 rounded-lg text-slate-700 outline-none cursor-pointer hover:bg-slate-50"
-                      title="Quick Reassign Customer Account Owner">
+                      title="Quick Reassign Customer RM">
                 ${allReps.map(sp => `<option value="${sp.id}" ${(assignedRep && assignedRep.id === sp.id) ? 'selected' : ''}>👤 ${escapeHtml(sp.name)}</option>`).join('')}
               </select>
             </div>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-medium">Earns Target & Commission</div>
+            <div class="text-[9px] text-indigo-700 mt-0.5 font-bold">Customer RM • Earns Commission</div>
           </td>
           <td class="p-3">
             <div class="font-semibold text-slate-800">${escapeHtml(c.contactPerson || '-')}</div>
@@ -9136,8 +9136,8 @@
               return `
               <div class="mt-1 space-y-1">
                 <div class="flex items-center gap-1 flex-wrap">
-                  <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-900 border border-indigo-200" title="Account Owner (Commission Credited)">
-                    🎯 Owner: ${escapeHtml(cRep ? cRep.name : (o.customerRepName || 'Direct'))}
+                  <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-900 border border-indigo-200" title="Customer RM (Commission Credited)">
+                    🎯 RM: ${escapeHtml(cRep ? cRep.name : (o.customerRepName || 'Direct'))}
                   </span>
                   ${(sRep && (!cRep || sRep.id !== cRep.id)) ? `
                     <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200" title="Supplied By (Van Stock Deducted)">
@@ -14228,7 +14228,7 @@
     }
 
     // ==============================================================================
-    // COMMISSION & TARGET ATTRIBUTION: Customer Representative (Account Owner)
+    // COMMISSION & TARGET ATTRIBUTION: Customer Relationship Manager (RM)
     // Calculates target accomplishment and commission based on the customer rep
     // irrespective of who physically delivers or supplies the stock!
     // ==============================================================================
@@ -14243,7 +14243,7 @@
       if (spId && cRepId && spId === cRepId) return true;
       if (spName && cRepName && (spName === cRepName || cRepName.includes(spName) || spName.includes(cRepName))) return true;
 
-      // 2. Resolve via customer account owner
+      // 2. Resolve via customer RM
       const buyerId = order.buyerId || order.customerId;
       if (buyerId) {
         const custRep = getCustomerAssignedRep(buyerId);
@@ -14290,7 +14290,7 @@
       return false;
     }
 
-    // Default legacy method delegates to Commission & Target Owner
+    // Default legacy method delegates to Customer RM
     function isOrderFromSalesperson(order, sp) {
       return isOrderCreditedToSalesperson(order, sp);
     }
@@ -16864,7 +16864,7 @@
           rep,
           amount,
           title: `💰 Payment Due: ${c.name}`,
-          message: `Pending Udhaar: ${formatINR(amount)}. Account Owner: ${rep ? rep.name : 'Direct'}. Credit Limit: ${formatINR(c.creditLimit || 50000)}.`,
+          message: `Pending Udhaar: ${formatINR(amount)}. Customer RM: ${rep ? rep.name : 'Direct'}. Credit Limit: ${formatINR(c.creditLimit || 50000)}.`,
           actionLabel: 'WhatsApp Reminder',
           actionFn: `sendCustomerPaymentReminderWa('${c.id}')`,
           secondaryLabel: 'Ledger',
@@ -16914,7 +16914,7 @@
           pct: Math.min(100, Math.round((booked / target) * 100)),
           title: isGoalMet ? `🎉 Goal Met: ${sp.name}` : `🎯 Daily Nudge: ${sp.name}`,
           message: isGoalMet 
-            ? `${sp.name} achieved today's goal with ${booked} orders (${booked - target} bonus orders)! Managing ${repCustCount} accounts.`
+            ? `${sp.name} achieved today's goal with ${booked} orders (${booked - target} bonus orders)! Managing ${repCustCount} RM accounts.`
             : `${sp.name} has booked ${booked}/${target} orders today (${remaining} more to achieve daily target). Beat: ${sp.assignedRoute || 'General'}.`,
           actionLabel: 'WhatsApp Nudge',
           actionFn: `sendRepGoalNudgeWa('${sp.id}')`

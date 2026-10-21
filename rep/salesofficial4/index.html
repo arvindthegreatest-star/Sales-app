@@ -2445,7 +2445,7 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
         ? `Field booking by ${AGENT.name} | ${notes} ${payTag} ${statusTag} ${repTag}` 
         : `Field booking by ${AGENT.name} ${payTag} ${statusTag} ${repTag}`;
 
-      // Resolve Customer Account Owner (for commission & target attribution)
+      // Resolve Customer RM (for commission & target attribution)
       let customerRepId = activeCustomer.assignedRepId;
       let customerRepName = activeCustomer.assignedRepName;
       if (!customerRepId) {
