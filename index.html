@@ -618,34 +618,92 @@
 
     <!-- 3. CUSTOMERS DATABASE VIEW (REPS & MANAGERS) -->
     <section id="view-customers" class="hidden space-y-4">
+      <!-- Section Header -->
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 class="text-lg font-bold text-slate-900">Customer Database</h2>
-          <p class="text-xs text-slate-500">Store directory, contact details, and credit balance</p>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Customer Database</h2>
+            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center gap-1">
+              <i data-lucide="users" class="w-3 h-3 text-indigo-600"></i> Store Master
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">Store directory, assigned Customer RM, routes, tiers & credit balance</p>
         </div>
-        <button onclick="openCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition">
-          <i data-lucide="plus" class="w-4 h-4"></i> Add Customer
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="exportCustomersToCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Filtered Customers to CSV / Excel spreadsheet">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i> Export CSV
+          </button>
+          <button onclick="openCustomerModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition shadow-xs cursor-pointer">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Customer
+          </button>
+        </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <input type="text" id="customer-search-input" oninput="renderCustomersTable()" placeholder="Search customer name, phone, or address..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-full max-w-sm outline-none">
+      <!-- Excel-Style Filter Toolbar -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs space-y-2.5">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+          <!-- Search Box -->
+          <div class="relative flex-1 min-w-[220px]">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="customer-search-input" oninput="onCustomerFilterChanged()" placeholder="Search store name, phone, contact person, or address..." class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs w-full outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 font-medium">
+          </div>
+
+          <!-- Multi-Attribute Excel Filters -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-wrap items-center">
+            <!-- Route Beat Dropdown -->
+            <select id="customer-filter-route" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Route Beat">
+              <option value="all">All Route Beats</option>
+            </select>
+
+            <!-- Customer RM Dropdown -->
+            <select id="customer-filter-rm" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Customer RM">
+              <option value="all">All Customer RMs</option>
+            </select>
+
+            <!-- Business Tier Dropdown -->
+            <select id="customer-filter-tier" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Customer Tier">
+              <option value="all">All Tiers</option>
+              <option value="Retail">Retail</option>
+              <option value="Wholesale">Wholesale</option>
+              <option value="Hotel / Cafe">Hotel / Cafe</option>
+              <option value="Supermarket">Supermarket</option>
+              <option value="Institution">Institution</option>
+              <option value="Distributor">Distributor</option>
+            </select>
+
+            <!-- Due Balance Filter -->
+            <select id="customer-filter-due" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Udhaar Due balance">
+              <option value="all">All Udhaar Balances</option>
+              <option value="debtors">🔴 Debtors Only (Due > 0)</option>
+              <option value="clear">🟢 Clear Balance (Due = ₹0)</option>
+            </select>
+          </div>
+
+          <!-- Reset Button -->
+          <div class="flex items-center gap-1.5 shrink-0 justify-end">
+            <button type="button" onclick="resetCustomerFilters()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer" title="Reset all customer search filters & sorting">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Summary Badge -->
+        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex-wrap gap-2">
+          <div id="customer-count-badge" class="font-bold text-slate-700 flex items-center gap-2">
+            <span>Showing all customers</span>
+          </div>
+          <div class="text-[10px] text-slate-400 italic flex items-center gap-1">
+            <i data-lucide="info" class="w-3 h-3"></i> Click any table column header to sort ascending (A-Z) or descending (Z-A)
+          </div>
+        </div>
       </div>
 
+      <!-- Customers Table -->
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
-              <tr>
-                <th class="p-3">Store Name & Address</th>
-                <th class="p-3">Customer RM (Commission)</th>
-                <th class="p-3">Contact Person</th>
-                <th class="p-3">Tier</th>
-                <th class="p-3">Route Beat</th>
-                <th class="p-3">Phone</th>
-                <th class="p-3 text-right">Outstanding Due</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
+            <thead id="customers-table-head" class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none">
+              <!-- Dynamically populated with clickable Excel-style sorting headers -->
             </thead>
             <tbody id="customers-table-body" class="divide-y divide-slate-100">
               <!-- Populated by JS -->
@@ -848,34 +906,97 @@
 
     <!-- 4. ORDERS DATABASE VIEW -->
     <section id="view-orders" class="hidden space-y-4">
+      <!-- Section Header -->
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 class="text-lg font-bold text-slate-900">Order Database & History</h2>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900">Order Database & History</h2>
+            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+              <i data-lucide="file-check-2" class="w-3 h-3 text-emerald-600"></i> Sales Archive
+            </span>
+          </div>
           <p class="text-xs text-slate-500">Track delivery fulfillment, modify orders, and send WhatsApp bills</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <div class="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
-            <button type="button" onclick="setOrdersStatusFilter('all')" id="btn-filter-orders-all" class="px-2.5 py-1 rounded-lg bg-white font-bold text-slate-900 shadow-xs">All</button>
-            <button type="button" onclick="setOrdersStatusFilter('Pending Delivery')" id="btn-filter-orders-pending" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold">🚚 Pending Delivery</button>
-            <button type="button" onclick="setOrdersStatusFilter('Delivered')" id="btn-filter-orders-delivered" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold">✅ Delivered</button>
-          </div>
-          <input type="text" id="order-history-search" oninput="renderOrdersHistoryTable()" placeholder="Search order ID or store..." class="p-2 bg-white border border-slate-300 rounded-xl text-xs w-48 outline-none">
+          <button type="button" onclick="exportOrdersHistoryToCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Filtered Orders History to CSV / Excel spreadsheet">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i> Export CSV
+          </button>
         </div>
       </div>
 
+      <!-- Excel-Style Filter Toolbar -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs space-y-2.5">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+          <!-- Fulfillment Status Pills -->
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 text-xs shrink-0">
+            <button type="button" onclick="setOrdersStatusFilter('all')" id="btn-filter-orders-all" class="px-2.5 py-1 rounded-lg bg-white font-bold text-slate-900 shadow-xs transition cursor-pointer">All</button>
+            <button type="button" onclick="setOrdersStatusFilter('Pending Delivery')" id="btn-filter-orders-pending" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold transition cursor-pointer">🚚 Pending</button>
+            <button type="button" onclick="setOrdersStatusFilter('Delivered')" id="btn-filter-orders-delivered" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold transition cursor-pointer">✅ Delivered</button>
+          </div>
+
+          <!-- Search Box -->
+          <div class="relative flex-1 min-w-[200px]">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="order-history-search" oninput="onOrdersFilterChanged()" placeholder="Search order ID, store, route, RM, supply rep..." class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs w-full outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 font-medium">
+          </div>
+
+          <!-- Multi-Attribute Excel Filters -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-wrap items-center">
+            <!-- Route Beat Dropdown -->
+            <select id="order-filter-route" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Dispatch Route Beat">
+              <option value="all">All Routes</option>
+            </select>
+
+            <!-- Rep / RM Dropdown -->
+            <select id="order-filter-rep" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Customer RM or Supply Rep">
+              <option value="all">All Salespeople</option>
+            </select>
+
+            <!-- Payment Mode Dropdown -->
+            <select id="order-filter-payment" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Payment Mode">
+              <option value="all">All Payment Modes</option>
+              <option value="credit">🔴 Udhaar / Credit Due</option>
+              <option value="part">🟡 Part Paid</option>
+              <option value="cash">💵 Cash</option>
+              <option value="upi">📲 UPI</option>
+              <option value="cheque">🏦 Cheque / Bank</option>
+            </select>
+
+            <!-- Date Range Filter -->
+            <select id="order-filter-date" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Order Date Period">
+              <option value="all">All Time</option>
+              <option value="today">📅 Today</option>
+              <option value="yesterday">📅 Yesterday</option>
+              <option value="last7">📅 Last 7 Days</option>
+              <option value="month">📅 This Month</option>
+            </select>
+          </div>
+
+          <!-- Reset Button -->
+          <div class="flex items-center gap-1.5 shrink-0 justify-end">
+            <button type="button" onclick="resetOrdersHistoryFilters()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer" title="Reset all orders search filters & sorting">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Summary Badge -->
+        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex-wrap gap-2">
+          <div id="order-history-count-badge" class="font-bold text-slate-700 flex items-center gap-2">
+            <span>Showing all orders</span>
+          </div>
+          <div class="text-[10px] text-slate-400 italic flex items-center gap-1">
+            <i data-lucide="info" class="w-3 h-3"></i> Click any table column header to sort ascending or descending
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Table -->
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
-              <tr>
-                <th class="p-3">Order ID & Date</th>
-                <th class="p-3">Customer & Route</th>
-                <th class="p-3 text-right">Units</th>
-                <th class="p-3 text-right">Net Amount</th>
-                <th class="p-3">Payment</th>
-                <th class="p-3 text-center">Status</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
+            <thead id="orders-table-head" class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none">
+              <!-- Dynamically populated with clickable Excel-style sorting headers -->
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
               <!-- Populated by JS -->
@@ -5988,6 +6109,8 @@
 
     // 7. ORDER BOOKING & CATALOG WITH LIVE STOCK DEDUCTION
     function populateDropdowns() {
+      if (typeof populateCustomerFilterDropdowns === 'function') populateCustomerFilterDropdowns();
+      if (typeof populateOrdersFilterDropdowns === 'function') populateOrdersFilterDropdowns();
       // Order customer select - ALWAYS preserve selected customer
       const custSelect = document.getElementById('order-customer-select');
       if (custSelect) {
@@ -8616,8 +8739,276 @@
       window.open(waUrl, '_blank');
     }
 
-    // 10. CUSTOMERS CRUD (REPS & MANAGERS)
+    // ==============================================================================
+    // 10. EXCEL-STYLE CUSTOMERS FILTERING, SORTING & CSV EXPORT
+    // ==============================================================================
+    let customerSortColumn = 'name'; // 'name' | 'rm' | 'contact' | 'tier' | 'route' | 'phone' | 'due'
+    let customerSortDirection = 'asc'; // 'asc' | 'desc'
+    let customerFilterRoute = 'all';
+    let customerFilterRm = 'all';
+    let customerFilterTier = 'all';
+    let customerFilterDue = 'all';
     let customersTableLimit = 50;
+
+    function getDistinctRoutes() {
+      const set = new Set();
+      (routes || []).forEach(r => {
+        const name = (typeof r === 'string' ? r : (r && r.name) || '').split(':')[0].trim();
+        if (name) set.add(name);
+      });
+      (customers || []).forEach(c => {
+        if (c && c.homeRoute) {
+          const name = String(c.homeRoute).split(':')[0].trim();
+          if (name) set.add(name);
+        }
+      });
+      (orders || []).forEach(o => {
+        if (o && o.dispatchRoute) {
+          const name = String(o.dispatchRoute).split(':')[0].trim();
+          if (name) set.add(name);
+        }
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+
+    function populateCustomerFilterDropdowns() {
+      const routeSelect = document.getElementById('customer-filter-route');
+      if (routeSelect) {
+        const current = customerFilterRoute;
+        const distinct = getDistinctRoutes();
+        routeSelect.innerHTML = `<option value="all">All Route Beats (${distinct.length})</option>` +
+          distinct.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+        if (current && (current === 'all' || distinct.includes(current))) {
+          routeSelect.value = current;
+        } else {
+          routeSelect.value = 'all';
+          customerFilterRoute = 'all';
+        }
+      }
+
+      const rmSelect = document.getElementById('customer-filter-rm');
+      if (rmSelect) {
+        const current = customerFilterRm;
+        const reps = getActiveSalespeople();
+        rmSelect.innerHTML = `<option value="all">All Customer RMs (${reps.length})</option>
+          <option value="__unassigned__">⚠️ Unassigned Stores</option>` +
+          reps.map(r => `<option value="${r.id}">👤 ${escapeHtml(r.name)} (${r.id})</option>`).join('');
+        if (current && (current === 'all' || current === '__unassigned__' || reps.some(r => String(r.id) === String(current)))) {
+          rmSelect.value = current;
+        } else {
+          rmSelect.value = 'all';
+          customerFilterRm = 'all';
+        }
+      }
+    }
+
+    function toggleCustomerSort(col) {
+      if (customerSortColumn === col) {
+        customerSortDirection = (customerSortDirection === 'asc') ? 'desc' : 'asc';
+      } else {
+        customerSortColumn = col;
+        customerSortDirection = (col === 'due') ? 'desc' : 'asc';
+      }
+      customersTableLimit = 50;
+      renderCustomersTable();
+    }
+
+    function onCustomerFilterChanged() {
+      customerFilterRoute = document.getElementById('customer-filter-route')?.value || 'all';
+      customerFilterRm = document.getElementById('customer-filter-rm')?.value || 'all';
+      customerFilterTier = document.getElementById('customer-filter-tier')?.value || 'all';
+      customerFilterDue = document.getElementById('customer-filter-due')?.value || 'all';
+      customersTableLimit = 50;
+      renderCustomersTable();
+    }
+
+    function resetCustomerFilters() {
+      const searchInput = document.getElementById('customer-search-input');
+      if (searchInput) searchInput.value = '';
+
+      customerFilterRoute = 'all';
+      customerFilterRm = 'all';
+      customerFilterTier = 'all';
+      customerFilterDue = 'all';
+      customerSortColumn = 'name';
+      customerSortDirection = 'asc';
+      customersTableLimit = 50;
+
+      const rSel = document.getElementById('customer-filter-route');
+      if (rSel) rSel.value = 'all';
+      const rmSel = document.getElementById('customer-filter-rm');
+      if (rmSel) rmSel.value = 'all';
+      const tSel = document.getElementById('customer-filter-tier');
+      if (tSel) tSel.value = 'all';
+      const dSel = document.getElementById('customer-filter-due');
+      if (dSel) dSel.value = 'all';
+
+      renderCustomersTable();
+    }
+
+    function renderCustomersTableHead() {
+      const thead = document.getElementById('customers-table-head');
+      if (!thead) return;
+
+      const cols = [
+        { key: 'name', label: 'Store Name & Address', align: 'left', sortable: true },
+        { key: 'rm', label: 'Customer RM (Commission)', align: 'left', sortable: true },
+        { key: 'contact', label: 'Contact Person', align: 'left', sortable: true },
+        { key: 'tier', label: 'Tier', align: 'left', sortable: true },
+        { key: 'route', label: 'Route Beat', align: 'left', sortable: true },
+        { key: 'phone', label: 'Phone', align: 'left', sortable: true },
+        { key: 'due', label: 'Outstanding Due', align: 'right', sortable: true },
+        { key: 'actions', label: 'Actions', align: 'right', sortable: false }
+      ];
+
+      thead.innerHTML = `<tr>` + cols.map(c => {
+        const alignClass = c.align === 'right' ? 'text-right' : 'text-left';
+        if (!c.sortable) {
+          return `<th class="p-3 ${alignClass}">${c.label}</th>`;
+        }
+
+        const isActive = (customerSortColumn === c.key);
+        const icon = isActive
+          ? (customerSortDirection === 'asc' ? '▲' : '▼')
+          : '<span class="opacity-25 group-hover:opacity-100 transition">↕</span>';
+
+        const activeClass = isActive
+          ? 'bg-indigo-50/90 text-indigo-950 font-black'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition';
+
+        return `
+          <th class="p-3 ${alignClass} cursor-pointer group select-none transition ${activeClass}"
+              onclick="toggleCustomerSort('${c.key}')"
+              title="Click to sort by ${escapeHtml(c.label)} (${isActive && customerSortDirection === 'asc' ? 'Descending' : 'Ascending'})">
+            <div class="inline-flex items-center gap-1.5 ${c.align === 'right' ? 'justify-end' : 'justify-start'}">
+              <span>${c.label}</span>
+              <span class="text-[10px] font-mono ${isActive ? 'text-indigo-600 font-black' : 'text-slate-400'}">${icon}</span>
+            </div>
+          </th>
+        `;
+      }).join('') + `</tr>`;
+    }
+
+    function exportCustomersToCSV() {
+      const list = getFilteredAndSortedCustomers();
+      if (!list || list.length === 0) {
+        alert('No customers match the active filters to export.');
+        return;
+      }
+
+      const rows = [
+        ['Customer ID', 'Store Name', 'Customer RM', 'Contact Person', 'Contact Role', 'Phone', 'Route Beat', 'Tier', 'Credit Limit (INR)', 'Pending Udhaar Due (INR)', 'Address']
+      ];
+
+      list.forEach(c => {
+        const assignedRep = getCustomerAssignedRep(c);
+        rows.push([
+          c.id || '',
+          c.name || '',
+          assignedRep ? assignedRep.name : 'Unassigned',
+          c.contactPerson || '',
+          c.contactRole || '',
+          c.phone || '',
+          (c.homeRoute || '').split(':')[0].trim(),
+          c.tier || 'Retail',
+          c.creditLimit || 0,
+          c.pendingUdhaar || 0,
+          (c.address || '').replace(/[\r\n]+/g, ' ')
+        ]);
+      });
+
+      const csvContent = rows.map(e => e.map(val => {
+        const str = String(val == null ? '' : val).replace(/"/g, '""');
+        return `"${str}"`;
+      }).join(',')).join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const nowStr = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Sri_Govinda_Customers_${nowStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function getFilteredAndSortedCustomers(q = '') {
+      const query = (q || document.getElementById('customer-search-input')?.value || '').toLowerCase().trim();
+
+      let result = customers.filter(c => {
+        if (!c) return false;
+
+        // Search text
+        if (query) {
+          const nameMatch = (c.name || '').toLowerCase().includes(query);
+          const phoneMatch = (c.phone || '').includes(query);
+          const addrMatch = (c.address || '').toLowerCase().includes(query);
+          const contactMatch = (c.contactPerson || '').toLowerCase().includes(query);
+          const contactPhoneMatch = (c.contactPhone || '').includes(query);
+          if (!nameMatch && !phoneMatch && !addrMatch && !contactMatch && !contactPhoneMatch) return false;
+        }
+
+        // Route filter
+        if (customerFilterRoute !== 'all') {
+          const cRoute = ((c.homeRoute || '').split(':')[0]).trim().toLowerCase();
+          if (cRoute !== customerFilterRoute.toLowerCase()) return false;
+        }
+
+        // RM filter
+        if (customerFilterRm !== 'all') {
+          const assigned = getCustomerAssignedRep(c);
+          if (customerFilterRm === '__unassigned__') {
+            if (assigned) return false;
+          } else {
+            if (!assigned || String(assigned.id) !== String(customerFilterRm)) return false;
+          }
+        }
+
+        // Tier filter
+        if (customerFilterTier !== 'all') {
+          const tier = (c.tier || 'Retail').toLowerCase();
+          if (tier !== customerFilterTier.toLowerCase()) return false;
+        }
+
+        // Due filter
+        if (customerFilterDue === 'debtors') {
+          if (!((Number(c.pendingUdhaar) || 0) > 0)) return false;
+        } else if (customerFilterDue === 'clear') {
+          if ((Number(c.pendingUdhaar) || 0) > 0) return false;
+        }
+
+        return true;
+      });
+
+      // Excel Column Sorting
+      result.sort((a, b) => {
+        let cmp = 0;
+        if (customerSortColumn === 'name') {
+          cmp = (a.name || '').localeCompare(b.name || '');
+        } else if (customerSortColumn === 'rm') {
+          const repA = getCustomerAssignedRep(a)?.name || 'zzz';
+          const repB = getCustomerAssignedRep(b)?.name || 'zzz';
+          cmp = repA.localeCompare(repB);
+        } else if (customerSortColumn === 'contact') {
+          cmp = (a.contactPerson || '').localeCompare(b.contactPerson || '');
+        } else if (customerSortColumn === 'tier') {
+          cmp = (a.tier || 'Retail').localeCompare(b.tier || 'Retail');
+        } else if (customerSortColumn === 'route') {
+          const rA = ((a.homeRoute || '').split(':')[0]).trim();
+          const rB = ((b.homeRoute || '').split(':')[0]).trim();
+          cmp = rA.localeCompare(rB);
+        } else if (customerSortColumn === 'phone') {
+          cmp = String(a.phone || '').localeCompare(String(b.phone || ''));
+        } else if (customerSortColumn === 'due') {
+          cmp = (Number(a.pendingUdhaar) || 0) - (Number(b.pendingUdhaar) || 0);
+        }
+        return (customerSortDirection === 'asc') ? cmp : -cmp;
+      });
+
+      return result;
+    }
 
     function loadMoreCustomers() {
       customersTableLimit += 50;
@@ -8626,12 +9017,41 @@
 
     function renderCustomersTable() {
       const tbody = document.getElementById('customers-table-body');
-      const q = (document.getElementById('customer-search-input')?.value || '').toLowerCase().trim();
+      if (!tbody) return;
 
-      const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.address && c.address.toLowerCase().includes(q)) || (c.contactPerson && c.contactPerson.toLowerCase().includes(q)));
+      renderCustomersTableHead();
+
+      const filtered = getFilteredAndSortedCustomers();
+
+      // Update Filter Count & Summary Badge
+      const badge = document.getElementById('customer-count-badge');
+      if (badge) {
+        const totalDue = filtered.reduce((sum, c) => sum + (Number(c.pendingUdhaar) || 0), 0);
+        const debtorsCount = filtered.filter(c => (Number(c.pendingUdhaar) || 0) > 0).length;
+        badge.innerHTML = `
+          <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 font-black border border-indigo-200">
+            Showing ${filtered.length} of ${customers.length} stores
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+            ${debtorsCount} Debtors • Total Due: <b class="${totalDue > 0 ? 'text-rose-700' : 'text-slate-600'}">${formatINR(totalDue)}</b>
+          </span>
+        `;
+      }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No customers found. Click <b>Add Customer</b> to create one.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-8 text-center text-slate-400">
+              <div class="space-y-1">
+                <p class="font-bold text-slate-700 text-sm">No customers match your filter or search criteria.</p>
+                <p class="text-xs text-slate-400">Try adjusting your route beat, customer RM, tier, or udhaar balance filters.</p>
+                <button type="button" onclick="resetCustomerFilters()" class="mt-2 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs transition cursor-pointer">
+                  Reset All Filters
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
@@ -8663,7 +9083,7 @@
           </td>
           <td class="p-3">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs" title="Customer Representative (Earns Commission & Target)">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs" title="Customer RM (Earns Commission & Target)">
                 <i data-lucide="user-check" class="w-3 h-3 text-indigo-600"></i> ${escapeHtml(assignedRep ? assignedRep.name : 'Unassigned')}
               </span>
               <select onchange="handleInlineAssignCustomerRep('${escapeHtml(c.id)}', this.value)" 
@@ -8715,14 +9135,15 @@
             ` : ''}
           </td>
         </tr>
-      `}).join('');
+      `;
+      }).join('');
 
       if (filtered.length > customersTableLimit) {
         const remaining = filtered.length - customersTableLimit;
         rowsHtml += `
           <tr id="customers-load-more-row">
             <td colspan="8" class="p-4 text-center bg-slate-50 border-t border-slate-200">
-              <button type="button" onclick="loadMoreCustomers()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-2">
+              <button type="button" onclick="loadMoreCustomers()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-2 cursor-pointer">
                 <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 <span>Load More Customers (${remaining} remaining)</span>
               </button>
@@ -9046,53 +9467,379 @@
       renderOrderCatalog();
     }
 
-    // 11. ORDERS HISTORY DATABASE
-    let currentOrdersStatusFilter = 'all';
+    // ==============================================================================
+    // 11. EXCEL-STYLE ORDERS HISTORY FILTERING, SORTING & CSV EXPORT
+    // ==============================================================================
+    let ordersSortColumn = 'date'; // 'date' | 'id' | 'customer' | 'units' | 'amount' | 'payment' | 'status'
+    let ordersSortDirection = 'desc'; // 'desc' | 'asc'
+    let currentOrdersStatusFilter = 'all'; // 'all' | 'Pending Delivery' | 'Delivered'
+    let ordersFilterRoute = 'all';
+    let ordersFilterRep = 'all';
+    let ordersFilterPayment = 'all';
+    let ordersFilterDate = 'all'; // 'all' | 'today' | 'yesterday' | 'last7' | 'month'
     let ordersHistoryLimit = 40;
+
+    function populateOrdersFilterDropdowns() {
+      const routeSelect = document.getElementById('order-filter-route');
+      if (routeSelect) {
+        const current = ordersFilterRoute;
+        const distinct = getDistinctRoutes();
+        routeSelect.innerHTML = `<option value="all">All Routes (${distinct.length})</option>` +
+          distinct.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+        if (current && (current === 'all' || distinct.includes(current))) {
+          routeSelect.value = current;
+        } else {
+          routeSelect.value = 'all';
+          ordersFilterRoute = 'all';
+        }
+      }
+
+      const repSelect = document.getElementById('order-filter-rep');
+      if (repSelect) {
+        const current = ordersFilterRep;
+        const reps = getActiveSalespeople();
+        repSelect.innerHTML = `<option value="all">All Salespeople (${reps.length})</option>` +
+          reps.map(r => `<option value="${r.id}">👤 ${escapeHtml(r.name)} (${r.id})</option>`).join('');
+        if (current && (current === 'all' || reps.some(r => String(r.id) === String(current)))) {
+          repSelect.value = current;
+        } else {
+          repSelect.value = 'all';
+          ordersFilterRep = 'all';
+        }
+      }
+    }
+
+    function toggleOrdersSort(col) {
+      if (ordersSortColumn === col) {
+        ordersSortDirection = (ordersSortDirection === 'asc') ? 'desc' : 'asc';
+      } else {
+        ordersSortColumn = col;
+        ordersSortDirection = (col === 'date' || col === 'id' || col === 'amount' || col === 'units') ? 'desc' : 'asc';
+      }
+      ordersHistoryLimit = 40;
+      renderOrdersHistoryTable();
+    }
+
+    function updateOrdersStatusPills(filter) {
+      currentOrdersStatusFilter = filter;
+      const pills = [
+        { id: 'btn-filter-orders-all', key: 'all' },
+        { id: 'btn-filter-orders-pending', key: 'Pending Delivery' },
+        { id: 'btn-filter-orders-delivered', key: 'Delivered' }
+      ];
+      pills.forEach(p => {
+        const btn = document.getElementById(p.id);
+        if (btn) {
+          if (filter === p.key) {
+            btn.className = 'px-2.5 py-1 rounded-lg bg-white font-bold text-slate-900 shadow-xs transition cursor-pointer';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold transition cursor-pointer';
+          }
+        }
+      });
+    }
+
+    function setOrdersStatusFilter(filter) {
+      updateOrdersStatusPills(filter);
+      ordersHistoryLimit = 40;
+      renderOrdersHistoryTable();
+    }
+
+    function onOrdersFilterChanged() {
+      ordersFilterRoute = document.getElementById('order-filter-route')?.value || 'all';
+      ordersFilterRep = document.getElementById('order-filter-rep')?.value || 'all';
+      ordersFilterPayment = document.getElementById('order-filter-payment')?.value || 'all';
+      ordersFilterDate = document.getElementById('order-filter-date')?.value || 'all';
+      ordersHistoryLimit = 40;
+      renderOrdersHistoryTable();
+    }
+
+    function resetOrdersHistoryFilters() {
+      const searchInput = document.getElementById('order-history-search');
+      if (searchInput) searchInput.value = '';
+
+      updateOrdersStatusPills('all');
+      ordersFilterRoute = 'all';
+      ordersFilterRep = 'all';
+      ordersFilterPayment = 'all';
+      ordersFilterDate = 'all';
+      ordersSortColumn = 'date';
+      ordersSortDirection = 'desc';
+      ordersHistoryLimit = 40;
+
+      const rSel = document.getElementById('order-filter-route');
+      if (rSel) rSel.value = 'all';
+      const repSel = document.getElementById('order-filter-rep');
+      if (repSel) repSel.value = 'all';
+      const pSel = document.getElementById('order-filter-payment');
+      if (pSel) pSel.value = 'all';
+      const dSel = document.getElementById('order-filter-date');
+      if (dSel) dSel.value = 'all';
+
+      renderOrdersHistoryTable();
+    }
+
+    function renderOrdersHistoryTableHead() {
+      const thead = document.getElementById('orders-table-head');
+      if (!thead) return;
+
+      const cols = [
+        { key: 'date', label: 'Order ID & Date', align: 'left', sortable: true },
+        { key: 'customer', label: 'Customer & Route', align: 'left', sortable: true },
+        { key: 'units', label: 'Units', align: 'right', sortable: true },
+        { key: 'amount', label: 'Net Amount', align: 'right', sortable: true },
+        { key: 'payment', label: 'Payment', align: 'left', sortable: true },
+        { key: 'status', label: 'Status', align: 'center', sortable: true },
+        { key: 'actions', label: 'Actions', align: 'right', sortable: false }
+      ];
+
+      thead.innerHTML = `<tr>` + cols.map(c => {
+        const alignClass = c.align === 'right' ? 'text-right' : (c.align === 'center' ? 'text-center' : 'text-left');
+        if (!c.sortable) {
+          return `<th class="p-3 ${alignClass}">${c.label}</th>`;
+        }
+
+        const isActive = (ordersSortColumn === c.key);
+        const icon = isActive
+          ? (ordersSortDirection === 'asc' ? '▲' : '▼')
+          : '<span class="opacity-25 group-hover:opacity-100 transition">↕</span>';
+
+        const activeClass = isActive
+          ? 'bg-indigo-50/90 text-indigo-950 font-black'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition';
+
+        return `
+          <th class="p-3 ${alignClass} cursor-pointer group select-none transition ${activeClass}"
+              onclick="toggleOrdersSort('${c.key}')"
+              title="Click to sort by ${escapeHtml(c.label)} (${isActive && ordersSortDirection === 'asc' ? 'Descending' : 'Ascending'})">
+            <div class="inline-flex items-center gap-1.5 ${c.align === 'right' ? 'justify-end' : (c.align === 'center' ? 'justify-center' : 'justify-start')}">
+              <span>${c.label}</span>
+              <span class="text-[10px] font-mono ${isActive ? 'text-indigo-600 font-black' : 'text-slate-400'}">${icon}</span>
+            </div>
+          </th>
+        `;
+      }).join('') + `</tr>`;
+    }
+
+    function exportOrdersHistoryToCSV() {
+      const list = getFilteredAndSortedOrders();
+      if (!list || list.length === 0) {
+        alert('No orders match the active filters to export.');
+        return;
+      }
+
+      const rows = [
+        ['Order ID', 'Date', 'Time', 'Customer Name', 'Customer ID', 'Route Beat', 'Customer RM', 'Supply Rep', 'Total Units', 'Net Payable (INR)', 'Payment Mode', 'Payment Status', 'Fulfillment Status', 'Delivered Date']
+      ];
+
+      list.forEach(o => {
+        const cRep = getCustomerAssignedRep(o.buyerId || o.buyerName);
+        const sRepName = o.supplyRepName || o.salespersonName || o.repName || 'Direct';
+        const payInfo = getOrderPaymentBreakdown(o);
+        const status = getOrderStatus(o);
+
+        let payStatusText = 'Paid';
+        if (payInfo.isPartPayment) {
+          payStatusText = `Part Paid (Paid: ${payInfo.amountPaid}, Due: ${payInfo.balanceDue})`;
+        } else if (payInfo.balanceDue > 0 && payInfo.amountPaid === 0) {
+          payStatusText = `Udhaar Due (${payInfo.balanceDue})`;
+        }
+
+        rows.push([
+          o.id || '',
+          o.date || '',
+          o.time || '',
+          o.buyerName || '',
+          o.buyerId || '',
+          (o.dispatchRoute || '').split(':')[0].trim(),
+          cRep ? cRep.name : (o.customerRepName || 'Direct'),
+          sRepName,
+          o.totalUnits || 0,
+          o.netPayable || 0,
+          o.paymentMode || '',
+          payStatusText,
+          status,
+          o.deliveredAt ? String(o.deliveredAt).split('T')[0] : ''
+        ]);
+      });
+
+      const csvContent = rows.map(e => e.map(val => {
+        const str = String(val == null ? '' : val).replace(/"/g, '""');
+        return `"${str}"`;
+      }).join(',')).join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const nowStr = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Sri_Govinda_Orders_History_${nowStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function isOrderInDateRange(orderDateStr, filter) {
+      if (!filter || filter === 'all') return true;
+      if (!orderDateStr) return false;
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      if (filter === 'today') {
+        return orderDateStr === todayStr;
+      }
+      if (filter === 'yesterday') {
+        const yest = new Date();
+        yest.setDate(yest.getDate() - 1);
+        return orderDateStr === yest.toISOString().split('T')[0];
+      }
+      if (filter === 'last7') {
+        const d7 = new Date();
+        d7.setDate(d7.getDate() - 7);
+        const d7Str = d7.toISOString().split('T')[0];
+        return orderDateStr >= d7Str && orderDateStr <= todayStr;
+      }
+      if (filter === 'month') {
+        const monthPrefix = todayStr.substring(0, 7);
+        return orderDateStr.startsWith(monthPrefix);
+      }
+      return true;
+    }
+
+    function getFilteredAndSortedOrders(q = '') {
+      const query = (q || document.getElementById('order-history-search')?.value || '').toLowerCase().trim();
+
+      let result = orders.filter(o => {
+        if (!o || !o.id) return false;
+
+        // Fulfillment status filter
+        const status = getOrderStatus(o);
+        if (currentOrdersStatusFilter !== 'all' && status !== currentOrdersStatusFilter) return false;
+
+        // Date period filter
+        if (!isOrderInDateRange(o.date, ordersFilterDate)) return false;
+
+        // Search text
+        if (query) {
+          const idMatch = String(o.id || '').toLowerCase().includes(query);
+          const buyerMatch = String(o.buyerName || '').toLowerCase().includes(query);
+          const routeMatch = String(o.dispatchRoute || '').toLowerCase().includes(query);
+          const repMatch = String(o.repName || o.salespersonName || o.supplyRepName || o.customerRepName || '').toLowerCase().includes(query);
+          if (!idMatch && !buyerMatch && !routeMatch && !repMatch) return false;
+        }
+
+        // Route beat filter
+        if (ordersFilterRoute !== 'all') {
+          const oRoute = ((o.dispatchRoute || '').split(':')[0]).trim().toLowerCase();
+          if (oRoute !== ordersFilterRoute.toLowerCase()) return false;
+        }
+
+        // Salesperson filter (Customer RM or Supply Rep)
+        if (ordersFilterRep !== 'all') {
+          const cRep = getCustomerAssignedRep(o.buyerId || o.buyerName);
+          const sRepId = o.supplyRepId || o.salespersonId || o.repId;
+          const cRepId = cRep ? cRep.id : null;
+          if (String(sRepId) !== String(ordersFilterRep) && String(cRepId) !== String(ordersFilterRep)) {
+            return false;
+          }
+        }
+
+        // Payment mode filter
+        if (ordersFilterPayment !== 'all') {
+          const payInfo = getOrderPaymentBreakdown(o);
+          const mode = (o.paymentMode || '').toLowerCase();
+          if (ordersFilterPayment === 'credit') {
+            if (!(payInfo.balanceDue > 0 && payInfo.amountPaid === 0) && mode !== 'credit' && mode !== 'udhaar') return false;
+          } else if (ordersFilterPayment === 'part') {
+            if (!payInfo.isPartPayment) return false;
+          } else if (ordersFilterPayment === 'cash') {
+            if (!mode.includes('cash')) return false;
+          } else if (ordersFilterPayment === 'upi') {
+            if (!mode.includes('upi')) return false;
+          } else if (ordersFilterPayment === 'cheque') {
+            if (!mode.includes('cheque') && !mode.includes('bank')) return false;
+          }
+        }
+
+        return true;
+      });
+
+      // Excel Column Sorting
+      result.sort((a, b) => {
+        let cmp = 0;
+        if (ordersSortColumn === 'date' || ordersSortColumn === 'id') {
+          const dtA = (a.date || '') + 'T' + (a.time || '');
+          const dtB = (b.date || '') + 'T' + (b.time || '');
+          cmp = dtA.localeCompare(dtB);
+          if (cmp === 0) {
+            cmp = String(a.id || '').localeCompare(String(b.id || ''));
+          }
+        } else if (ordersSortColumn === 'customer') {
+          cmp = (a.buyerName || '').localeCompare(b.buyerName || '');
+        } else if (ordersSortColumn === 'units') {
+          cmp = (Number(a.totalUnits) || 0) - (Number(b.totalUnits) || 0);
+        } else if (ordersSortColumn === 'amount') {
+          cmp = (Number(a.netPayable) || 0) - (Number(b.netPayable) || 0);
+        } else if (ordersSortColumn === 'payment') {
+          cmp = (a.paymentMode || '').localeCompare(b.paymentMode || '');
+        } else if (ordersSortColumn === 'status') {
+          const stA = getOrderStatus(a);
+          const stB = getOrderStatus(b);
+          cmp = stA.localeCompare(stB);
+        }
+        return (ordersSortDirection === 'asc') ? cmp : -cmp;
+      });
+
+      return result;
+    }
 
     function loadMoreOrders() {
       ordersHistoryLimit += 40;
       renderOrdersHistoryTable();
     }
 
-    function setOrdersStatusFilter(filter) {
-      currentOrdersStatusFilter = filter;
-      ordersHistoryLimit = 40;
-      ['all', 'pending', 'delivered'].forEach(k => {
-        const btn = document.getElementById(`btn-filter-orders-${k}`);
-        if (btn) {
-          const match = (k === 'all' && filter === 'all') || (k === 'pending' && filter === 'Pending Delivery') || (k === 'delivered' && filter === 'Delivered');
-          if (match) {
-            btn.className = 'px-2.5 py-1 rounded-lg bg-white font-bold text-slate-900 shadow-xs';
-          } else {
-            btn.className = 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-semibold';
-          }
-        }
-      });
-      renderOrdersHistoryTable();
-    }
-
-    // 11. ORDERS HISTORY DATABASE
     function renderOrdersHistoryTable() {
       const tbody = document.getElementById('orders-table-body');
       if (!tbody) return;
-      const q = (document.getElementById('order-history-search')?.value || '').toLowerCase().trim();
 
-      const filtered = orders.filter(o => {
-        if (!o || !o.id) return false;
-        const status = getOrderStatus(o);
-        if (currentOrdersStatusFilter !== 'all' && status !== currentOrdersStatusFilter) return false;
+      renderOrdersHistoryTableHead();
 
-        if (!q) return true;
-        const idMatch = String(o.id || '').toLowerCase().includes(q);
-        const buyerMatch = String(o.buyerName || '').toLowerCase().includes(q);
-        const routeMatch = String(o.dispatchRoute || '').toLowerCase().includes(q);
-        const repMatch = String(o.repName || o.salespersonName || '').toLowerCase().includes(q);
-        return idMatch || buyerMatch || routeMatch || repMatch;
-      });
+      const filtered = getFilteredAndSortedOrders();
+
+      // Update Filter Summary Badge & Net Revenue Tally
+      const badge = document.getElementById('order-history-count-badge');
+      if (badge) {
+        const totalNet = filtered.reduce((sum, o) => sum + (Number(o.netPayable) || 0), 0);
+        const pendingCount = filtered.filter(o => getOrderStatus(o) === 'Pending Delivery').length;
+        const deliveredCount = filtered.filter(o => getOrderStatus(o) === 'Delivered').length;
+        badge.innerHTML = `
+          <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 font-black border border-indigo-200">
+            Showing ${filtered.length} of ${orders.length} orders
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
+            Total Net Value: <b class="font-black font-mono">${formatINR(totalNet)}</b>
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+            ${pendingCount} Pending • ${deliveredCount} Delivered
+          </span>
+        `;
+      }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No orders found matching the filter criteria.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-400">
+              <div class="space-y-1">
+                <p class="font-bold text-slate-700 text-sm">No orders match your filter or search criteria.</p>
+                <p class="text-xs text-slate-400">Try adjusting your route, salesperson, fulfillment stage, or date filters.</p>
+                <button type="button" onclick="resetOrdersHistoryFilters()" class="mt-2 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs transition cursor-pointer">
+                  Reset All Filters
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
@@ -9165,25 +9912,25 @@
           <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
           <td class="p-3 text-right space-x-1 whitespace-nowrap">
             ${!isDelivered ? `
-              <button onclick="openDeliveryConfirmModal('${o.id}')" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 shadow-xs transition" title="Confirm Delivery & Send WhatsApp Bill">
+              <button onclick="openDeliveryConfirmModal('${o.id}')" class="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 shadow-xs transition cursor-pointer" title="Confirm Delivery & Send WhatsApp Bill">
                 <i data-lucide="truck" class="w-3 h-3"></i> Deliver & Bill
               </button>
             ` : `
-              <button onclick="shareWhatsApp('${o.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" title="Resend WhatsApp Bill">
+              <button onclick="shareWhatsApp('${o.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer" title="Resend WhatsApp Bill">
                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
               </button>
             `}
-            <button onclick="openInvoiceModal('${o.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200" title="View & Download Tax Invoice (PDF & JPEG)">
+            <button onclick="openInvoiceModal('${o.id}')" class="p-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer" title="View & Download Tax Invoice (PDF & JPEG)">
               <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
             </button>
-            <button onclick="openEditOrderModal('${o.id}')" class="p-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200" title="Modify Order">
+            <button onclick="openEditOrderModal('${o.id}')" class="p-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer" title="Modify Order">
               <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
-            <button onclick="viewOrderDetails('${o.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700" title="Inspect Order Details">
+            <button onclick="viewOrderDetails('${o.id}')" class="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" title="Inspect Order Details">
               <i data-lucide="eye" class="w-3.5 h-3.5"></i>
             </button>
             ${isManager ? `
-              <button onclick="deleteOrderConfirm('${o.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700" title="Cancel & Delete Order">
+              <button onclick="deleteOrderConfirm('${o.id}')" class="p-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 cursor-pointer" title="Cancel & Delete Order">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             ` : ''}
@@ -9197,7 +9944,7 @@
         rowsHtml += `
           <tr id="orders-load-more-row">
             <td colspan="7" class="p-4 text-center bg-slate-50 border-t border-slate-200">
-              <button type="button" onclick="loadMoreOrders()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-2">
+              <button type="button" onclick="loadMoreOrders()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-2 cursor-pointer">
                 <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 <span>Load More Orders (${remaining} remaining)</span>
               </button>
