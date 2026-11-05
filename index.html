@@ -3212,10 +3212,13 @@
         </div>
 
         <div class="flex items-center gap-2 pt-1 flex-shrink-0">
-          <button type="button" onclick="closeEditOrderModal()" class="w-1/4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+          <button type="button" onclick="deleteOrderConfirm(document.getElementById('edit-order-id').value)" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition inline-flex items-center gap-1 border border-rose-200 cursor-pointer" title="Cancel and permanently delete this order">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+          </button>
+          <button type="button" onclick="closeEditOrderModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
             Cancel
           </button>
-          <button type="submit" id="btn-save-edit-order" class="w-3/4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition flex items-center justify-center gap-1.5">
+          <button type="submit" id="btn-save-edit-order" class="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md text-xs transition flex items-center justify-center gap-1.5">
             <i data-lucide="check" class="w-4 h-4"></i> Save Changes & Reconcile Stock
           </button>
         </div>
@@ -5642,10 +5645,11 @@
                   balanceDue: breakdown.balanceDue
                 };
               });
-              const cloudIds = new Set(cloudOrders.map(o => o.id));
+              const cloudIds = new Set(cloudOrders.map(o => String(o.id)));
+              const deletedIds = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
               const localOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
-              const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(o.id));
-              orders = [...localUnsynced, ...cloudOrders];
+              const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(String(o.id)) && !deletedIds.has(String(o.id)));
+              orders = [...localUnsynced, ...cloudOrders].filter(o => o && o.id && !deletedIds.has(String(o.id)));
               try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
               debouncedRefreshAllUI(100); 
             }
@@ -5780,10 +5784,11 @@
               balanceDue: breakdown.balanceDue
             };
           });
-          const cloudIds = new Set(cloudOrders.map(o => o.id));
+          const cloudIds = new Set(cloudOrders.map(o => String(o.id)));
+          const deletedIds = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
           const localOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
-          const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(o.id));
-          orders = [...localUnsynced, ...cloudOrders];
+          const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(String(o.id)) && !deletedIds.has(String(o.id)));
+          orders = [...localUnsynced, ...cloudOrders].filter(o => o && o.id && !deletedIds.has(String(o.id)));
           try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
 
           // Background auto-sync of any unsynced local orders to cloud
@@ -10934,33 +10939,96 @@
     }
 
     async function deleteOrderConfirm(orderId) {
-      const o = orders.find(x => x.id === orderId);
-      if (!o) return;
-
-      if (!confirm(`Are you sure you want to cancel and delete Order #${o.id}?\n\nCustomer: ${o.buyerName}\nAmount: ${formatINR(o.netPayable)}\n\n⚠️ All ${o.totalUnits} product units will be immediately returned to warehouse inventory.`)) {
+      if (!orderId) return;
+      const targetId = String(orderId).trim();
+      const o = orders.find(x => String(x.id).trim().toLowerCase() === targetId.toLowerCase());
+      if (!o) {
+        alert(`Order #${targetId} could not be located in database.`);
         return;
       }
 
-      // Restore Udhaar if credit
-      if (o.paymentMode === 'Credit / Udhaar' && o.buyerId) {
-        const buyer = customers.find(c => c.id === o.buyerId);
+      const payInfo = typeof getOrderPaymentBreakdown === 'function' ? getOrderPaymentBreakdown(o) : { balanceDue: Number(o.balanceDue || 0) };
+      const dueToReverse = Number(payInfo.balanceDue !== undefined ? payInfo.balanceDue : (o.balanceDue || 0));
+
+      const customerLabel = o.buyerName || 'Unknown Customer';
+      const orderAmountLabel = typeof formatINR === 'function' ? formatINR(o.netPayable) : `₹${o.netPayable}`;
+      const udhaarReversalNotice = dueToReverse > 0 ? `\nUdhaar Balance to Reverse: ${typeof formatINR === 'function' ? formatINR(dueToReverse) : '₹' + dueToReverse}` : '';
+
+      if (!confirm(`Are you sure you want to cancel and delete Order #${o.id}?\n\nCustomer: ${customerLabel}\nAmount: ${orderAmountLabel}${udhaarReversalNotice}\n\n⚠️ All ${o.totalUnits || 0} product units will be immediately returned to warehouse inventory.`)) {
+        return;
+      }
+
+      // 1. Restore Customer Udhaar balance if applicable
+      if (dueToReverse > 0 && (o.buyerId || o.buyerName)) {
+        const buyer = customers.find(c => 
+          (o.buyerId && String(c.id).trim().toLowerCase() === String(o.buyerId).trim().toLowerCase()) || 
+          (o.buyerName && c.name && c.name.trim().toLowerCase() === String(o.buyerName).trim().toLowerCase())
+        );
         if (buyer) {
-          buyer.pendingUdhaar = Math.max(0, Number(buyer.pendingUdhaar || 0) - Number(o.netPayable || 0));
+          buyer.pendingUdhaar = Math.max(0, Number(buyer.pendingUdhaar || 0) - dueToReverse);
+          saveCustomersLocally();
+          if (supabaseClient) {
+            supabaseClient.from('buyers').update({ pendingUdhaar: buyer.pendingUdhaar }).eq('id', buyer.id).catch(() => {});
+          }
           try {
-            await callManagerEdgeFunction('manager_update_buyer', { id: buyer.id, pendingUdhaar: buyer.pendingUdhaar });
+            callManagerEdgeFunction('manager_update_buyer', { id: buyer.id, pendingUdhaar: buyer.pendingUdhaar }).catch(() => {});
           } catch(err){}
         }
       }
 
-      orders = orders.filter(x => x.id !== orderId);
-
+      // 2. Remove order from local in-memory array & persist to localStorage
+      orders = orders.filter(x => String(x.id).trim().toLowerCase() !== targetId.toLowerCase());
       try {
-        await callManagerEdgeFunction('manager_delete_order', { id: orderId });
-      } catch(err) {
-        console.error("Manager order delete error:", err);
+        localStorage.setItem('sg_orders', JSON.stringify(orders));
+      } catch (e) {
+        console.warn("Could not save sg_orders to localStorage:", e);
       }
 
-      refreshAllUI();
+      // 3. Record in tombstone list so background sync never resurrects it
+      try {
+        const deletedSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
+        deletedSet.add(targetId);
+        if (o.id) deletedSet.add(String(o.id));
+        localStorage.setItem('sg_deleted_order_ids', JSON.stringify(Array.from(deletedSet).slice(-500)));
+      } catch(e) {}
+
+      // 4. Close edit modal if open for this order
+      const editModal = document.getElementById('modal-edit-order');
+      if (editModal && !editModal.classList.contains('hidden')) {
+        const editIdVal = document.getElementById('edit-order-id')?.value;
+        if (editIdVal && String(editIdVal).trim().toLowerCase() === targetId.toLowerCase()) {
+          closeEditOrderModal();
+        }
+      }
+
+      // 5. Broadcast deletion across all open tabs
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ORDER_DELETED', orderId: targetId });
+        }
+      } catch(e) {}
+
+      // 6. Delete from Supabase cloud (Elevated Edge Function + Direct fallback)
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_order', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
+      } catch(err) {
+        console.warn("Manager edge function delete error:", err);
+      }
+
+      if (!cloudDeleted && supabaseClient) {
+        try {
+          const { error: delErr } = await supabaseClient.from('orders').delete().eq('id', targetId);
+          if (!delErr) cloudDeleted = true;
+        } catch (e) {
+          console.warn("Direct Supabase delete error:", e);
+        }
+      }
+
+      showToast(`✅ Order #${targetId} cancelled and deleted successfully.`);
+      refreshAllUI(true);
     }
 
     // 12. PRODUCTS CRUD (MANAGER ONLY)
@@ -17442,6 +17510,18 @@
                 try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
                 showToast(`📦 Order #${ord.id} marked as Delivered by ${data.repName || 'Sales Official'}!`);
                 refreshAllUI();
+              }
+            } else if (data.type === 'ORDER_DELETED') {
+              const delId = String(data.orderId || '').trim().toLowerCase();
+              if (delId) {
+                orders = orders.filter(o => String(o.id || '').trim().toLowerCase() !== delId);
+                try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
+                try {
+                  const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
+                  delSet.add(data.orderId);
+                  localStorage.setItem('sg_deleted_order_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+                } catch(e) {}
+                refreshAllUI(true);
               }
             } else if (data.type === 'SAMPLE_CREATED') {
               const smpl = data.sample;
