@@ -2153,7 +2153,7 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
               <span class="text-[10px] text-slate-400 font-mono font-bold">${qty > 0 ? `Sub: ${formatINR(qty * rate)}` : 'Qty:'}</span>
               <div class="flex items-center gap-1.5">
                 <button type="button" onclick="updateItemQty('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer">-</button>
-                <input type="number" min="0" value="${qty}" onchange="setItemQtyDirect('${p.id}', this.value)" class="w-12 h-7 bg-slate-950 border border-slate-700 rounded-lg text-center font-mono font-black text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <input type="number" step="any" min="0" inputmode="decimal" value="${qty}" onchange="setItemQtyDirect('${p.id}', this.value)" class="w-14 sm:w-16 h-7 bg-slate-950 border border-slate-700 rounded-lg text-center font-mono font-black text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500" title="Quantity (decimals allowed, e.g. 1.5)">
                 <button type="button" onclick="updateItemQty('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center transition active:scale-95 cursor-pointer">+</button>
               </div>
             </div>
@@ -2169,8 +2169,8 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
     }
 
     function updateItemQty(productId, delta) {
-      const current = activeCart[productId] || 0;
-      const next = Math.max(0, current + delta);
+      const current = parseFloat(activeCart[productId]) || 0;
+      const next = Math.max(0, Math.round((current + delta) * 100) / 100);
       if (next === 0) {
         delete activeCart[productId];
       } else {
@@ -2180,7 +2180,8 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
     }
 
     function setItemQtyDirect(productId, val) {
-      const next = Math.max(0, parseInt(val, 10) || 0);
+      const parsed = parseFloat(val);
+      const next = (!isNaN(parsed) && parsed > 0) ? Math.round(parsed * 100) / 100 : 0;
       if (next === 0) {
         delete activeCart[productId];
       } else {

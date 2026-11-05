@@ -6407,7 +6407,7 @@
               ${qty > 0 ? `<span class="text-xs font-mono font-black text-emerald-700 sm:mr-1">${formatINR(qty * activeRate)}</span>` : ''}
               <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
                 <button type="button" onclick="adjustQty('${p.id}', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-slate-200 active:scale-95 text-slate-700 font-black text-base flex items-center justify-center disabled:opacity-30 touch-manipulation cursor-pointer shadow-2xs" ${qty === 0 ? 'disabled' : ''}>-</button>
-                <input type="number" min="0" value="${qty}" onchange="setQty('${p.id}', this.value)" class="w-12 h-8 text-center font-mono font-black text-sm rounded-lg bg-white border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                <input type="number" step="any" min="0" inputmode="decimal" value="${qty}" onchange="setQty('${p.id}', this.value)" class="w-16 sm:w-20 h-8 text-center font-mono font-black text-sm rounded-lg bg-white border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none" title="Enter quantity (decimals allowed, e.g. 1.5, 0.5)">
                 <button type="button" onclick="adjustQty('${p.id}', 1)" class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-base flex items-center justify-center touch-manipulation cursor-pointer shadow-xs">+</button>
               </div>
             </div>
@@ -6418,15 +6418,16 @@
     }
 
     function adjustQty(prodId, delta) {
-      const cur = cart[prodId] || 0;
-      const next = Math.max(0, cur + delta);
+      const cur = parseFloat(cart[prodId]) || 0;
+      const next = Math.max(0, Math.round((cur + delta) * 100) / 100);
       if (next === 0) delete cart[prodId];
       else cart[prodId] = next;
       renderOrderCatalog();
     }
 
     function setQty(prodId, val) {
-      const next = Math.max(0, parseInt(val) || 0);
+      const parsed = parseFloat(val);
+      const next = (!isNaN(parsed) && parsed > 0) ? Math.round(parsed * 100) / 100 : 0;
       if (next === 0) delete cart[prodId];
       else cart[prodId] = next;
       renderOrderCatalog();
@@ -6448,17 +6449,21 @@
       const prevDue = currentCust ? Number(currentCust.pendingUdhaar || 0) : 0;
 
       Object.keys(cart).forEach(pId => {
-        const qty = cart[pId];
+        const qty = parseFloat(cart[pId]) || 0;
         if (qty > 0) {
           const prod = products.find(p => p.id === pId);
           if (prod) {
             const unitRate = getCustomerProductRate(currentCustId, prod);
+            const lineTotal = Math.round(qty * unitRate * 100) / 100;
             totalUnits += qty;
             lineItems++;
-            subtotal += (qty * unitRate);
+            subtotal += lineTotal;
           }
         }
       });
+
+      totalUnits = Math.round(totalUnits * 100) / 100;
+      subtotal = Math.round(subtotal * 100) / 100;
 
       const rebate = parseFloat(document.getElementById('order-rebate')?.value) || 0;
       const netPayable = Math.max(0, subtotal - rebate);
@@ -6739,18 +6744,21 @@
       let itemsSubtotal = 0;
 
       Object.keys(cart).forEach(pId => {
-        const qty = cart[pId];
+        const qty = parseFloat(cart[pId]) || 0;
         if (qty > 0) {
           const prod = products.find(p => p.id === pId);
           if (prod) {
             const unitRate = getCustomerProductRate(cust.id, prod);
-            const lineTotal = qty * unitRate;
+            const lineTotal = Math.round(qty * unitRate * 100) / 100;
             items.push({ productId: pId, sku: prod.sku, name: prod.name, unitSize: prod.unitSize, qty, rate: unitRate, total: lineTotal });
             totalUnits += qty;
             itemsSubtotal += lineTotal;
           }
         }
       });
+
+      totalUnits = Math.round(totalUnits * 100) / 100;
+      itemsSubtotal = Math.round(itemsSubtotal * 100) / 100;
 
       if (items.length === 0) { alert("Cart is empty. Please select product quantities."); return; }
 
@@ -10637,7 +10645,7 @@
           <td class="p-2.5 text-center">
             <div class="inline-flex items-center gap-1">
               <button type="button" onclick="adjustEditItemQty(${idx}, -1)" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center">-</button>
-              <input type="number" min="1" value="${it.qty}" onchange="updateEditItemQty(${idx}, this.value)" class="w-10 h-6 text-center font-mono font-bold text-xs rounded-lg border border-slate-200">
+              <input type="number" step="any" min="0.01" inputmode="decimal" value="${it.qty}" onchange="updateEditItemQty(${idx}, this.value)" class="w-16 h-6 text-center font-mono font-bold text-xs rounded-lg border border-slate-200" title="Item quantity (decimals allowed)">
               <button type="button" onclick="adjustEditItemQty(${idx}, 1)" class="w-6 h-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center justify-center">+</button>
             </div>
           </td>
@@ -10663,21 +10671,23 @@
 
     function updateEditItemQty(idx, val) {
       if (!editOrderItems[idx]) return;
-      const qty = Math.max(1, parseInt(val) || 1);
+      const parsed = parseFloat(val);
+      const qty = (!isNaN(parsed) && parsed > 0) ? Math.round(parsed * 100) / 100 : 1;
       editOrderItems[idx].qty = qty;
-      editOrderItems[idx].total = editOrderItems[idx].rate * qty;
+      editOrderItems[idx].total = Math.round(editOrderItems[idx].rate * qty * 100) / 100;
       renderEditOrderItemsTable();
       calculateEditOrderTotals();
     }
 
     function adjustEditItemQty(idx, delta) {
       if (!editOrderItems[idx]) return;
-      const next = editOrderItems[idx].qty + delta;
+      const cur = parseFloat(editOrderItems[idx].qty) || 0;
+      const next = Math.round((cur + delta) * 100) / 100;
       if (next <= 0) {
         removeEditOrderItem(idx);
       } else {
         editOrderItems[idx].qty = next;
-        editOrderItems[idx].total = editOrderItems[idx].rate * next;
+        editOrderItems[idx].total = Math.round(editOrderItems[idx].rate * next * 100) / 100;
         renderEditOrderItemsTable();
         calculateEditOrderTotals();
       }
