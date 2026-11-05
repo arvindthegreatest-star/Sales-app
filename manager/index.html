@@ -648,8 +648,20 @@
             <input type="text" id="customer-search-input" oninput="onCustomerFilterChanged()" placeholder="Search store name, phone, contact person, or address..." class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs w-full outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 font-medium">
           </div>
 
-          <!-- Multi-Attribute Excel Filters -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-wrap items-center">
+          <!-- Multi-Attribute Excel Filters & Sorting -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 flex-wrap items-center">
+            <!-- Sort By Dropdown -->
+            <select id="customer-sort-select" onchange="onCustomerSortDropdownChanged(this.value)" class="p-1.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-2xs" title="Sort Customer Database">
+              <option value="name_asc">🔤 Store: A → Z (Alphabetical)</option>
+              <option value="name_desc">🔤 Store: Z → A</option>
+              <option value="route_asc">🗺️ Route Beat: A → Z</option>
+              <option value="rm_asc">👤 Customer RM: A → Z</option>
+              <option value="tier_asc">🏷️ Tier: A → Z</option>
+              <option value="due_desc">🔴 Outstanding Due: Highest</option>
+              <option value="due_asc">🟢 Outstanding Due: Lowest</option>
+              <option value="contact_asc">👤 Contact Person: A → Z</option>
+            </select>
+
             <!-- Route Beat Dropdown -->
             <select id="customer-filter-route" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Route Beat">
               <option value="all">All Route Beats</option>
@@ -672,7 +684,7 @@
             </select>
 
             <!-- Due Balance Filter -->
-            <select id="customer-filter-due" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Udhaar Due balance">
+            <select id="customer-filter-due" onchange="onCustomerFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer col-span-2 sm:col-span-1" title="Filter by Udhaar Due balance">
               <option value="all">All Udhaar Balances</option>
               <option value="debtors">🔴 Debtors Only (Due > 0)</option>
               <option value="clear">🟢 Clear Balance (Due = ₹0)</option>
@@ -940,8 +952,21 @@
             <input type="text" id="order-history-search" oninput="onOrdersFilterChanged()" placeholder="Search order ID, store, route, RM, supply rep..." class="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs w-full outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 font-medium">
           </div>
 
-          <!-- Multi-Attribute Excel Filters -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-wrap items-center">
+          <!-- Multi-Attribute Excel Filters & Sorting -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 flex-wrap items-center">
+            <!-- Sort By Dropdown -->
+            <select id="order-sort-select" onchange="onOrdersSortDropdownChanged(this.value)" class="p-1.5 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-2xs" title="Sort Order Database & History by Customer Name, Date, Amount, Units...">
+              <option value="date_desc">📅 Date: Newest First</option>
+              <option value="date_asc">📅 Date: Oldest First</option>
+              <option value="name_asc">🔤 Customer Name (A → Z)</option>
+              <option value="name_desc">🔤 Customer Name (Z → A)</option>
+              <option value="route_asc">🗺️ Route Beat (A → Z)</option>
+              <option value="amount_desc">💰 Net Amount: Highest First</option>
+              <option value="amount_asc">💰 Net Amount: Lowest First</option>
+              <option value="units_desc">📦 Total Units: Highest</option>
+              <option value="status_asc">🚚 Status: Pending → Delivered</option>
+            </select>
+
             <!-- Route Beat Dropdown -->
             <select id="order-filter-route" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Dispatch Route Beat">
               <option value="all">All Routes</option>
@@ -963,7 +988,7 @@
             </select>
 
             <!-- Date Range Filter -->
-            <select id="order-filter-date" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer" title="Filter by Order Date Period">
+            <select id="order-filter-date" onchange="onOrdersFilterChanged()" class="p-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none hover:bg-white focus:ring-1 focus:ring-indigo-500 cursor-pointer col-span-2 sm:col-span-1" title="Filter by Order Date Period">
               <option value="all">All Time</option>
               <option value="today">📅 Today</option>
               <option value="yesterday">📅 Yesterday</option>
@@ -8802,6 +8827,15 @@
       }
     }
 
+    function onCustomerSortDropdownChanged(val) {
+      if (!val) return;
+      const parts = val.split('_');
+      customerSortColumn = parts[0];
+      customerSortDirection = parts[1] || 'asc';
+      customersTableLimit = 50;
+      renderCustomersTable();
+    }
+
     function toggleCustomerSort(col) {
       if (customerSortColumn === col) {
         customerSortDirection = (customerSortDirection === 'asc') ? 'desc' : 'asc';
@@ -8833,6 +8867,8 @@
       customerSortColumn = 'name';
       customerSortDirection = 'asc';
       customersTableLimit = 50;
+      const custSortSel = document.getElementById('customer-sort-select');
+      if (custSortSel) custSortSel.value = 'name_asc';
 
       const rSel = document.getElementById('customer-filter-route');
       if (rSel) rSel.value = 'all';
@@ -9018,6 +9054,15 @@
     function renderCustomersTable() {
       const tbody = document.getElementById('customers-table-body');
       if (!tbody) return;
+
+      // Sync Sort By Dropdown
+      const custSortSel = document.getElementById('customer-sort-select');
+      if (custSortSel) {
+        const expected = `${customerSortColumn}_${customerSortDirection}`;
+        if (custSortSel.value !== expected && Array.from(custSortSel.options).some(o => o.value === expected)) {
+          custSortSel.value = expected;
+        }
+      }
 
       renderCustomersTableHead();
 
@@ -9509,6 +9554,18 @@
       }
     }
 
+    function onOrdersSortDropdownChanged(val) {
+      if (!val) return;
+      const parts = val.split('_');
+      const col = parts[0];
+      const dir = parts[1] || 'desc';
+
+      ordersSortColumn = (col === 'name') ? 'customer' : col;
+      ordersSortDirection = dir;
+      ordersHistoryLimit = 40;
+      renderOrdersHistoryTable();
+    }
+
     function toggleOrdersSort(col) {
       if (ordersSortColumn === col) {
         ordersSortDirection = (ordersSortDirection === 'asc') ? 'desc' : 'asc';
@@ -9566,6 +9623,8 @@
       ordersSortColumn = 'date';
       ordersSortDirection = 'desc';
       ordersHistoryLimit = 40;
+      const ordSortSel = document.getElementById('order-sort-select');
+      if (ordSortSel) ordSortSel.value = 'date_desc';
 
       const rSel = document.getElementById('order-filter-route');
       if (rSel) rSel.value = 'all';
@@ -9584,12 +9643,12 @@
       if (!thead) return;
 
       const cols = [
-        { key: 'date', label: 'Order ID & Date', align: 'left', sortable: true },
-        { key: 'customer', label: 'Customer & Route', align: 'left', sortable: true },
-        { key: 'units', label: 'Units', align: 'right', sortable: true },
-        { key: 'amount', label: 'Net Amount', align: 'right', sortable: true },
-        { key: 'payment', label: 'Payment', align: 'left', sortable: true },
-        { key: 'status', label: 'Status', align: 'center', sortable: true },
+        { key: 'date', label: 'Order ID & Date', align: 'left', sortable: true, title: 'Click to sort by Date (Newest / Oldest)' },
+        { key: 'customer', label: 'Customer Name & Route', align: 'left', sortable: true, title: 'Click to sort Alphabetically by Customer Name (A-Z / Z-A)' },
+        { key: 'units', label: 'Units', align: 'right', sortable: true, title: 'Click to sort by Total Units (Highest / Lowest)' },
+        { key: 'amount', label: 'Net Amount', align: 'right', sortable: true, title: 'Click to sort by Net Amount (Highest / Lowest)' },
+        { key: 'payment', label: 'Payment', align: 'left', sortable: true, title: 'Click to sort by Payment Mode' },
+        { key: 'status', label: 'Status', align: 'center', sortable: true, title: 'Click to sort by Fulfillment Status' },
         { key: 'actions', label: 'Actions', align: 'right', sortable: false }
       ];
 
@@ -9765,24 +9824,36 @@
         return true;
       });
 
-      // Excel Column Sorting
+      // Excel Column Sorting & Dropdown Sorting
       result.sort((a, b) => {
         let cmp = 0;
         if (ordersSortColumn === 'date' || ordersSortColumn === 'id') {
-          const dtA = (a.date || '') + 'T' + (a.time || '');
-          const dtB = (b.date || '') + 'T' + (b.time || '');
-          cmp = dtA.localeCompare(dtB);
+          const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          if (tA && tB && !isNaN(tA) && !isNaN(tB)) {
+            cmp = tA - tB;
+          } else {
+            const dtA = (a.date || '') + 'T' + (a.time || '');
+            const dtB = (b.date || '') + 'T' + (b.time || '');
+            cmp = dtA.localeCompare(dtB);
+          }
           if (cmp === 0) {
             cmp = String(a.id || '').localeCompare(String(b.id || ''));
           }
-        } else if (ordersSortColumn === 'customer') {
-          cmp = (a.buyerName || '').localeCompare(b.buyerName || '');
+        } else if (ordersSortColumn === 'customer' || ordersSortColumn === 'name') {
+          const nameA = String(a.buyerName || '').trim();
+          const nameB = String(b.buyerName || '').trim();
+          cmp = nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+        } else if (ordersSortColumn === 'route') {
+          const rA = String((a.dispatchRoute || a.buyerHomeRoute || '').split(':')[0]).trim();
+          const rB = String((b.dispatchRoute || b.buyerHomeRoute || '').split(':')[0]).trim();
+          cmp = rA.localeCompare(rB, undefined, { sensitivity: 'base' });
         } else if (ordersSortColumn === 'units') {
           cmp = (Number(a.totalUnits) || 0) - (Number(b.totalUnits) || 0);
         } else if (ordersSortColumn === 'amount') {
           cmp = (Number(a.netPayable) || 0) - (Number(b.netPayable) || 0);
         } else if (ordersSortColumn === 'payment') {
-          cmp = (a.paymentMode || '').localeCompare(b.paymentMode || '');
+          cmp = String(a.paymentMode || '').localeCompare(String(b.paymentMode || ''));
         } else if (ordersSortColumn === 'status') {
           const stA = getOrderStatus(a);
           const stB = getOrderStatus(b);
@@ -9802,6 +9873,16 @@
     function renderOrdersHistoryTable() {
       const tbody = document.getElementById('orders-table-body');
       if (!tbody) return;
+
+      // Sync Sort By Dropdown
+      const ordSortSel = document.getElementById('order-sort-select');
+      if (ordSortSel) {
+        const colKey = (ordersSortColumn === 'customer') ? 'name' : ordersSortColumn;
+        const expected = `${colKey}_${ordersSortDirection}`;
+        if (ordSortSel.value !== expected && Array.from(ordSortSel.options).some(o => o.value === expected)) {
+          ordSortSel.value = expected;
+        }
+      }
 
       renderOrdersHistoryTableHead();
 

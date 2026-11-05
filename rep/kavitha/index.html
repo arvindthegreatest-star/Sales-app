@@ -431,17 +431,31 @@
           <span class="text-xs text-slate-400 font-mono" id="orders-count-indicator">Showing your recent bookings</span>
         </div>
 
+        <!-- Filter & Sort Controls for Rep Orders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <input type="text" id="agent-orders-search" oninput="renderOrdersHistory()" placeholder="🔍 Search store, bill #, date..." class="p-2 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 outline-none w-full focus:ring-1 focus:ring-emerald-500 font-medium">
+          <select id="agent-orders-sort" onchange="onAgentOrdersSortChanged(this.value)" class="p-2 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-emerald-400 font-bold outline-none cursor-pointer focus:ring-1 focus:ring-emerald-500" title="Sort Order Bookings by Date, Retailer Name, Amount...">
+            <option value="date_desc">📅 Date: Newest First (Default)</option>
+            <option value="date_asc">📅 Date: Oldest First</option>
+            <option value="name_asc">🔤 Retailer Name: A → Z (Alphabetical)</option>
+            <option value="name_desc">🔤 Retailer Name: Z → A</option>
+            <option value="amount_desc">💰 Amount: Highest First</option>
+            <option value="amount_asc">💰 Amount: Lowest First</option>
+            <option value="units_desc">📦 Units: Highest First</option>
+          </select>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs text-slate-200">
-            <thead class="bg-slate-900/80 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-700">
+            <thead class="bg-slate-900/80 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-700 select-none">
               <tr>
-                <th class="p-2.5">Bill #</th>
-                <th class="p-2.5">Date / Time</th>
-                <th class="p-2.5">Retailer Name</th>
-                <th class="p-2.5 text-right">Units</th>
-                <th class="p-2.5 text-right">Amount (₹)</th>
+                <th class="p-2.5 cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('id')" title="Click to sort by Bill #">Bill #</th>
+                <th class="p-2.5 cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('date')" title="Click to sort by Date / Time">Date / Time</th>
+                <th class="p-2.5 cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('name')" title="Click to sort Alphabetically by Retailer Name (A-Z / Z-A)">Retailer Name</th>
+                <th class="p-2.5 text-right cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('units')" title="Click to sort by Units">Units</th>
+                <th class="p-2.5 text-right cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('amount')" title="Click to sort by Amount">Amount (₹)</th>
                 <th class="p-2.5">Payment</th>
-                <th class="p-2.5 text-center">Status</th>
+                <th class="p-2.5 text-center cursor-pointer hover:text-white" onclick="toggleAgentOrdersSort('status')" title="Click to sort by Status">Status</th>
                 <th class="p-2.5 text-right">Action</th>
               </tr>
             </thead>
@@ -2757,6 +2771,34 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
     }
 
     // 11. ORDERS HISTORY VIEW
+    let agentOrdersSortColumn = 'date';
+    let agentOrdersSortDirection = 'desc';
+
+    function onAgentOrdersSortChanged(val) {
+      if (!val) return;
+      const parts = val.split('_');
+      agentOrdersSortColumn = parts[0];
+      agentOrdersSortDirection = parts[1] || 'desc';
+      renderOrdersHistory();
+    }
+
+    function toggleAgentOrdersSort(col) {
+      if (agentOrdersSortColumn === col) {
+        agentOrdersSortDirection = (agentOrdersSortDirection === 'asc') ? 'desc' : 'asc';
+      } else {
+        agentOrdersSortColumn = col;
+        agentOrdersSortDirection = (col === 'date' || col === 'id' || col === 'amount' || col === 'units') ? 'desc' : 'asc';
+      }
+      const sel = document.getElementById('agent-orders-sort');
+      if (sel) {
+        const expected = `${agentOrdersSortColumn}_${agentOrdersSortDirection}`;
+        if (Array.from(sel.options).some(o => o.value === expected)) {
+          sel.value = expected;
+        }
+      }
+      renderOrdersHistory();
+    }
+
     function renderOrdersHistory() {
       const tbody = document.getElementById('agent-orders-tbody');
       if (!tbody) return;
@@ -2764,12 +2806,58 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
       const tabCount = document.getElementById('tab-orders-count');
       if (tabCount) tabCount.innerText = orders.length;
 
-      if (orders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 italic">No orders logged yet. Book your first order!</td></tr>`;
+      const q = (document.getElementById('agent-orders-search')?.value || '').toLowerCase().trim();
+
+      let filtered = orders.filter(o => {
+        if (!o) return false;
+        if (!q) return true;
+        const idMatch = String(o.id || '').toLowerCase().includes(q);
+        const nameMatch = String(o.buyerName || '').toLowerCase().includes(q);
+        const dateMatch = String(o.date || '').includes(q);
+        return idMatch || nameMatch || dateMatch;
+      });
+
+      // Sort
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (agentOrdersSortColumn === 'date' || agentOrdersSortColumn === 'id') {
+          const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          if (tA && tB && !isNaN(tA) && !isNaN(tB)) {
+            cmp = tA - tB;
+          } else {
+            const dtA = (a.date || '') + 'T' + (a.time || '');
+            const dtB = (b.date || '') + 'T' + (b.time || '');
+            cmp = dtA.localeCompare(dtB);
+          }
+          if (cmp === 0) cmp = String(a.id || '').localeCompare(String(b.id || ''));
+        } else if (agentOrdersSortColumn === 'name') {
+          const nameA = String(a.buyerName || '').trim();
+          const nameB = String(b.buyerName || '').trim();
+          cmp = nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+        } else if (agentOrdersSortColumn === 'amount') {
+          cmp = (Number(a.netPayable) || 0) - (Number(b.netPayable) || 0);
+        } else if (agentOrdersSortColumn === 'units') {
+          cmp = (Number(a.totalUnits) || 0) - (Number(b.totalUnits) || 0);
+        } else if (agentOrdersSortColumn === 'status') {
+          const stA = (a.status === 'Delivered') ? 1 : 0;
+          const stB = (b.status === 'Delivered') ? 1 : 0;
+          cmp = stA - stB;
+        }
+        return (agentOrdersSortDirection === 'asc') ? cmp : -cmp;
+      });
+
+      const indicator = document.getElementById('orders-count-indicator');
+      if (indicator) {
+        indicator.innerText = `Showing ${filtered.length} of ${orders.length} bookings`;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500 italic">${q ? 'No orders match your search query.' : 'No orders logged yet. Book your first order!'}</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = orders.map(o => {
+      tbody.innerHTML = filtered.map(o => {
         const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
         const delivDateStr = o.deliveredAt ? String(o.deliveredAt).split('T')[0] : '';
         return `
