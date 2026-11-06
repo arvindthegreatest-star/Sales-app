@@ -2415,9 +2415,17 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition mt-2 flex items-center justify-center gap-1.5 flex-shrink-0">
-          <i data-lucide="check" class="w-4 h-4"></i> Save Customer & Custom Rates
-        </button>
+        <div class="flex items-center gap-2 pt-2 flex-shrink-0">
+          <button type="button" id="btn-delete-modal-customer" onclick="deleteCustomerConfirm(document.getElementById('cust-id').value)" class="hidden px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition border border-rose-200 inline-flex items-center gap-1 cursor-pointer" title="Delete Customer">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+          </button>
+          <button type="button" onclick="closeCustomerModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="flex-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i> Save Customer & Custom Rates
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -2950,9 +2958,17 @@
           <input type="number" id="prod-initial-stock" min="0" value="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono">
         </div>
 
-        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
-          Save Product
-        </button>
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="btn-delete-modal-product" onclick="deleteProductConfirm(document.getElementById('prod-id').value)" class="hidden px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition border border-rose-200 inline-flex items-center gap-1 cursor-pointer" title="Delete Product from Catalog">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+          </button>
+          <button type="button" onclick="closeProductModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i> Save Product
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -2994,9 +3010,17 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition mt-2">
-          Save Route Beat
-        </button>
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" id="btn-delete-modal-route" onclick="deleteRouteConfirm(document.getElementById('route-id').value)" class="hidden px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition border border-rose-200 inline-flex items-center gap-1 cursor-pointer" title="Delete Delivery Beat">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+          </button>
+          <button type="button" onclick="closeRouteModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="check" class="w-4 h-4"></i> Save Route Beat
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -5197,11 +5221,13 @@
 
     let salespeople = [];
     try {
+      const delSpSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_salespeople_ids') || '[]').map(s => String(s).trim().toLowerCase()));
       const savedSp = localStorage.getItem('sg_salespeople');
       if (savedSp) salespeople = JSON.parse(savedSp);
       if (!Array.isArray(salespeople) || salespeople.length === 0) {
         salespeople = DEFAULT_SALESPEOPLE;
       }
+      salespeople = salespeople.filter(s => s && s.id && !delSpSet.has(String(s.id).trim().toLowerCase()));
     } catch (e) {
       salespeople = DEFAULT_SALESPEOPLE;
     }
@@ -5222,6 +5248,30 @@
       }
     }
 
+    function saveProductsLocally() {
+      try {
+        localStorage.setItem('sg_products', JSON.stringify(products));
+      } catch (e) {
+        console.warn("Error saving products locally:", e);
+      }
+    }
+
+    function saveRoutesLocally() {
+      try {
+        localStorage.setItem('sg_routes', JSON.stringify(routes));
+      } catch (e) {
+        console.warn("Error saving routes locally:", e);
+      }
+    }
+
+    function saveSamplesLocally() {
+      try {
+        localStorage.setItem('sg_samples', JSON.stringify(sampleGiveaways));
+      } catch (e) {
+        console.warn("Error saving samples locally:", e);
+      }
+    }
+
     async function fetchSalespeopleFromServer() {
       try {
         let res = await fetch('/api/salespeople');
@@ -5231,7 +5281,8 @@
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            salespeople = data;
+            const delSpSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_salespeople_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+            salespeople = data.filter(s => s && s.id && !delSpSet.has(String(s.id).trim().toLowerCase()));
             saveSalespeopleLocally();
             if (typeof populateSalespersonDropdowns === 'function') populateSalespersonDropdowns();
           }
@@ -5248,10 +5299,23 @@
     let expandedSalespersonBills = new Set();
 
     let products = [];
+    try {
+      const delProdSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_product_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+      const savedProd = localStorage.getItem('sg_products');
+      if (savedProd) {
+        const parsed = JSON.parse(savedProd);
+        if (Array.isArray(parsed)) products = parsed.filter(p => p && p.id && !delProdSet.has(String(p.id).trim().toLowerCase()) && (!p.sku || !delProdSet.has(String(p.sku).trim().toLowerCase())));
+      }
+    } catch (e) {}
+
     let customers = [];
     try {
+      const delCustSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_customer_ids') || '[]').map(s => String(s).trim().toLowerCase()));
       const savedCust = localStorage.getItem('sg_customers');
-      if (savedCust) customers = JSON.parse(savedCust);
+      if (savedCust) {
+        const parsed = JSON.parse(savedCust);
+        if (Array.isArray(parsed)) customers = parsed.filter(c => c && c.id && !delCustSet.has(String(c.id).trim().toLowerCase()));
+      }
     } catch (e) {
       customers = [];
     }
@@ -5386,6 +5450,14 @@
     }
     let orders = [];
     let routes = [];
+    try {
+      const delRouteSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_route_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+      const savedRoutes = localStorage.getItem('sg_routes');
+      if (savedRoutes) {
+        const parsed = JSON.parse(savedRoutes);
+        if (Array.isArray(parsed)) routes = parsed.filter(r => r && r.id && !delRouteSet.has(String(r.id).trim().toLowerCase()));
+      }
+    } catch (e) {}
     let inwardEntries = [];
     try {
       const savedInward = localStorage.getItem('sg_inward_entries');
@@ -5656,26 +5728,39 @@
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'buyers' }, async () => {
             const { data } = await supabaseClient.from('buyers').select('*');
-            if (data) { customers = data; saveCustomersLocally(); debouncedRefreshAllUI(100); }
+            if (data) {
+              const delCustSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_customer_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              customers = data.filter(c => c && c.id && !delCustSet.has(String(c.id).trim().toLowerCase()));
+              saveCustomersLocally();
+              debouncedRefreshAllUI(100);
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
             const { data } = await supabaseClient.from('products').select('*');
             if (data) { 
-              products = data.map(p => ({
+              const delProdSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_product_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              products = data.filter(p => p && p.id && !delProdSet.has(String(p.id).trim().toLowerCase()) && (!p.sku || !delProdSet.has(String(p.sku).trim().toLowerCase()))).map(p => ({
                 ...p,
                 unitWeightKg: p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0
               })); 
+              saveProductsLocally();
               debouncedRefreshAllUI(100); 
             }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, async () => {
             const { data } = await supabaseClient.from('routes').select('*');
-            if (data) { routes = data; debouncedRefreshAllUI(100); }
+            if (data) {
+              const delRouteSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_route_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              routes = data.filter(r => r && r.id && !delRouteSet.has(String(r.id).trim().toLowerCase()));
+              saveRoutesLocally();
+              debouncedRefreshAllUI(100);
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_inward' }, async () => {
             const { data } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
             if (data && data.length > 0) { 
-              inwardEntries = data; 
+              const delInwardSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_inward_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              inwardEntries = data.filter(e => e && e.id && !delInwardSet.has(String(e.id).trim().toLowerCase())); 
               saveInwardEntriesLocally();
               debouncedRefreshAllUI(100); 
             }
@@ -5683,14 +5768,20 @@
           .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_outward' }, async () => {
             const { data } = await supabaseClient.from('inventory_outward').select('*').order('created_at', { ascending: false });
             if (data && data.length > 0) { 
-              outwardDispatches = data; 
+              const delOutwardSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_outward_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              outwardDispatches = data.filter(d => d && d.id && !delOutwardSet.has(String(d.id).trim().toLowerCase())); 
               saveOutwardDispatchesLocally();
               debouncedRefreshAllUI(100); 
             }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'sample_giveaways' }, async () => {
             const { data } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
-            if (data) { sampleGiveaways = data; debouncedRefreshAllUI(100); }
+            if (data) {
+              const delSampleSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_sample_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              sampleGiveaways = data.filter(s => s && s.id && !delSampleSet.has(String(s.id).trim().toLowerCase()));
+              saveSamplesLocally();
+              debouncedRefreshAllUI(100);
+            }
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_pricing' }, async () => {
             const { data } = await supabaseClient.from('contract_pricing').select('*');
@@ -5699,7 +5790,8 @@
           .on('postgres_changes', { event: '*', schema: 'public', table: 'salespeople' }, async () => {
             const { data } = await supabaseClient.from('salespeople').select('*');
             if (data && data.length > 0) {
-              salespeople = data;
+              const delSpSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_salespeople_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              salespeople = data.filter(s => s && s.id && !delSpSet.has(String(s.id).trim().toLowerCase()));
               saveSalespeopleLocally();
               debouncedRefreshAllUI(100);
             }
@@ -5710,7 +5802,8 @@
           .on('postgres_changes', { event: '*', schema: 'public', table: 'salesperson_stock_audits' }, async () => {
             const { data } = await supabaseClient.from('salesperson_stock_audits').select('*').order('created_at', { ascending: false });
             if (data) {
-              stockAudits = data;
+              const delAuditSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_audit_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+              stockAudits = data.filter(a => a && a.id && !delAuditSet.has(String(a.id).trim().toLowerCase()));
               saveStockAuditsLocally();
               if (currentSalespersonSubtab === 'reports') renderSalespersonReportsView();
             }
@@ -5746,17 +5839,20 @@
     async function loadAllData() {
       if (!supabaseClient) return;
       try {
+        const delProdSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_product_ids') || '[]').map(s => String(s).trim().toLowerCase()));
         const { data: dbProducts } = await supabaseClient.from('products').select('*');
         if (dbProducts) {
-          products = dbProducts.map(p => ({
+          products = dbProducts.filter(p => p && p.id && !delProdSet.has(String(p.id).trim().toLowerCase()) && (!p.sku || !delProdSet.has(String(p.sku).trim().toLowerCase()))).map(p => ({
             ...p,
             unitWeightKg: p.unitWeightKg || parseUnitSizeToKg(p.unitSize) || 1.0
           }));
+          saveProductsLocally();
         }
 
+        const delCustSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_customer_ids') || '[]').map(s => String(s).trim().toLowerCase()));
         const { data: dbBuyers } = await supabaseClient.from('buyers').select('*');
         if (dbBuyers && dbBuyers.length > 0) {
-          customers = dbBuyers;
+          customers = dbBuyers.filter(c => c && c.id && !delCustSet.has(String(c.id).trim().toLowerCase()));
           applyCustomerRepAssignments(customers);
           saveCustomersLocally();
         } else if (customers.length === 0) {
@@ -5764,13 +5860,17 @@
           if (localSaved) {
             try {
               const parsed = JSON.parse(localSaved);
-              if (parsed && parsed.length > 0) customers = parsed;
+              if (parsed && parsed.length > 0) customers = parsed.filter(c => c && c.id && !delCustSet.has(String(c.id).trim().toLowerCase()));
             } catch (e) {}
           }
         }
 
+        const delRouteSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_route_ids') || '[]').map(s => String(s).trim().toLowerCase()));
         const { data: dbRoutes } = await supabaseClient.from('routes').select('*');
-        if (dbRoutes) routes = dbRoutes;
+        if (dbRoutes) {
+          routes = dbRoutes.filter(r => r && r.id && !delRouteSet.has(String(r.id).trim().toLowerCase()));
+          saveRoutesLocally();
+        }
 
         const { data: dbOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
         if (dbOrders) {
@@ -5849,28 +5949,35 @@
           console.warn("Outward dispatches fetch note:", outErr);
         }
 
+        const delSampleSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_sample_ids') || '[]').map(s => String(s).trim().toLowerCase()));
         const { data: dbSamples } = await supabaseClient.from('sample_giveaways').select('*').order('created_at', { ascending: false });
-        if (dbSamples) sampleGiveaways = dbSamples;
+        if (dbSamples) {
+          sampleGiveaways = dbSamples.filter(s => s && s.id && !delSampleSet.has(String(s.id).trim().toLowerCase()));
+          saveSamplesLocally();
+        }
 
         const { data: dbPricing } = await supabaseClient.from('contract_pricing').select('*');
         if (dbPricing) contractPricing = dbPricing;
 
         try {
+          const delSpSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_salespeople_ids') || '[]').map(s => String(s).trim().toLowerCase()));
           const { data: dbSalespeople, error: spErr } = await supabaseClient.from('salespeople').select('*');
           if (dbSalespeople && dbSalespeople.length > 0) {
-            salespeople = dbSalespeople;
+            salespeople = dbSalespeople.filter(s => s && s.id && !delSpSet.has(String(s.id).trim().toLowerCase()));
             saveSalespeopleLocally();
           } else if (salespeople.length > 0 && !spErr) {
-            callManagerEdgeFunction('manager_save_salesperson', salespeople).catch(() => {});
+            const cleanSp = salespeople.filter(s => s && s.id && !delSpSet.has(String(s.id).trim().toLowerCase()));
+            if (cleanSp.length > 0) callManagerEdgeFunction('manager_save_salesperson', cleanSp).catch(() => {});
           }
         } catch (e) {
           console.warn("Salespeople table fetch note:", e);
         }
 
         try {
+          const delAuditSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_audit_ids') || '[]').map(s => String(s).trim().toLowerCase()));
           const { data: dbAudits } = await supabaseClient.from('salesperson_stock_audits').select('*').order('created_at', { ascending: false });
           if (dbAudits && dbAudits.length > 0) {
-            stockAudits = dbAudits;
+            stockAudits = dbAudits.filter(a => a && a.id && !delAuditSet.has(String(a.id).trim().toLowerCase()));
             saveStockAuditsLocally();
           }
         } catch (e) {}
@@ -7285,15 +7392,38 @@
     }
 
     async function deleteSampleConfirm(sampleId) {
+      if (!sampleId) return;
+      const targetId = String(sampleId).trim();
       if (!confirm("Delete this sample entry? (Stock will be credited back)")) return;
-      sampleGiveaways = sampleGiveaways.filter(s => s.id !== sampleId);
-      if (supabaseClient) {
-        try { await supabaseClient.from('sample_giveaways').delete().eq('id', sampleId); } catch (e) {}
+
+      sampleGiveaways = sampleGiveaways.filter(s => String(s.id).trim().toLowerCase() !== targetId.toLowerCase());
+      saveSamplesLocally();
+
+      try {
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_sample_ids') || '[]').map(String));
+        delSet.add(targetId);
+        localStorage.setItem('sg_deleted_sample_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_sample', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
+      } catch (e) {}
+
+      if (!cloudDeleted && supabaseClient) {
+        try { await supabaseClient.from('sample_giveaways').delete().eq('id', targetId); } catch (e) {}
       }
-      renderSamplesTable();
-      renderDashboard();
-      renderOrderCatalog();
-      renderInwardTables();
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'SAMPLE_DELETED', sampleId: targetId });
+        }
+      } catch(e) {}
+
+      showToast("🗑️ Sample entry deleted and stock credited back.");
+      refreshAllUI(true);
     }
 
     // 9. INWARD INVENTORY & STOCK TALLY (MANAGER ONLY)
@@ -7759,14 +7889,31 @@
     }
 
     async function deleteInwardConfirm(inwardId) {
-      if (!confirm("Delete this inward stock entry? (Stock will be deducted)")) return;
-      inwardEntries = inwardEntries.filter(e => e.id !== inwardId);
+      if (!inwardId) return;
+      const targetId = String(inwardId).trim();
+      if (!confirm("Delete this inward stock entry? (Stock will be deducted from warehouse inventory)")) return;
+
+      inwardEntries = inwardEntries.filter(e => String(e.id).trim().toLowerCase() !== targetId.toLowerCase());
       saveInwardEntriesLocally();
-      try { await callManagerEdgeFunction('manager_delete_inward', { id: inwardId }); } catch (e) {}
-      renderInwardTables(true);
-      renderDashboard();
-      renderOrderCatalog();
-      renderProductsTable();
+
+      try {
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_inward_ids') || '[]').map(String));
+        delSet.add(targetId);
+        localStorage.setItem('sg_deleted_inward_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_inward', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
+      } catch (e) {}
+
+      if (!cloudDeleted && supabaseClient) {
+        try { await supabaseClient.from('inventory_inward').delete().eq('id', targetId); } catch (e) {}
+      }
+
+      showToast("🗑️ Inward stock batch deleted.");
+      refreshAllUI(true);
     }
 
     // =========================================================================
@@ -8581,17 +8728,38 @@
     }
 
     async function deleteOutwardConfirm(dispatchId) {
+      if (!dispatchId) return;
+      const targetId = String(dispatchId).trim();
       if (!confirm("Are you sure you want to delete this outward dispatch? The issued stock will be credited back to the central warehouse depot balance.")) return;
 
-      outwardDispatches = (outwardDispatches || []).filter(d => d.id !== dispatchId);
+      outwardDispatches = (outwardDispatches || []).filter(d => String(d.id).trim().toLowerCase() !== targetId.toLowerCase());
       saveOutwardDispatchesLocally();
 
       try {
-        await callManagerEdgeFunction('manager_delete_outward', { id: dispatchId });
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_outward_ids') || '[]').map(String));
+        delSet.add(targetId);
+        localStorage.setItem('sg_deleted_outward_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_outward', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
       } catch (e) {}
 
-      refreshAllUI();
+      if (!cloudDeleted && supabaseClient) {
+        try { await supabaseClient.from('inventory_outward').delete().eq('id', targetId); } catch (e) {}
+      }
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'OUTWARD_DELETED', dispatchId: targetId });
+        }
+      } catch(e) {}
+
       showToast("🗑️ Outward dispatch removed. Central depot stock credited back.");
+      refreshAllUI(true);
     }
 
     // Modal: Printable Delivery Challan
@@ -9317,6 +9485,7 @@
       }
 
       if (editId) {
+        document.getElementById('btn-delete-modal-customer')?.classList.remove('hidden');
         const c = customers.find(x => String(x.id) === String(editId));
         if (c) {
           document.getElementById('modal-customer-title').innerText = "Edit Customer & Contract Rates";
@@ -9335,6 +9504,7 @@
           if (repSelect && assigned) repSelect.value = assigned.id;
         }
       } else {
+        document.getElementById('btn-delete-modal-customer')?.classList.add('hidden');
         document.getElementById('modal-customer-title').innerText = "Add New Customer";
         document.getElementById('cust-gstin').value = '';
         document.getElementById('cust-contact-person').value = '';
@@ -9583,21 +9753,54 @@
     }
 
     async function deleteCustomerConfirm(custId) {
-      if (!confirm("Are you sure you want to delete this customer?")) return;
-      customers = customers.filter(c => c.id !== custId);
-      contractPricing = contractPricing.filter(c => String(c.buyerId) !== String(custId));
+      if (!custId) return;
+      const targetId = String(custId).trim();
+      const cust = (customers || []).find(c => String(c.id).trim().toLowerCase() === targetId.toLowerCase());
+      const custName = cust ? cust.name : targetId;
+      if (!confirm(`Are you sure you want to permanently delete customer "${custName}"?\n\nThis will remove their profile, contract rates, and pricing records.`)) return;
+
+      customers = customers.filter(c => String(c.id).trim().toLowerCase() !== targetId.toLowerCase());
+      contractPricing = contractPricing.filter(c => String(c.buyerId).trim().toLowerCase() !== targetId.toLowerCase());
+      customerQuotations = (customerQuotations || []).filter(q => String(q.buyerId || q.customerId).trim().toLowerCase() !== targetId.toLowerCase());
       saveCustomersLocally();
+      saveCustomerQuotations();
 
       try {
-        await callManagerEdgeFunction('manager_delete_buyer', { id: custId });
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_customer_ids') || '[]').map(String));
+        delSet.add(targetId);
+        if (cust && cust.id) delSet.add(String(cust.id));
+        localStorage.setItem('sg_deleted_customer_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_buyer', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
       } catch (e) {
-        console.error("Manager delete customer error:", e);
+        console.warn("Manager delete buyer error:", e);
       }
 
-      renderCustomersTable();
-      populateDropdowns();
-      renderDashboard();
-      renderOrderCatalog();
+      if (!cloudDeleted && supabaseClient) {
+        try {
+          await supabaseClient.from('buyers').delete().eq('id', targetId);
+          await supabaseClient.from('contract_pricing').delete().eq('buyerId', targetId);
+        } catch (e) {}
+      }
+
+      closeCustomerModal();
+      if (document.getElementById('modal-customer-profile')) {
+        document.getElementById('modal-customer-profile').classList.add('hidden');
+      }
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'CUSTOMER_DELETED', customerId: targetId });
+        }
+      } catch(e) {}
+
+      showToast(`Customer "${custName}" deleted successfully.`);
+      refreshAllUI(true);
     }
 
     // ==============================================================================
@@ -11120,6 +11323,7 @@
       document.getElementById('prod-id').value = prodId;
 
       if (prodId) {
+        document.getElementById('btn-delete-modal-product')?.classList.remove('hidden');
         const p = products.find(x => x.id === prodId);
         if (p) {
           document.getElementById('modal-product-title').innerText = "Edit Product";
@@ -11133,6 +11337,7 @@
           document.getElementById('prod-initial-stock').value = p.initialStock || 0;
         }
       } else {
+        document.getElementById('btn-delete-modal-product')?.classList.add('hidden');
         document.getElementById('modal-product-title').innerText = "Add New Product";
         document.getElementById('prod-weight-kg').value = '';
         document.getElementById('prod-unit-size').value = '';
@@ -11193,13 +11398,48 @@
     }
 
     async function deleteProductConfirm(prodId) {
-      if (!confirm("Delete product from catalog?")) return;
-      products = products.filter(p => p.id !== prodId);
-      contractPricing = contractPricing.filter(c => String(c.productId) !== String(prodId));
+      if (!prodId) return;
+      const targetId = String(prodId).trim();
+      const prod = (products || []).find(p => String(p.id).trim().toLowerCase() === targetId.toLowerCase() || (p.sku && p.sku.trim().toLowerCase() === targetId.toLowerCase()));
+      const prodName = prod ? prod.name : targetId;
+      if (!confirm(`Are you sure you want to delete product "${prodName}" from catalog?\n\nThis will remove the product and all customer contract rates for it.`)) return;
+
+      products = products.filter(p => String(p.id).trim().toLowerCase() !== targetId.toLowerCase() && (p.sku ? p.sku.trim().toLowerCase() !== targetId.toLowerCase() : true));
+      contractPricing = contractPricing.filter(c => String(c.productId).trim().toLowerCase() !== targetId.toLowerCase());
+      saveProductsLocally();
+
+      try {
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_product_ids') || '[]').map(String));
+        delSet.add(targetId);
+        if (prod && prod.id) delSet.add(String(prod.id));
+        if (prod && prod.sku) delSet.add(String(prod.sku));
+        localStorage.setItem('sg_deleted_product_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
       try { 
-        await callManagerEdgeFunction('manager_delete_product', { id: prodId }); 
+        const res = await callManagerEdgeFunction('manager_delete_product', { id: targetId }); 
+        if (res && res.success) cloudDeleted = true;
       } catch (e) {}
-      refreshAllUI();
+
+      if (!cloudDeleted && supabaseClient) {
+        try {
+          await supabaseClient.from('products').delete().eq('id', targetId);
+          await supabaseClient.from('contract_pricing').delete().eq('productId', targetId);
+        } catch (e) {}
+      }
+
+      closeProductModal();
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'PRODUCT_DELETED', productId: targetId });
+        }
+      } catch(e) {}
+
+      showToast(`Product "${prodName}" deleted.`);
+      refreshAllUI(true);
     }
 
     function handleProductCSV(e) {
@@ -11276,6 +11516,7 @@
       document.getElementById('route-id').value = routeId;
 
       if (routeId) {
+        document.getElementById('btn-delete-modal-route')?.classList.remove('hidden');
         const r = routes.find(x => x.id === routeId);
         if (r) {
           document.getElementById('modal-route-title').innerText = "Edit Route Beat";
@@ -11286,6 +11527,7 @@
           document.getElementById('route-vehicle').value = r.vehicle || '';
         }
       } else {
+        document.getElementById('btn-delete-modal-route')?.classList.add('hidden');
         document.getElementById('modal-route-title').innerText = "Add New Route Beat";
       }
 
@@ -11323,11 +11565,45 @@
     }
 
     async function deleteRouteConfirm(routeId) {
-      if (!confirm("Delete this delivery beat?")) return;
-      routes = routes.filter(r => r.id !== routeId);
-      try { await callManagerEdgeFunction('manager_delete_route', { id: routeId }); } catch (e) {}
+      if (!routeId) return;
+      const targetId = String(routeId).trim();
+      const r = (routes || []).find(rt => String(rt.id).trim().toLowerCase() === targetId.toLowerCase() || (rt.name && rt.name.trim().toLowerCase() === targetId.toLowerCase()));
+      const rName = r ? r.name : targetId;
+      if (!confirm(`Are you sure you want to delete delivery beat "${rName}"?`)) return;
+
+      routes = routes.filter(rt => String(rt.id).trim().toLowerCase() !== targetId.toLowerCase() && (rt.name ? rt.name.trim().toLowerCase() !== targetId.toLowerCase() : true));
+      saveRoutesLocally();
+
+      try {
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_route_ids') || '[]').map(String));
+        delSet.add(targetId);
+        if (r && r.id) delSet.add(String(r.id));
+        localStorage.setItem('sg_deleted_route_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try { 
+        const res = await callManagerEdgeFunction('manager_delete_route', { id: targetId }); 
+        if (res && res.success) cloudDeleted = true;
+      } catch (e) {}
+
+      if (!cloudDeleted && supabaseClient) {
+        try { await supabaseClient.from('routes').delete().eq('id', targetId); } catch (e) {}
+      }
+
+      closeRouteModal();
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'ROUTE_DELETED', routeId: targetId });
+        }
+      } catch(e) {}
+
+      showToast(`Delivery route "${rName}" deleted.`);
       renderRoutesGrid();
       populateDropdowns();
+      refreshAllUI(true);
     }
 
     // ==============================================================================
@@ -16281,17 +16557,53 @@
     }
 
     async function deleteSalespersonConfirm(spId) {
-      const sp = (salespeople || []).find(s => String(s.id) === String(spId));
-      if (!sp) return;
-      if (!confirm(`Are you sure you want to remove sales official "${sp.name}" (${sp.id}) from the active roster?`)) return;
+      if (!spId) return;
+      const targetId = String(spId).trim();
+      const sp = (salespeople || []).find(s => String(s.id).trim().toLowerCase() === targetId.toLowerCase() || (s.slug && s.slug.trim().toLowerCase() === targetId.toLowerCase()));
+      if (!sp) {
+        alert(`Sales official #${targetId} could not be found.`);
+        return;
+      }
+      if (!confirm(`Are you sure you want to remove sales official "${sp.name}" (${sp.id}) from the active roster?\n\nThis will permanently delete this representative and unassign their routes.`)) return;
 
-      salespeople = salespeople.filter(s => String(s.id) !== String(spId));
+      salespeople = salespeople.filter(s => String(s.id).trim().toLowerCase() !== targetId.toLowerCase() && (s.slug ? s.slug.trim().toLowerCase() !== targetId.toLowerCase() : true));
       saveSalespeopleLocally();
 
       try {
-        await callManagerEdgeFunction('manager_delete_salesperson', { id: spId });
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_salespeople_ids') || '[]').map(String));
+        delSet.add(targetId);
+        if (sp.id) delSet.add(String(sp.id));
+        if (sp.slug) delSet.add(String(sp.slug));
+        localStorage.setItem('sg_deleted_salespeople_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch (e) {}
+
+      // Unassign customer RM mapping for deleted rep
+      try {
+        let custUpdated = false;
+        customers.forEach(c => {
+          if (c.assignedRepId && String(c.assignedRepId).trim().toLowerCase() === targetId.toLowerCase()) {
+            c.assignedRepId = '';
+            c.assignedRepName = '';
+            custUpdated = true;
+          }
+        });
+        if (custUpdated) saveCustomersLocally();
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_salesperson', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
       } catch (e) {
-        console.warn("Could not delete salesperson from Supabase:", e);
+        console.warn("Could not delete salesperson via edge function:", e);
+      }
+
+      if (!cloudDeleted && supabaseClient) {
+        try {
+          await supabaseClient.from('salespeople').delete().eq('id', targetId);
+        } catch (e) {
+          console.warn("Direct Supabase delete salesperson error:", e);
+        }
       }
 
       try {
@@ -16302,10 +16614,19 @@
         });
       } catch (e) {}
 
-      showToast(`Sales official ${sp.name} removed from roster.`);
       closeManageSalespersonModal();
+
+      try {
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('sg_sales_bus');
+          bc.postMessage({ type: 'SALESPERSON_DELETED', spId: targetId });
+        }
+      } catch(e) {}
+
+      showToast(`Sales official ${sp.name} removed from roster.`);
       populateSalespersonDropdowns();
       renderSalesPersonnelHub();
+      refreshAllUI(true);
     }
 
     // 7. EXPORT CSV
@@ -17066,18 +17387,34 @@
     }
 
     async function deleteStockAuditConfirm(auditId) {
+      if (!auditId) return;
+      const targetId = String(auditId).trim();
       if (!confirm("Are you sure you want to delete this archived stock audit record? This will un-lock closing stock for this month.")) return;
-      stockAudits = (stockAudits || []).filter(a => a.id !== auditId);
+
+      stockAudits = (stockAudits || []).filter(a => String(a.id).trim().toLowerCase() !== targetId.toLowerCase());
       saveStockAuditsLocally();
 
-      if (supabaseClient) {
+      try {
+        const delSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_audit_ids') || '[]').map(String));
+        delSet.add(targetId);
+        localStorage.setItem('sg_deleted_audit_ids', JSON.stringify(Array.from(delSet).slice(-500)));
+      } catch(e) {}
+
+      let cloudDeleted = false;
+      try {
+        const res = await callManagerEdgeFunction('manager_delete_stock_audit', { id: targetId });
+        if (res && res.success) cloudDeleted = true;
+      } catch (e) {}
+
+      if (!cloudDeleted && supabaseClient) {
         try {
-          await supabaseClient.from('salesperson_stock_audits').delete().eq('id', auditId);
+          await supabaseClient.from('salesperson_stock_audits').delete().eq('id', targetId);
         } catch(e) {}
       }
 
       showToast("🗑️ Stock audit record deleted.");
       renderSalespersonReportsView();
+      refreshAllUI(true);
     }
 
     // Modal: Record Month-End Stock Audit
@@ -17547,6 +17884,48 @@
                 showToast(`📦 Outward Stock Issued: ${disp.total_units} units to ${disp.rep_name}!`);
                 refreshAllUI();
               }
+            } else if (data.type === 'SALESPERSON_DELETED') {
+              const targetSp = String(data.spId || '').trim().toLowerCase();
+              if (targetSp) {
+                salespeople = salespeople.filter(s => String(s.id).trim().toLowerCase() !== targetSp && (s.slug ? s.slug.trim().toLowerCase() !== targetSp : true));
+                saveSalespeopleLocally();
+                refreshAllUI(true);
+              }
+            } else if (data.type === 'CUSTOMER_DELETED') {
+              const targetCust = String(data.customerId || '').trim().toLowerCase();
+              if (targetCust) {
+                customers = customers.filter(c => String(c.id).trim().toLowerCase() !== targetCust);
+                saveCustomersLocally();
+                refreshAllUI(true);
+              }
+            } else if (data.type === 'PRODUCT_DELETED') {
+              const targetProd = String(data.productId || '').trim().toLowerCase();
+              if (targetProd) {
+                products = products.filter(p => String(p.id).trim().toLowerCase() !== targetProd);
+                saveProductsLocally();
+                refreshAllUI(true);
+              }
+            } else if (data.type === 'ROUTE_DELETED') {
+              const targetRoute = String(data.routeId || '').trim().toLowerCase();
+              if (targetRoute) {
+                routes = routes.filter(r => String(r.id).trim().toLowerCase() !== targetRoute);
+                saveRoutesLocally();
+                refreshAllUI(true);
+              }
+            } else if (data.type === 'SAMPLE_DELETED') {
+              const targetSample = String(data.sampleId || '').trim().toLowerCase();
+              if (targetSample) {
+                sampleGiveaways = sampleGiveaways.filter(s => String(s.id).trim().toLowerCase() !== targetSample);
+                saveSamplesLocally();
+                refreshAllUI(true);
+              }
+            } else if (data.type === 'OUTWARD_DELETED') {
+              const targetOut = String(data.dispatchId || '').trim().toLowerCase();
+              if (targetOut) {
+                outwardDispatches = outwardDispatches.filter(d => String(d.id).trim().toLowerCase() !== targetOut);
+                saveOutwardDispatchesLocally();
+                refreshAllUI(true);
+              }
             }
           };
         } catch (e) {}
@@ -17591,6 +17970,22 @@
             const fresh = JSON.parse(e.newValue || '[]');
             if (Array.isArray(fresh)) {
               salespeople = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_products') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              products = fresh;
+              refreshAllUI();
+            }
+          } catch(err) {}
+        } else if (e.key === 'sg_routes') {
+          try {
+            const fresh = JSON.parse(e.newValue || '[]');
+            if (Array.isArray(fresh)) {
+              routes = fresh;
               refreshAllUI();
             }
           } catch(err) {}

@@ -1256,7 +1256,7 @@
                 } else {
                   fetchCloudData();
                 }
-              } else if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'SAMPLE_CREATED' || data.type === 'ORDER_DELETED') {
+              } else if (data.type === 'ORDER_CREATED' || data.type === 'ORDER_UPDATED' || data.type === 'SAMPLE_CREATED' || data.type === 'ORDER_DELETED' || data.type === 'CUSTOMER_DELETED' || data.type === 'PRODUCT_DELETED' || data.type === 'ROUTE_DELETED' || data.type === 'SALESPERSON_DELETED' || data.type === 'SAMPLE_DELETED' || data.type === 'OUTWARD_DELETED') {
                 fetchCloudData();
               }
             };

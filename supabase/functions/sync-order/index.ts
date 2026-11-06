@@ -415,6 +415,15 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
+    } else if (action === "manager_delete_salesperson") {
+      const { id } = payload;
+      const { error } = await supabase.from("salespeople").delete().eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
     } else if (action === "manager_save_contract_pricing") {
       const items = Array.isArray(payload) ? payload : [payload];
       const { data, error } = await supabase.from("contract_pricing").upsert(items, { onConflict: "buyerId,productId" }).select();
