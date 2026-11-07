@@ -5519,6 +5519,50 @@
     const formatINR = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     function escapeHtml(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
 
+    function normalizeToISODate(dStr) {
+      if (!dStr || typeof dStr !== 'string') return '';
+      const s = dStr.trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+      const dmMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (dmMatch) return `${dmMatch[3]}-${dmMatch[2].padStart(2, '0')}-${dmMatch[1].padStart(2, '0')}`;
+      const parsed = new Date(s);
+      return !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : s;
+    }
+
+    function getRecordDateTimestamp(rec) {
+      if (!rec) return 0;
+      if (rec.date && typeof rec.date === 'string') {
+        const isoDate = normalizeToISODate(rec.date);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+          let hours = 12, mins = 0, secs = 0;
+          if (rec.time && typeof rec.time === 'string') {
+            const m = rec.time.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i);
+            if (m) {
+              hours = parseInt(m[1], 10);
+              mins = parseInt(m[2], 10);
+              secs = m[3] ? parseInt(m[3], 10) : 0;
+              const ampm = m[4] ? m[4].toLowerCase() : null;
+              if (ampm === 'pm' && hours < 12) hours += 12;
+              if (ampm === 'am' && hours === 12) hours = 0;
+            }
+          }
+          const dt = new Date(`${isoDate}T${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+          if (!isNaN(dt.getTime())) return dt.getTime();
+        }
+        const direct = new Date(rec.date).getTime();
+        if (!isNaN(direct)) return direct;
+      }
+      if (rec.deliveredAt && typeof rec.deliveredAt === 'string') {
+        const dt = new Date(rec.deliveredAt).getTime();
+        if (!isNaN(dt)) return dt;
+      }
+      if (rec.created_at && typeof rec.created_at === 'string') {
+        const t = new Date(rec.created_at).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return 0;
+    }
+
     // PARSE UNIT SIZE TO KG (supports '500g', '250 gm', '1kg', '10 kg', '0.5kg', '750g', '500ml', or direct numeric kg)
     function parseUnitSizeToKg(unitSize) {
       if (!unitSize && unitSize !== 0) return null;
@@ -5722,6 +5766,7 @@
               const localOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
               const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(String(o.id)) && !deletedIds.has(String(o.id)));
               orders = [...localUnsynced, ...cloudOrders].filter(o => o && o.id && !deletedIds.has(String(o.id)));
+              orders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
               try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
               debouncedRefreshAllUI(100); 
             }
@@ -5872,7 +5917,7 @@
           saveRoutesLocally();
         }
 
-        const { data: dbOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+        const { data: dbOrders } = await supabaseClient.from('orders').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
         if (dbOrders) {
           const cloudOrders = dbOrders.map(o => {
             const isDelivered = (o.status === 'Delivered') || (o.notes && o.notes.includes('[STATUS:DELIVERED]'));
@@ -5889,6 +5934,7 @@
           const localOrders = JSON.parse(localStorage.getItem('sg_orders') || '[]');
           const localUnsynced = localOrders.filter(o => o && o.id && !cloudIds.has(String(o.id)) && !deletedIds.has(String(o.id)));
           orders = [...localUnsynced, ...cloudOrders].filter(o => o && o.id && !deletedIds.has(String(o.id)));
+          orders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
           try { localStorage.setItem('sg_orders', JSON.stringify(orders)); } catch(e) {}
 
           // Background auto-sync of any unsynced local orders to cloud
@@ -5899,7 +5945,7 @@
           }
         }
 
-        const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('created_at', { ascending: false });
+        const { data: dbInward } = await supabaseClient.from('inventory_inward').select('*').order('date', { ascending: false }).order('created_at', { ascending: false });
         if (dbInward && dbInward.length > 0) {
           inwardEntries = dbInward;
           saveInwardEntriesLocally();
@@ -6949,7 +6995,8 @@
         notes
       };
 
-      orders.unshift(orderRecord);
+      orders.push(orderRecord);
+      orders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
 
       // 1. Immediately persist to localStorage so order is permanently preserved locally
       try {
@@ -7299,13 +7346,15 @@
       const tbody = document.getElementById('samples-table-body');
       const q = (document.getElementById('sample-search-input')?.value || '').toLowerCase().trim();
 
-      const filtered = sampleGiveaways.filter(s => 
+      const filtered = (sampleGiveaways || []).filter(s => 
         !q || 
         (s.store_name && s.store_name.toLowerCase().includes(q)) || 
         (s.product_sku && s.product_sku.toLowerCase().includes(q)) ||
         (s.product_name && s.product_name.toLowerCase().includes(q)) ||
         (s.rep_name && s.rep_name.toLowerCase().includes(q))
       );
+
+      filtered.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
 
       if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No free samples recorded. Click <b>Log Free Sample</b> to record chef tastings.</td></tr>`;
@@ -7478,12 +7527,13 @@
         }).join('');
       }
 
-      // 3. Inward Receipts Log
+      // 3. Inward Receipts Log (Strictly Chronological by Date)
       const inwardTbody = document.getElementById('inward-table-body');
-      if (inwardEntries.length === 0) {
+      const sortedInward = [...(inwardEntries || [])].sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
+      if (sortedInward.length === 0) {
         inwardTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No inward batch receipts recorded yet. Use the <b>Factory Stock Arrival List</b> above to inward stock.</td></tr>`;
       } else {
-        inwardTbody.innerHTML = inwardEntries.map(e => {
+        inwardTbody.innerHTML = sortedInward.map(e => {
           const matchedProd = products.find(x => x.sku === e.product_sku || x.name === e.product_name);
           const uSize = e.unit_size || (matchedProd ? matchedProd.unitSize : '');
           const kgVal = parseUnitSizeToKg(uSize);
@@ -8626,7 +8676,7 @@
       const badge = document.getElementById('outward-journal-count-badge');
       if (!tbody) return;
 
-      const list = outwardDispatches || [];
+      const list = [...(outwardDispatches || [])].sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
       if (badge) badge.innerText = `${list.length} dispatch${list.length !== 1 ? 'es' : ''}`;
 
       if (list.length === 0) {
@@ -10035,24 +10085,26 @@
       if (!orderDateStr) return false;
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
+      const isoDate = normalizeToISODate(orderDateStr);
+      if (!isoDate) return false;
 
       if (filter === 'today') {
-        return orderDateStr === todayStr;
+        return isoDate === todayStr;
       }
       if (filter === 'yesterday') {
         const yest = new Date();
         yest.setDate(yest.getDate() - 1);
-        return orderDateStr === yest.toISOString().split('T')[0];
+        return isoDate === yest.toISOString().split('T')[0];
       }
       if (filter === 'last7') {
         const d7 = new Date();
         d7.setDate(d7.getDate() - 7);
         const d7Str = d7.toISOString().split('T')[0];
-        return orderDateStr >= d7Str && orderDateStr <= todayStr;
+        return isoDate >= d7Str && isoDate <= todayStr;
       }
       if (filter === 'month') {
         const monthPrefix = todayStr.substring(0, 7);
-        return orderDateStr.startsWith(monthPrefix);
+        return isoDate.startsWith(monthPrefix);
       }
       return true;
     }
@@ -10115,22 +10167,19 @@
         return true;
       });
 
-      // Excel Column Sorting & Dropdown Sorting
+      // Excel Column Sorting & Dropdown Sorting (Strictly Chronological by Order Date)
       result.sort((a, b) => {
         let cmp = 0;
-        if (ordersSortColumn === 'date' || ordersSortColumn === 'id') {
-          const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          if (tA && tB && !isNaN(tA) && !isNaN(tB)) {
+        if (ordersSortColumn === 'date') {
+          const tA = getRecordDateTimestamp(a);
+          const tB = getRecordDateTimestamp(b);
+          if (tA !== tB) {
             cmp = tA - tB;
           } else {
-            const dtA = (a.date || '') + 'T' + (a.time || '');
-            const dtB = (b.date || '') + 'T' + (b.time || '');
-            cmp = dtA.localeCompare(dtB);
-          }
-          if (cmp === 0) {
             cmp = String(a.id || '').localeCompare(String(b.id || ''));
           }
+        } else if (ordersSortColumn === 'id') {
+          cmp = String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true });
         } else if (ordersSortColumn === 'customer' || ordersSortColumn === 'name') {
           const nameA = String(a.buyerName || '').trim();
           const nameB = String(b.buyerName || '').trim();
@@ -14027,11 +14076,12 @@
         if (document.getElementById('stmt-cust-route')) document.getElementById('stmt-cust-route').innerText = (cust.homeRoute || 'General Beat').split(':')[0];
         if (document.getElementById('stmt-cust-credit-limit')) document.getElementById('stmt-cust-credit-limit').innerText = formatINR(cust.creditLimit || 50000);
 
-        // Customer past orders
+        // Customer past orders (Strictly Chronological by Order Date)
         const custOrders = orders.filter(o => String(o.buyerId) === String(cust.id) || (o.buyerName && o.buyerName.toLowerCase() === (cust.name || '').toLowerCase()));
+        custOrders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
         const totalOutstanding = Number(cust.pendingUdhaar || 0);
 
-        // Calculate previous due and latest bill
+        // Calculate previous due and latest bill based on true chronological latest bill
         const latestOrderForCust = custOrders[0] || null;
         let latestBillAmount = 0;
         let prevBillsDue = totalOutstanding;
@@ -14154,6 +14204,7 @@
 
       const settings = getCompanySettings();
       const custOrders = orders.filter(o => o.buyerId === cust.id || o.buyerName === cust.name);
+      custOrders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
       const totalOutstanding = Number(cust.pendingUdhaar || 0);
 
       const latestOrderForCust = custOrders[0] || null;
@@ -14346,7 +14397,7 @@
           id: o.id,
           date: o.date,
           time: o.time || '',
-          timestamp: new Date(o.date + ' ' + (o.time || '00:00')).getTime() || 0,
+          timestamp: getRecordDateTimestamp(o),
           debit: Number(o.netPayable || 0),
           credit: Number(o.amountPaid || 0),
           netDueAdded: Number(o.balanceDue !== undefined ? o.balanceDue : (Number(o.netPayable || 0) - Number(o.amountPaid || 0))),
@@ -14364,7 +14415,7 @@
           id: r.id,
           date: r.date,
           time: r.time || '',
-          timestamp: new Date(r.date + ' ' + (r.time || '00:00')).getTime() || 0,
+          timestamp: getRecordDateTimestamp(r),
           debit: 0,
           credit: Number(r.amount || 0),
           netDueAdded: -Number(r.amount || 0),
@@ -16395,13 +16446,14 @@
         }).join('');
       }
 
-      // 5C. Recent Factory Inward Arrivals
+      // 5C. Recent Factory Inward Arrivals (Chronological by Date)
       const inTbody = document.getElementById('sp-inward-recent-tbody');
       if (inTbody) {
-        if (!inwardEntries || inwardEntries.length === 0) {
+        const sortedInward = [...(inwardEntries || [])].sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
+        if (sortedInward.length === 0) {
           inTbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No factory stock receipts recorded yet.</td></tr>`;
         } else {
-          inTbody.innerHTML = inwardEntries.slice(0, 8).map(e => `
+          inTbody.innerHTML = sortedInward.slice(0, 8).map(e => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
               <td class="p-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">${e.date || '-'}</td>
               <td class="p-2.5 font-mono font-bold text-slate-700">#${e.id || '-'}</td>

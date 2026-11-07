@@ -303,8 +303,8 @@ Deno.serve(async (req: Request) => {
         supabase.from("products").select("*"),
         supabase.from("buyers").select("*"),
         supabase.from("contract_pricing").select("*"),
-        supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(250),
-        supabase.from("inventory_outward").select("*").order("created_at", { ascending: false }).limit(250),
+        supabase.from("orders").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }).limit(300),
+        supabase.from("inventory_outward").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }).limit(300),
       ]);
 
       let inwardData: any[] = [];
@@ -314,7 +314,7 @@ Deno.serve(async (req: Request) => {
       // If Manager is bootstrapping, also include full manager repository data
       if (isManager) {
         const [inwardRes, routesRes, repsRes] = await Promise.all([
-          supabase.from("inventory_inward").select("*").order("created_at", { ascending: false }),
+          supabase.from("inventory_inward").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }),
           supabase.from("routes").select("*"),
           supabase.from("salespeople").select("*"),
         ]);

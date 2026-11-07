@@ -1465,10 +1465,11 @@
           localStorage.setItem('sg_samples', JSON.stringify(sampleGiveaways));
         }
 
-        // Fetch all orders from Supabase
+        // Fetch all orders from Supabase (ordered chronologically by date)
         const { data: dbOrders, error: ordErr } = await supabaseClient
           .from('orders')
           .select('*')
+          .order('date', { ascending: false })
           .order('created_at', { ascending: false });
 
         if (dbOrders) {
@@ -2544,7 +2545,8 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
       };
 
       // 1. Optimistic local storage update
-      orders.unshift(newOrder);
+      orders.push(newOrder);
+      orders.sort((a, b) => getRecordDateTimestamp(b) - getRecordDateTimestamp(a));
       localStorage.setItem(`sg_orders_${AGENT.slug}`, JSON.stringify(orders));
 
       // Dual-sync to global manager orders repository
@@ -2854,20 +2856,19 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
         return idMatch || nameMatch || dateMatch;
       });
 
-      // Sort
+      // Sort (Strictly Chronological by Order Date)
       filtered.sort((a, b) => {
         let cmp = 0;
-        if (agentOrdersSortColumn === 'date' || agentOrdersSortColumn === 'id') {
-          const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          if (tA && tB && !isNaN(tA) && !isNaN(tB)) {
+        if (agentOrdersSortColumn === 'date') {
+          const tA = getRecordDateTimestamp(a);
+          const tB = getRecordDateTimestamp(b);
+          if (tA !== tB) {
             cmp = tA - tB;
           } else {
-            const dtA = (a.date || '') + 'T' + (a.time || '');
-            const dtB = (b.date || '') + 'T' + (b.time || '');
-            cmp = dtA.localeCompare(dtB);
+            cmp = String(a.id || '').localeCompare(String(b.id || ''));
           }
-          if (cmp === 0) cmp = String(a.id || '').localeCompare(String(b.id || ''));
+        } else if (agentOrdersSortColumn === 'id') {
+          cmp = String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true });
         } else if (agentOrdersSortColumn === 'name') {
           const nameA = String(a.buyerName || '').trim();
           const nameB = String(b.buyerName || '').trim();
@@ -3166,6 +3167,50 @@ function getAgentStockSummary(tf = agentStockTimeframe) {
     }
 
     // 14. HELPERS
+    function normalizeToISODate(dStr) {
+      if (!dStr || typeof dStr !== 'string') return '';
+      const s = dStr.trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+      const dmMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (dmMatch) return `${dmMatch[3]}-${dmMatch[2].padStart(2, '0')}-${dmMatch[1].padStart(2, '0')}`;
+      const parsed = new Date(s);
+      return !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : s;
+    }
+
+    function getRecordDateTimestamp(rec) {
+      if (!rec) return 0;
+      if (rec.date && typeof rec.date === 'string') {
+        const isoDate = normalizeToISODate(rec.date);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+          let hours = 12, mins = 0, secs = 0;
+          if (rec.time && typeof rec.time === 'string') {
+            const m = rec.time.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i);
+            if (m) {
+              hours = parseInt(m[1], 10);
+              mins = parseInt(m[2], 10);
+              secs = m[3] ? parseInt(m[3], 10) : 0;
+              const ampm = m[4] ? m[4].toLowerCase() : null;
+              if (ampm === 'pm' && hours < 12) hours += 12;
+              if (ampm === 'am' && hours === 12) hours = 0;
+            }
+          }
+          const dt = new Date(`${isoDate}T${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+          if (!isNaN(dt.getTime())) return dt.getTime();
+        }
+        const direct = new Date(rec.date).getTime();
+        if (!isNaN(direct)) return direct;
+      }
+      if (rec.deliveredAt && typeof rec.deliveredAt === 'string') {
+        const dt = new Date(rec.deliveredAt).getTime();
+        if (!isNaN(dt)) return dt;
+      }
+      if (rec.created_at && typeof rec.created_at === 'string') {
+        const t = new Date(rec.created_at).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return 0;
+    }
+
     function formatINR(amount) {
       const num = Number(amount) || 0;
       return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
