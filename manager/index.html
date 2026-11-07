@@ -732,9 +732,9 @@
 
       <!-- Customers Table -->
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[72vh]">
           <table class="w-full text-left text-xs">
-            <thead id="customers-table-head" class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none">
+            <thead id="customers-table-head" class="bg-slate-50/95 backdrop-blur-xs text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none sticky top-0 z-20 shadow-xs">
               <!-- Dynamically populated with clickable Excel-style sorting headers -->
             </thead>
             <tbody id="customers-table-body" class="divide-y divide-slate-100">
@@ -915,9 +915,9 @@
 
       <!-- Debtors & Creditors Ledger Table -->
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[72vh]">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-3">Party / Store Details</th>
                 <th class="p-3">Classification</th>
@@ -1038,9 +1038,9 @@
 
       <!-- Orders Table -->
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[72vh]">
           <table class="w-full text-left text-xs">
-            <thead id="orders-table-head" class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none">
+            <thead id="orders-table-head" class="bg-slate-50/95 backdrop-blur-xs text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200 select-none sticky top-0 z-20 shadow-xs">
               <!-- Dynamically populated with clickable Excel-style sorting headers -->
             </thead>
             <tbody id="orders-table-body" class="divide-y divide-slate-100">
@@ -1071,9 +1071,9 @@
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[72vh]">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-3">Date</th>
                 <th class="p-3">Customer / Store</th>
@@ -1187,9 +1187,9 @@
         </div>
 
         <!-- Scrollable Open List of ALL Products -->
-        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10 shadow-2xs">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-2.5 pl-3 sm:pl-4 sticky left-0 bg-slate-100 z-20 min-w-[140px] sm:min-w-[170px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Product & Pack</th>
                 <th class="p-2.5 text-center min-w-[175px] bg-indigo-50/70 text-indigo-950 font-black">Inward Qty (+)</th>
@@ -1225,9 +1225,9 @@
         <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
           <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i> Master Stock Balance Reconciliation
         </h3>
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-2.5">SKU</th>
                 <th class="p-2.5">Product Name</th>
@@ -1251,9 +1251,9 @@
         <h3 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
           <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-emerald-600"></i> Inward Batch Receipts Log
         </h3>
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-2.5">Date</th>
                 <th class="p-2.5">SKU & Product</th>
@@ -1421,9 +1421,9 @@
         </div>
 
         <!-- Products Matrix Table -->
-        <div class="overflow-x-auto max-h-[500px]">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-10 shadow-2xs">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-2.5 pl-3 sm:pl-4 sticky left-0 bg-slate-50 z-20 min-w-[140px] sm:min-w-[170px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Product & Pack</th>
                 <th class="p-2.5 text-center min-w-[175px] bg-amber-50/70 text-amber-950 font-black">Issue Quantity (Packs)</th>
@@ -1476,9 +1476,9 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-3">Sales Representative</th>
                 <th class="p-3">Assigned Beat</th>
@@ -1516,9 +1516,9 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[65vh]">
           <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-3">Date & Time</th>
                 <th class="p-3">Challan / Voucher #</th>
@@ -1562,9 +1562,9 @@
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
+        <div class="overflow-auto max-h-[72vh]">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+            <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
               <tr>
                 <th class="p-3">SKU</th>
                 <th class="p-3">Product Name</th>
@@ -1811,9 +1811,9 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-auto max-h-[72vh]">
             <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+              <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
                 <tr>
                   <th class="p-2.5 text-center">Rank</th>
                   <th class="p-2.5">Sales Official</th>
@@ -1909,9 +1909,9 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-auto max-h-[72vh]">
             <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+              <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
                 <tr>
                   <th class="p-2.5">Date</th>
                   <th class="p-2.5">Sales Official</th>
@@ -1949,9 +1949,9 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-auto max-h-[72vh]">
             <table class="w-full text-left text-xs border-collapse">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+              <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs">
                 <tr>
                   <th class="p-2.5">SKU</th>
                   <th class="p-2.5">Product Name</th>
@@ -1979,9 +1979,9 @@
             </h3>
             <p class="text-[11px] text-slate-500">Breakdown of commercial units booked by each sales official per product SKU.</p>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-auto max-h-[72vh]">
             <table class="w-full text-left text-xs border-collapse" id="sp-sku-movement-table">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200" id="sp-sku-movement-thead">
+              <thead class="bg-slate-50/95 backdrop-blur-xs text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 sticky top-0 z-20 shadow-xs" id="sp-sku-movement-thead">
                 <!-- Populated dynamically by JS -->
               </thead>
               <tbody id="sp-sku-movement-tbody" class="divide-y divide-slate-100">
@@ -6491,16 +6491,16 @@
         }
 
         return `
-          <div class="bg-white rounded-2xl p-3 border ${qty > 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'} shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="bg-white rounded-2xl p-2.5 sm:p-3 border ${qty > 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'} shadow-xs flex items-center justify-between gap-2.5">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="font-mono text-[10px] text-slate-400 font-bold">${escapeHtml(p.sku)}</span>
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">📦 ${escapeHtml(p.unitSize)}</span>
                 ${stockBadgeHtml}
               </div>
-              <h4 class="font-bold text-slate-900 text-sm mt-0.5">${escapeHtml(p.name)}</h4>
+              <h4 class="font-bold text-slate-900 text-xs sm:text-sm mt-0.5 leading-snug truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</h4>
               <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span class="font-mono font-black text-sm ${isFromQuote ? 'text-emerald-700' : (hasCustomRate ? 'text-indigo-600' : 'text-slate-900')}">${formatINR(activeRate)}</span>
+                <span class="font-mono font-black text-xs sm:text-sm ${isFromQuote ? 'text-emerald-700' : (hasCustomRate ? 'text-indigo-600' : 'text-slate-900')}">${formatINR(activeRate)}</span>
                 ${(() => {
                   const rKg = calculateRatePerKg(activeRate, p.unitSize);
                   return rKg ? `<span class="text-[10px] text-slate-500 font-mono font-semibold">(${formatINR(rKg)}/kg)</span>` : '';
@@ -6515,11 +6515,11 @@
               </div>
             </div>
 
-            <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-              ${qty > 0 ? `<span class="text-xs font-mono font-black text-emerald-700 sm:mr-1">${formatINR(qty * activeRate)}</span>` : ''}
-              <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 flex-shrink-0">
+              ${qty > 0 ? `<span class="text-[11px] sm:text-xs font-mono font-black text-emerald-700 sm:mr-1">${formatINR(qty * activeRate)}</span>` : ''}
+              <div class="flex items-center gap-0.5 sm:gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
                 <button type="button" onclick="adjustQty('${p.id}', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-slate-200 active:scale-95 text-slate-700 font-black text-base flex items-center justify-center disabled:opacity-30 touch-manipulation cursor-pointer shadow-2xs" ${qty === 0 ? 'disabled' : ''}>-</button>
-                <input type="number" step="any" min="0" inputmode="decimal" value="${qty}" onchange="setQty('${p.id}', this.value)" class="w-16 sm:w-20 h-8 text-center font-mono font-black text-sm rounded-lg bg-white border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none" title="Enter quantity (decimals allowed, e.g. 1.5, 0.5)">
+                <input type="number" step="any" min="0" inputmode="decimal" value="${qty}" onchange="setQty('${p.id}', this.value)" class="w-14 sm:w-20 h-8 text-center font-mono font-black text-xs sm:text-sm rounded-lg bg-white border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none" title="Enter quantity (decimals allowed, e.g. 1.5, 0.5)">
                 <button type="button" onclick="adjustQty('${p.id}', 1)" class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-base flex items-center justify-center touch-manipulation cursor-pointer shadow-xs">+</button>
               </div>
             </div>
@@ -9156,7 +9156,7 @@
       thead.innerHTML = `<tr>` + cols.map(c => {
         const alignClass = c.align === 'right' ? 'text-right' : 'text-left';
         if (!c.sortable) {
-          return `<th class="p-3 ${alignClass}">${c.label}</th>`;
+          return `<th class="p-3 ${alignClass} bg-slate-50/95 backdrop-blur-xs">${c.label}</th>`;
         }
 
         const isActive = (customerSortColumn === c.key);
@@ -9165,8 +9165,8 @@
           : '<span class="opacity-25 group-hover:opacity-100 transition">↕</span>';
 
         const activeClass = isActive
-          ? 'bg-indigo-50/90 text-indigo-950 font-black'
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition';
+          ? 'bg-indigo-50/95 text-indigo-950 font-black backdrop-blur-xs'
+          : 'bg-slate-50/95 text-slate-600 hover:text-slate-900 hover:bg-slate-100/95 backdrop-blur-xs transition';
 
         return `
           <th class="p-3 ${alignClass} cursor-pointer group select-none transition ${activeClass}"
@@ -9946,7 +9946,7 @@
       thead.innerHTML = `<tr>` + cols.map(c => {
         const alignClass = c.align === 'right' ? 'text-right' : (c.align === 'center' ? 'text-center' : 'text-left');
         if (!c.sortable) {
-          return `<th class="p-3 ${alignClass}">${c.label}</th>`;
+          return `<th class="p-3 ${alignClass} bg-slate-50/95 backdrop-blur-xs">${c.label}</th>`;
         }
 
         const isActive = (ordersSortColumn === c.key);
@@ -9955,8 +9955,8 @@
           : '<span class="opacity-25 group-hover:opacity-100 transition">↕</span>';
 
         const activeClass = isActive
-          ? 'bg-indigo-50/90 text-indigo-950 font-black'
-          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition';
+          ? 'bg-indigo-50/95 text-indigo-950 font-black backdrop-blur-xs'
+          : 'bg-slate-50/95 text-slate-600 hover:text-slate-900 hover:bg-slate-100/95 backdrop-blur-xs transition';
 
         return `
           <th class="p-3 ${alignClass} cursor-pointer group select-none transition ${activeClass}"
