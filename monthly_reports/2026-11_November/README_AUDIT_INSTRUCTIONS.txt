@@ -1,6 +1,6 @@
 # SRI GOVINDA FOOD PRODUCTS - MONTHLY ACCOUNTS PACK
 **Accounting Month:** November 2026 (2026-11)  
-**Generated Date:** 7/11/2026, 11:48:58 pm IST  
+**Generated Date:** 8/11/2026, 11:30:03 am IST  
 **Company:** Sri Govinda Food Products | GSTIN: 29AFVPD7658B1Z1
 
 ---

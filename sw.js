@@ -1,8 +1,9 @@
 // Service Worker for Sri Govinda Sales & Field Representative Portal PWAs
-const CACHE_NAME = 'sg-sales-cache-v40';
+const CACHE_NAME = 'sg-sales-cache-v41';
 const ASSETS_TO_CACHE = [
   '/config.js',
   '/monthly_accounts_export.js',
+  '/product_wise_sales_ui.js',
   '/icon-192.png',
   '/icon-512.png'
 ];

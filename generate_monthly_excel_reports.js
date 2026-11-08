@@ -190,6 +190,140 @@ function buildSalesRegister(monthOrders, monthName, year, isReadOnly, company) {
 }
 
 // -----------------------------------------------------------------------------
+// Report 1B: Product-Wise Sales Record & Revenue Analysis
+// -----------------------------------------------------------------------------
+function buildProductWiseSalesRegister(monthOrders, productsMap, monthName, year, isReadOnly, company) {
+  const wb = XLSX.utils.book_new();
+  const banner = getHeaderBanner("Product-Wise Sales Record & Revenue Analysis", monthName, year, isReadOnly, company);
+
+  const productAgg = {};
+  let grandTotalUnits = 0;
+  let grandTotalValue = 0;
+
+  const sortedOrders = [...monthOrders].sort((a,b) => {
+    const da = a.date || a.created_at || '';
+    const db = b.date || b.created_at || '';
+    return da.localeCompare(db);
+  });
+
+  sortedOrders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const sku = it.sku || 'GENERAL';
+      const prod = productsMap[sku] || {};
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || Number(prod.baseRate) || 0;
+      const total = Number(it.total) || (qty * rate);
+
+      if (!productAgg[sku]) {
+        productAgg[sku] = {
+          sku: sku,
+          name: it.name || prod.name || sku,
+          category: prod.category || 'General',
+          unitSize: it.unitSize || prod.unitSize || 'pack',
+          baseRate: rate,
+          totalQty: 0,
+          totalVal: 0,
+          billsCount: 0
+        };
+      }
+      productAgg[sku].totalQty += qty;
+      productAgg[sku].totalVal += total;
+      productAgg[sku].billsCount += 1;
+
+      grandTotalUnits += qty;
+      grandTotalValue += total;
+    });
+  });
+
+  const productList = Object.values(productAgg).sort((a, b) => b.totalVal - a.totalVal);
+
+  const headers = [
+    "Sl No", "Product SKU", "Product Name", "Category", "Pack Unit",
+    "Base Rate (₹)", "Quantity Sold (Units)", "Total Billed Value (₹)",
+    "Avg Effective Rate (₹)", "Bills / Orders Count", "Volume Share (%)", "Revenue Share (%)"
+  ];
+
+  const summaryRows = [...banner, headers];
+
+  productList.forEach((p, idx) => {
+    const avgRate = p.totalQty > 0 ? Math.round((p.totalVal / p.totalQty) * 100) / 100 : p.baseRate;
+    const volShare = grandTotalUnits > 0 ? `${((p.totalQty / grandTotalUnits) * 100).toFixed(1)}%` : '0%';
+    const revShare = grandTotalValue > 0 ? `${((p.totalVal / grandTotalValue) * 100).toFixed(1)}%` : '0%';
+
+    summaryRows.push([
+      idx + 1,
+      p.sku,
+      p.name,
+      p.category,
+      p.unitSize,
+      p.baseRate,
+      p.totalQty,
+      p.totalVal,
+      avgRate,
+      p.billsCount,
+      volShare,
+      revShare
+    ]);
+  });
+
+  summaryRows.push([
+    "TOTAL",
+    `${productList.length} Products Sold`,
+    "", "", "", "",
+    grandTotalUnits,
+    grandTotalValue,
+    "",
+    sortedOrders.length,
+    "100.0%",
+    "100.0%"
+  ]);
+
+  const wsSummary = createSheetFromAoa(summaryRows, isReadOnly, banner.length + 1);
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Product Sales Summary");
+
+  // Tab 2: Itemized Bills
+  const detailHeaders = [
+    "Sl No", "Invoice Date", "Order ID", "Product SKU", "Product Name",
+    "Customer / Store Name", "Route Beat", "Supply Rep", "Quantity Delivered (Units)",
+    "Billed Unit Rate (₹)", "Line Item Net Total (₹)", "Payment Mode"
+  ];
+  const detailRows = [
+    ...banner.slice(0, 5),
+    ["ITEMIZED TRANSACTION BILLS BREAKDOWN"],
+    [],
+    detailHeaders
+  ];
+
+  let lineSl = 1;
+  sortedOrders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || 0;
+      const tot = Number(it.total) || (qty * rate);
+      detailRows.push([
+        lineSl++,
+        o.date || (o.created_at ? o.created_at.slice(0, 10) : ''),
+        o.id || '',
+        it.sku || '',
+        it.name || '',
+        o.buyerName || '',
+        o.dispatchRoute || '',
+        o.repName || o.salespersonName || 'Direct',
+        qty,
+        rate,
+        tot,
+        o.paymentMode || 'Cash'
+      ]);
+    });
+  });
+
+  const wsDetails = createSheetFromAoa(detailRows, isReadOnly, 8);
+  XLSX.utils.book_append_sheet(wb, wsDetails, "Itemized Bills");
+
+  return wb;
+}
+
+// -----------------------------------------------------------------------------
 // Report 2: Total Inward Log (Factory Arrivals)
 // -----------------------------------------------------------------------------
 function buildInwardLog(monthInward, productsMap, monthName, year, isReadOnly, company) {
@@ -872,6 +1006,10 @@ async function runGenerator() {
         gen: (isRO) => buildSalesRegister(mOrders, monthName, year, isRO, company)
       },
       {
+        fileName: `${filePrefix}_Product_Wise_Sales_Record.xlsx`,
+        gen: (isRO) => buildProductWiseSalesRegister(mOrders, productsMap, monthName, year, isRO, company)
+      },
+      {
         fileName: `${filePrefix}_Total_Inward_Log.xlsx`,
         gen: (isRO) => buildInwardLog(mInward, productsMap, monthName, year, isRO, company)
       },
@@ -1003,3 +1141,4 @@ runGenerator().catch(err => {
   console.error("[FATAL ERROR]", err);
   process.exit(1);
 });
+

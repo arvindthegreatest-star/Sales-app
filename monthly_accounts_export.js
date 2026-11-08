@@ -522,6 +522,9 @@ async function executeMonthlyAccountsExport() {
     } else if (feature === 'debtors') {
       const wb = makeDebtorsWb();
       XLSX.writeFile(wb, `${filePrefix}_Debtors_Outstanding_Aging_Ledger_${editionTag}.xlsx`);
+    } else if (feature === 'product_wise') {
+      const wb = buildProductWiseSalesWorkbook(mOrders, `${year}-${mNum}-01`, `${year}-${mNum}-31`, isReadOnly, company, `Month: ${monthName} ${year}`);
+      XLSX.writeFile(wb, `${filePrefix}_Product_Wise_Sales_Record_${editionTag}.xlsx`);
     } else if (feature === 'samples') {
       const wb = makeSamplesWb();
       XLSX.writeFile(wb, `${filePrefix}_Free_Samples_Trial_Register_${editionTag}.xlsx`);
@@ -533,6 +536,7 @@ async function executeMonthlyAccountsExport() {
     } else if (feature === 'all') {
       const files = [
         { name: `${filePrefix}_Executive_Master_Accounts_Pack_${editionTag}.xlsx`, wb: makeMasterPackWb() },
+        { name: `${filePrefix}_Product_Wise_Sales_Record_${editionTag}.xlsx`, wb: buildProductWiseSalesWorkbook(mOrders, `${year}-${mNum}-01`, `${year}-${mNum}-31`, isReadOnly, company, `Month: ${monthName} ${year}`) },
         { name: `${filePrefix}_Warehouse_Stock_Opening_Closing_Reconciliation_${editionTag}.xlsx`, wb: makeReconciliationWb() },
         { name: `${filePrefix}_Total_Sales_Register_${editionTag}.xlsx`, wb: makeSalesWb() },
         { name: `${filePrefix}_Total_Inward_Log_${editionTag}.xlsx`, wb: makeInwardWb() },
@@ -553,3 +557,233 @@ async function executeMonthlyAccountsExport() {
     alert('Export failed: ' + err.message);
   }
 }
+
+// ==============================================================================
+// PRODUCT-WISE SALES RECORD BUILDER & DATE-RANGE EXPORTER
+// ==============================================================================
+function buildProductWiseSalesWorkbook(filteredOrders, fromDate, toDate, isReadOnly, company, filterNotes = '') {
+  const wb = XLSX.utils.book_new();
+
+  const accessType = isReadOnly
+    ? "READ-ONLY AUDIT ARCHIVE (Sheet Protected - Unlock Password: srigovinda2321)"
+    : "MANAGER EDITABLE MASTER COPY (Unrestricted Access - Security Key: srigovinda2321)";
+
+  const banner = [
+    [company.companyName.toUpperCase()],
+    [`GSTIN: ${company.gstin} | ${company.address} | Phone: ${company.phone}`],
+    [`PRODUCT-WISE SALES RECORD & REVENUE ANALYSIS`],
+    [`Period Range: ${fromDate} to ${toDate}${filterNotes ? ' | ' + filterNotes : ''}`],
+    [`Access Classification: ${accessType}`],
+    [`Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST`],
+    []
+  ];
+
+  const productAgg = {};
+  let grandTotalUnits = 0;
+  let grandTotalValue = 0;
+  const allProds = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+  const prodMap = {};
+  allProds.forEach(p => { prodMap[p.sku] = p; });
+
+  const sortedOrders = [...filteredOrders].sort((a,b) => {
+    const da = a.date || a.created_at || '';
+    const db = b.date || b.created_at || '';
+    return da.localeCompare(db);
+  });
+
+  sortedOrders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const sku = it.sku || 'GENERAL';
+      const masterProd = prodMap[sku] || {};
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || Number(masterProd.baseRate) || 0;
+      const total = Number(it.total) || (qty * rate);
+
+      if (!productAgg[sku]) {
+        productAgg[sku] = {
+          sku: sku,
+          name: it.name || masterProd.name || sku,
+          category: masterProd.category || 'General',
+          unitSize: it.unitSize || masterProd.unitSize || 'pack',
+          baseRate: rate,
+          totalQty: 0,
+          totalVal: 0,
+          billsCount: 0
+        };
+      }
+      productAgg[sku].totalQty += qty;
+      productAgg[sku].totalVal += total;
+      productAgg[sku].billsCount += 1;
+
+      grandTotalUnits += qty;
+      grandTotalValue += total;
+    });
+  });
+
+  const productList = Object.values(productAgg).sort((a, b) => b.totalVal - a.totalVal);
+
+  const headers = [
+    "Sl No", "Product SKU", "Product Name", "Category", "Pack Unit",
+    "Base Rate (₹)", "Quantity Sold (Units)", "Total Billed Value (₹)",
+    "Avg Effective Rate (₹)", "Bills / Orders Count", "Volume Share (%)", "Revenue Share (%)"
+  ];
+
+  const summaryRows = [...banner, headers];
+
+  productList.forEach((p, idx) => {
+    const avgRate = p.totalQty > 0 ? Math.round((p.totalVal / p.totalQty) * 100) / 100 : p.baseRate;
+    const volShare = grandTotalUnits > 0 ? `${((p.totalQty / grandTotalUnits) * 100).toFixed(1)}%` : '0%';
+    const revShare = grandTotalValue > 0 ? `${((p.totalVal / grandTotalValue) * 100).toFixed(1)}%` : '0%';
+
+    summaryRows.push([
+      idx + 1,
+      p.sku,
+      p.name,
+      p.category,
+      p.unitSize,
+      p.baseRate,
+      p.totalQty,
+      p.totalVal,
+      avgRate,
+      p.billsCount,
+      volShare,
+      revShare
+    ]);
+  });
+
+  // Grand Totals Row
+  summaryRows.push([
+    "TOTAL",
+    `${productList.length} Products Sold`,
+    "", "", "", "",
+    grandTotalUnits,
+    grandTotalValue,
+    "",
+    sortedOrders.length,
+    "100.0%",
+    "100.0%"
+  ]);
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  const colWidths = [];
+  summaryRows.forEach(row => {
+    if (!Array.isArray(row)) return;
+    row.forEach((cell, idx) => {
+      const len = cell !== null && cell !== undefined ? String(cell).length : 0;
+      colWidths[idx] = Math.max(colWidths[idx] || 10, len + 3);
+    });
+  });
+  wsSummary['!cols'] = colWidths.map(w => ({ wch: Math.min(Math.max(w, 10), 50) }));
+  wsSummary['!freeze'] = { xSplit: 0, ySplit: banner.length + 1 };
+  if (isReadOnly) {
+    wsSummary['!protect'] = { password: SG_ACCOUNTS_PASSWORD, selectLockedCells: true, selectUnlockedCells: true };
+  }
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Product Sales Summary");
+
+  // Tab 2: Itemized Bills Breakdown
+  const detailHeaders = [
+    "Sl No", "Invoice Date", "Order ID", "Product SKU", "Product Name",
+    "Customer / Store Name", "Route Beat", "Supply Rep", "Quantity Delivered (Units)",
+    "Billed Unit Rate (₹)", "Line Item Net Total (₹)", "Payment Mode"
+  ];
+  const detailRows = [
+    ...banner.slice(0, 5),
+    ["ITEMIZED TRANSACTION BILLS BREAKDOWN"],
+    [],
+    detailHeaders
+  ];
+
+  let lineSl = 1;
+  sortedOrders.forEach(o => {
+    (o.items || []).forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || 0;
+      const tot = Number(it.total) || (qty * rate);
+      detailRows.push([
+        lineSl++,
+        o.date || (o.created_at ? o.created_at.slice(0, 10) : ''),
+        o.id || '',
+        it.sku || '',
+        it.name || '',
+        o.buyerName || '',
+        o.dispatchRoute || '',
+        o.repName || o.salespersonName || 'Direct',
+        qty,
+        rate,
+        tot,
+        o.paymentMode || 'Cash'
+      ]);
+    });
+  });
+
+  const wsDetails = XLSX.utils.aoa_to_sheet(detailRows);
+  const detailWidths = [];
+  detailRows.forEach(row => {
+    if (!Array.isArray(row)) return;
+    row.forEach((cell, idx) => {
+      const len = cell !== null && cell !== undefined ? String(cell).length : 0;
+      detailWidths[idx] = Math.max(detailWidths[idx] || 10, len + 3);
+    });
+  });
+  wsDetails['!cols'] = detailWidths.map(w => ({ wch: Math.min(Math.max(w, 10), 50) }));
+  wsDetails['!freeze'] = { xSplit: 0, ySplit: 8 };
+  if (isReadOnly) {
+    wsDetails['!protect'] = { password: SG_ACCOUNTS_PASSWORD, selectLockedCells: true, selectUnlockedCells: true };
+  }
+  XLSX.utils.book_append_sheet(wb, wsDetails, "Itemized Bills");
+
+  return wb;
+}
+
+function exportProductWiseSalesToExcel(fromDate, toDate, isReadOnly = true, repFilter = 'all', routeFilter = 'all') {
+  if (typeof XLSX === 'undefined') {
+    alert('SheetJS (XLSX) is still loading. Please retry in 2 seconds.');
+    return;
+  }
+  const allOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+  
+  const filtered = allOrders.filter(o => {
+    const d = (o.date || o.created_at || '').slice(0, 10);
+    if (fromDate && d < fromDate) return false;
+    if (toDate && d > toDate) return false;
+    if (repFilter && repFilter !== 'all') {
+      const r = (o.repName || o.salespersonName || o.repId || '').toLowerCase();
+      if (!r.includes(repFilter.toLowerCase())) return false;
+    }
+    if (routeFilter && routeFilter !== 'all') {
+      const rt = (o.dispatchRoute || '').toLowerCase();
+      if (!rt.includes(routeFilter.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    alert(`No sales records found for the period ${fromDate || 'Start'} to ${toDate || 'End'}.`);
+    return;
+  }
+
+  const company = (typeof companySettings !== 'undefined' && companySettings) || {
+    companyName: "Sri Govinda Food Products",
+    gstin: "29AFVPD7658B1Z1",
+    address: "17, Jai Layout, 1st cross, Gantiganahalli, Singanayakanahalli post, Yelahanka, Bengaluru - 560064",
+    phone: "+91 9972374711 / 9731988411"
+  };
+
+  const filterNotes = [
+    repFilter && repFilter !== 'all' ? `Rep: ${repFilter}` : '',
+    routeFilter && routeFilter !== 'all' ? `Route: ${routeFilter}` : ''
+  ].filter(Boolean).join('; ');
+
+  const wb = buildProductWiseSalesWorkbook(filtered, fromDate || 'Beginning', toDate || 'Latest', isReadOnly, company, filterNotes);
+  const editionTag = isReadOnly ? "Read_Only" : "Manager_Editable";
+  const fName = `Product_Wise_Sales_Record_${fromDate || 'Start'}_to_${toDate || 'End'}_${editionTag}.xlsx`;
+  XLSX.writeFile(wb, fName);
+}
+
+// Make accessible on window
+if (typeof window !== 'undefined') {
+  window.buildProductWiseSalesWorkbook = buildProductWiseSalesWorkbook;
+  window.exportProductWiseSalesToExcel = exportProductWiseSalesToExcel;
+}
+
+
