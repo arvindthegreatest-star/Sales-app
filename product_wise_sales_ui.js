@@ -5,7 +5,114 @@
 // order penetration statistics, itemized bill drilldown, and audit-grade Excel export.
 // ==============================================================================
 
-let currentProductSalesPreset = 'this_month';
+let currentProductSalesPreset = 'all';
+
+// Local date formatter (YYYY-MM-DD) avoiding UTC timezone shifts
+function formatLocalYMD(d) {
+  if (!d || !(d instanceof Date) || isNaN(d.getTime())) {
+    d = new Date();
+  }
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Resilient helper to fetch orders from memory or persistent storage
+function getProductSalesOrders() {
+  let list = [];
+  try {
+    if (typeof window !== 'undefined' && Array.isArray(window.orders) && window.orders.length > 0) {
+      list = window.orders;
+    } else if (typeof orders !== 'undefined' && Array.isArray(orders) && orders.length > 0) {
+      list = orders;
+    }
+  } catch (e) {}
+
+  if (!list || list.length === 0) {
+    try {
+      const delOrderSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
+      const raw = localStorage.getItem('sg_orders');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed.filter(o => o && o.id && !delOrderSet.has(String(o.id)));
+        }
+      }
+    } catch (e) {}
+  }
+  return list || [];
+}
+
+// Resilient helper to fetch master products
+function getProductSalesProducts() {
+  let list = [];
+  try {
+    if (typeof window !== 'undefined' && Array.isArray(window.products) && window.products.length > 0) {
+      list = window.products;
+    } else if (typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) {
+      list = products;
+    }
+  } catch (e) {}
+
+  if (!list || list.length === 0) {
+    try {
+      const delProdSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_product_ids') || '[]').map(s => String(s).trim().toLowerCase()));
+      const raw = localStorage.getItem('sg_products');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          list = parsed.filter(p => p && p.id && !delProdSet.has(String(p.id).trim().toLowerCase()));
+        }
+      }
+    } catch (e) {}
+  }
+  return list || [];
+}
+
+// Normalize date string from order object to YYYY-MM-DD
+function extractOrderDate(o) {
+  if (!o) return '';
+  let d = o.date || o.orderDate || '';
+  if (!d && o.created_at) {
+    d = String(o.created_at).slice(0, 10);
+  }
+  if (!d && o.deliveredAt) {
+    d = String(o.deliveredAt).slice(0, 10);
+  }
+  if (typeof d === 'string') {
+    d = d.trim();
+    // Handle DD-MM-YYYY or DD/MM/YYYY
+    if ((d.includes('/') || d.includes('-')) && d.length >= 8 && d.length <= 10) {
+      const parts = d.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+        if (parts[0].length === 4) {
+          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+      }
+    }
+    return d.slice(0, 10);
+  }
+  return '';
+}
+
+// Safely extract line-items from an order
+function extractOrderItems(o) {
+  if (!o) return [];
+  let raw = o.items || o.cart || o.products || [];
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch (e) { raw = []; }
+  }
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'object') {
+    return Object.values(raw);
+  }
+  return [];
+}
 
 // Initialize default date range on boot or view switch
 function initProductSalesDates() {
@@ -14,7 +121,20 @@ function initProductSalesDates() {
   if (!fromInput || !toInput) return;
 
   if (!fromInput.value || !toInput.value) {
-    setProductSalesDatePreset('this_month');
+    // Check if there are orders this month
+    const allOrders = getProductSalesOrders();
+    const today = new Date();
+    const thisMonthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const thisMonthOrders = allOrders.filter(o => extractOrderDate(o).startsWith(thisMonthPrefix));
+
+    if (thisMonthOrders.length > 0) {
+      setProductSalesDatePreset('this_month');
+    } else if (allOrders.length > 0) {
+      // If no orders this month but orders exist in prior months, default to All Time so user immediately sees data
+      setProductSalesDatePreset('all');
+    } else {
+      setProductSalesDatePreset('this_month');
+    }
   }
 }
 
@@ -26,7 +146,6 @@ function setProductSalesDatePreset(preset) {
   if (!fromInput || !toInput) return;
 
   const today = new Date();
-  const formatYMD = (d) => d.toISOString().slice(0, 10);
 
   // Update preset button active styling
   ['today', 'yesterday', 'last7', 'this_month', 'last_month', 'all'].forEach(p => {
@@ -41,33 +160,33 @@ function setProductSalesDatePreset(preset) {
   });
 
   if (preset === 'today') {
-    const s = formatYMD(today);
+    const s = formatLocalYMD(today);
     fromInput.value = s;
     toInput.value = s;
   } else if (preset === 'yesterday') {
     const y = new Date(today);
     y.setDate(y.getDate() - 1);
-    const s = formatYMD(y);
+    const s = formatLocalYMD(y);
     fromInput.value = s;
     toInput.value = s;
   } else if (preset === 'last7') {
     const d7 = new Date(today);
     d7.setDate(d7.getDate() - 6);
-    fromInput.value = formatYMD(d7);
-    toInput.value = formatYMD(today);
+    fromInput.value = formatLocalYMD(d7);
+    toInput.value = formatLocalYMD(today);
   } else if (preset === 'this_month') {
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
     fromInput.value = `${y}-${m}-01`;
-    toInput.value = formatYMD(today);
+    toInput.value = formatLocalYMD(today);
   } else if (preset === 'last_month') {
     const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
     const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    fromInput.value = formatYMD(prevMonthStart);
-    toInput.value = formatYMD(prevMonthEnd);
+    fromInput.value = formatLocalYMD(prevMonthStart);
+    toInput.value = formatLocalYMD(prevMonthEnd);
   } else if (preset === 'all') {
     fromInput.value = "2025-01-01";
-    toInput.value = formatYMD(today);
+    toInput.value = formatLocalYMD(today);
   }
 
   onProductSalesFilterChanged();
@@ -79,42 +198,74 @@ function onProductSalesFilterChanged() {
 
 // Populate secondary dropdowns (Rep, Route, Category)
 function populateProductSalesDropdowns() {
+  const allOrders = getProductSalesOrders();
+  const prods = getProductSalesProducts();
+
   const repSelect = document.getElementById('ps-filter-rep');
-  if (repSelect && repSelect.children.length <= 1) {
+  if (repSelect) {
     const currentVal = repSelect.value;
-    const reps = typeof salespeople !== 'undefined' && Array.isArray(salespeople) ? salespeople : [];
+    const repSet = new Set();
+    const reps = typeof salespeople !== 'undefined' && Array.isArray(salespeople) ? salespeople : (window.salespeople || []);
+    reps.forEach(r => { if (r && r.name) repSet.add(r.name.trim()); });
+    allOrders.forEach(o => {
+      const r = o.repName || o.salespersonName || o.supplyRepName;
+      if (r && typeof r === 'string' && r.trim()) repSet.add(r.trim());
+    });
+
     const opts = ['<option value="all">All Sales Personnel</option>'];
-    reps.forEach(r => {
-      opts.push(`<option value="${r.name}">${r.name} (${r.assignedRoute || 'Beat'})</option>`);
+    Array.from(repSet).sort().forEach(name => {
+      opts.push(`<option value="${escapeProductSalesAttr(name)}">${name}</option>`);
     });
     repSelect.innerHTML = opts.join('');
-    if (currentVal) repSelect.value = currentVal;
+    if (currentVal && Array.from(repSet).includes(currentVal)) {
+      repSelect.value = currentVal;
+    }
   }
 
   const routeSelect = document.getElementById('ps-filter-route');
-  if (routeSelect && routeSelect.children.length <= 1) {
+  if (routeSelect) {
     const currentVal = routeSelect.value;
-    const routesList = typeof routes !== 'undefined' && Array.isArray(routes) ? routes : [];
+    const routeSet = new Set();
+    const routesList = typeof routes !== 'undefined' && Array.isArray(routes) ? routes : (window.routes || []);
+    routesList.forEach(rt => { if (rt && rt.name) routeSet.add(rt.name.trim()); });
+    allOrders.forEach(o => {
+      if (o.dispatchRoute) routeSet.add(o.dispatchRoute.split(':')[0].trim());
+    });
+
     const opts = ['<option value="all">All Route Beats</option>'];
-    routesList.forEach(rt => {
-      opts.push(`<option value="${rt.name}">${rt.name}</option>`);
+    Array.from(routeSet).sort().forEach(rt => {
+      opts.push(`<option value="${escapeProductSalesAttr(rt)}">${rt}</option>`);
     });
     routeSelect.innerHTML = opts.join('');
-    if (currentVal) routeSelect.value = currentVal;
+    if (currentVal && Array.from(routeSet).includes(currentVal)) {
+      routeSelect.value = currentVal;
+    }
   }
 
   const catSelect = document.getElementById('ps-filter-category');
-  if (catSelect && catSelect.children.length <= 1) {
+  if (catSelect) {
     const currentVal = catSelect.value;
-    const prods = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
-    const cats = Array.from(new Set(prods.map(p => p.category || 'General').filter(Boolean))).sort();
+    const catSet = new Set();
+    prods.forEach(p => { if (p && p.category) catSet.add(p.category.trim()); });
+    allOrders.forEach(o => {
+      const items = extractOrderItems(o);
+      items.forEach(it => { if (it && it.category) catSet.add(it.category.trim()); });
+    });
+
     const opts = ['<option value="all">All Product Categories</option>'];
-    cats.forEach(c => {
-      opts.push(`<option value="${c}">${c}</option>`);
+    Array.from(catSet).sort().forEach(c => {
+      opts.push(`<option value="${escapeProductSalesAttr(c)}">${c}</option>`);
     });
     catSelect.innerHTML = opts.join('');
-    if (currentVal) catSelect.value = currentVal;
+    if (currentVal && Array.from(catSet).includes(currentVal)) {
+      catSelect.value = currentVal;
+    }
   }
+}
+
+function escapeProductSalesAttr(str) {
+  if (!str) return '';
+  return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // Main Table & Analytics Renderer
@@ -124,8 +275,8 @@ function renderProductWiseSalesView() {
 
   const fromInput = document.getElementById('ps-from-date');
   const toInput = document.getElementById('ps-to-date');
-  const fromDate = fromInput ? fromInput.value : '';
-  const toDate = toInput ? toInput.value : '';
+  const fromDate = fromInput ? fromInput.value.trim() : '';
+  const toDate = toInput ? toInput.value.trim() : '';
 
   const searchInput = document.getElementById('ps-search-input');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
@@ -140,24 +291,41 @@ function renderProductWiseSalesView() {
     periodLabel.innerText = `${fromDate || 'Beginning'} → ${toDate || 'Today'}`;
   }
 
-  const allOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
-  const allProds = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+  const allOrders = getProductSalesOrders();
+  const allProds = getProductSalesProducts();
+
+  // Build resilient multi-key product dictionary
   const prodMap = {};
-  allProds.forEach(p => { prodMap[p.sku] = p; });
+  allProds.forEach(p => {
+    if (p) {
+      if (p.sku) {
+        prodMap[p.sku.trim()] = p;
+        prodMap[p.sku.trim().toLowerCase()] = p;
+      }
+      if (p.id) {
+        prodMap[p.id.trim()] = p;
+      }
+      if (p.name) {
+        prodMap[p.name.trim().toLowerCase()] = p;
+      }
+    }
+  });
 
   // 1. Filter Orders within Date Range & Dimensions
   const filteredOrders = allOrders.filter(o => {
-    const d = (o.date || o.created_at || '').slice(0, 10);
-    if (fromDate && d < fromDate) return false;
-    if (toDate && d > toDate) return false;
+    if (!o || !o.id) return false;
+
+    const d = extractOrderDate(o);
+    if (fromDate && d && d < fromDate) return false;
+    if (toDate && d && d > toDate) return false;
 
     if (repFilter && repFilter !== 'all') {
-      const r = (o.repName || o.salespersonName || o.repId || '').toLowerCase();
+      const r = (o.repName || o.salespersonName || o.supplyRepName || o.customerRepName || '').toLowerCase();
       if (!r.includes(repFilter.toLowerCase())) return false;
     }
 
     if (routeFilter && routeFilter !== 'all') {
-      const rt = (o.dispatchRoute || '').toLowerCase();
+      const rt = (o.dispatchRoute || o.buyerHomeRoute || '').toLowerCase();
       if (!rt.includes(routeFilter.toLowerCase())) return false;
     }
 
@@ -170,26 +338,49 @@ function renderProductWiseSalesView() {
   let grandTotalValue = 0;
 
   filteredOrders.forEach(o => {
-    (o.items || []).forEach(it => {
-      const sku = it.sku || 'GENERAL';
-      const masterProd = prodMap[sku] || {};
-      const category = masterProd.category || 'General';
+    const items = extractOrderItems(o);
+    const orderDateStr = extractOrderDate(o);
+
+    items.forEach(rawIt => {
+      let it = rawIt;
+      if (typeof it === 'string') {
+        try { it = JSON.parse(it); } catch (e) { return; }
+      }
+      if (!it || typeof it !== 'object') return;
+
+      const qty = Number(it.qty ?? it.quantity ?? it.units ?? it.count ?? 0) || 0;
+      if (qty <= 0) return;
+
+      // Product resolution via multi-key map
+      const rawSku = (it.sku || '').trim();
+      const rawId = String(it.productId || it.product_id || it.id || '').trim();
+      const rawName = (it.name || it.productName || it.product_name || '').trim();
+
+      const masterProd = prodMap[rawSku] ||
+                         prodMap[rawSku.toLowerCase()] ||
+                         prodMap[rawId] ||
+                         prodMap[rawName.toLowerCase()] ||
+                         {};
+
+      const sku = (masterProd.sku || rawSku || (masterProd.name || rawName || 'GENERAL')).trim();
+      const name = masterProd.name || rawName || sku;
+      const category = masterProd.category || it.category || 'General';
+      const unitSize = masterProd.unitSize || it.unitSize || it.unit_size || 'pack';
 
       if (catFilter && catFilter !== 'all' && category.toLowerCase() !== catFilter.toLowerCase()) {
         return;
       }
 
-      const qty = Number(it.qty) || 0;
-      const rate = Number(it.rate) || Number(masterProd.baseRate) || 0;
-      const total = Number(it.total) || (qty * rate);
+      const rate = Number(it.rate ?? it.unitRate ?? it.price ?? masterProd.baseRate ?? 0);
+      const total = Number(it.total ?? it.lineTotal ?? (qty * rate));
 
       if (!productAgg[sku]) {
         productAgg[sku] = {
           sku: sku,
-          name: it.name || masterProd.name || sku,
+          name: name,
           category: category,
-          unitSize: it.unitSize || masterProd.unitSize || 'pack',
-          baseRate: rate,
+          unitSize: unitSize,
+          baseRate: rate || Number(masterProd.baseRate) || 0,
           totalQty: 0,
           totalVal: 0,
           ordersCount: 0,
@@ -200,11 +391,11 @@ function renderProductWiseSalesView() {
       productAgg[sku].totalVal += total;
       productAgg[sku].ordersCount += 1;
       productAgg[sku].ordersList.push({
-        date: o.date || (o.created_at ? o.created_at.slice(0, 10) : ''),
+        date: orderDateStr || (o.time ? `${o.date} ${o.time}` : 'Recent'),
         orderId: o.id || '',
         buyerName: o.buyerName || 'Store',
-        route: o.dispatchRoute || '',
-        rep: o.repName || o.salespersonName || 'Direct',
+        route: (o.dispatchRoute || o.buyerHomeRoute || '').split(':')[0].trim(),
+        rep: o.repName || o.salespersonName || o.supplyRepName || 'Direct',
         qty: qty,
         rate: rate,
         total: total,
@@ -227,7 +418,7 @@ function renderProductWiseSalesView() {
     );
   }
 
-  // Sort by highest revenue first
+  // Sort by highest turnover value first
   productList.sort((a, b) => b.totalVal - a.totalVal);
 
   // 3. Update KPI Cards
@@ -276,13 +467,25 @@ function renderProductWiseSalesView() {
   if (!tbody) return;
 
   if (productList.length === 0) {
+    const hasTotalOrders = allOrders.length > 0;
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" class="py-12 text-center text-slate-400">
-          <div class="flex flex-col items-center justify-center gap-2">
-            <i data-lucide="package-search" class="w-8 h-8 text-slate-300"></i>
-            <span class="font-bold text-sm">No product sales found for this date range and filter criteria.</span>
-            <span class="text-xs text-slate-400">Try adjusting the From/To dates or selecting 'All Time'.</span>
+        <td colspan="11" class="py-10 text-center text-slate-500">
+          <div class="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto px-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+              <i data-lucide="package-search" class="w-6 h-6"></i>
+            </div>
+            <span class="font-extrabold text-sm text-slate-800">No product sales found between ${fromDate || 'Start'} and ${toDate || 'End'}</span>
+            <p class="text-xs text-slate-500 text-center">
+              ${hasTotalOrders
+                ? `There are <b>${allOrders.length} orders</b> booked in your database outside this selected date window.`
+                : `No orders found in your system yet. Generate an order from the 'New Order' tab to see live sales.`}
+            </p>
+            ${hasTotalOrders ? `
+              <button type="button" onclick="setProductSalesDatePreset('all')" class="mt-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="calendar-range" class="w-4 h-4"></i> Show All Time Sales (${allOrders.length} Orders)
+              </button>
+            ` : ''}
           </div>
         </td>
       </tr>
@@ -302,7 +505,7 @@ function renderProductWiseSalesView() {
       <tr class="hover:bg-slate-50/80 transition group">
         <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
         <td class="p-3">
-          <div class="font-bold text-slate-900 flex items-center gap-1.5">
+          <div class="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
             <span>${p.name}</span>
             <span class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">${p.sku}</span>
           </div>
@@ -339,7 +542,7 @@ function renderProductWiseSalesView() {
           </div>
         </td>
         <td class="p-3 text-center">
-          <button type="button" onclick="openProductBillsDrilldown('${p.sku}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold text-[10px] transition cursor-pointer border border-indigo-200 flex items-center gap-1 mx-auto">
+          <button type="button" onclick="openProductBillsDrilldown('${escapeProductSalesAttr(p.sku)}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold text-[10px] transition cursor-pointer border border-indigo-200 flex items-center gap-1 mx-auto">
             <i data-lucide="eye" class="w-3 h-3"></i> Bills (${p.ordersCount})
           </button>
         </td>
@@ -367,7 +570,7 @@ function renderProductWiseSalesView() {
     `;
   }
 
-  // Store active product list for drilldown
+  // Store active product map for drilldown
   window.currentProductWiseAggMap = productAgg;
 
   if (window.lucide) lucide.createIcons();
@@ -392,7 +595,7 @@ function openProductBillsDrilldown(sku) {
   if (sumElem) sumElem.innerText = `Total Sold: ${item.totalQty.toLocaleString('en-IN')} units across ${item.ordersCount} invoices • Revenue: ₹${item.totalVal.toLocaleString('en-IN')}`;
 
   if (tbody) {
-    tbody.innerHTML = item.ordersList.map((ord, idx) => `
+    tbody.innerHTML = item.ordersList.map(ord => `
       <tr class="hover:bg-slate-50 transition">
         <td class="p-2.5 font-mono text-slate-700 font-bold">${ord.date}</td>
         <td class="p-2.5 font-mono font-bold text-indigo-700">${ord.orderId}</td>
@@ -423,8 +626,8 @@ function closeProductBillsDrilldown() {
 function exportCurrentProductWiseSalesExcel() {
   const fromInput = document.getElementById('ps-from-date');
   const toInput = document.getElementById('ps-to-date');
-  const fromDate = fromInput ? fromInput.value : '';
-  const toDate = toInput ? toInput.value : '';
+  const fromDate = fromInput ? fromInput.value.trim() : '';
+  const toDate = toInput ? toInput.value.trim() : '';
 
   const repFilter = document.getElementById('ps-filter-rep') ? document.getElementById('ps-filter-rep').value : 'all';
   const routeFilter = document.getElementById('ps-filter-route') ? document.getElementById('ps-filter-route').value : 'all';
@@ -440,8 +643,8 @@ function exportCurrentProductWiseSalesExcel() {
 function shareProductWiseSalesWhatsApp() {
   const fromInput = document.getElementById('ps-from-date');
   const toInput = document.getElementById('ps-to-date');
-  const fromDate = fromInput ? fromInput.value : '';
-  const toDate = toInput ? toInput.value : '';
+  const fromDate = fromInput ? fromInput.value.trim() : '';
+  const toDate = toInput ? toInput.value.trim() : '';
 
   const productAgg = window.currentProductWiseAggMap || {};
   const list = Object.values(productAgg).sort((a, b) => b.totalVal - a.totalVal);
@@ -472,8 +675,20 @@ function shareProductWiseSalesWhatsApp() {
   window.open(url, '_blank');
 }
 
+// Function to bridge from Order History to Product Sales seamlessly
+function openProductSalesForHistory(preset) {
+  setTab('product-sales');
+  if (preset) {
+    setProductSalesDatePreset(preset);
+  } else {
+    renderProductWiseSalesView();
+  }
+}
+
 // Expose globally
 if (typeof window !== 'undefined') {
+  window.getProductSalesOrders = getProductSalesOrders;
+  window.getProductSalesProducts = getProductSalesProducts;
   window.initProductSalesDates = initProductSalesDates;
   window.setProductSalesDatePreset = setProductSalesDatePreset;
   window.onProductSalesFilterChanged = onProductSalesFilterChanged;
@@ -482,5 +697,5 @@ if (typeof window !== 'undefined') {
   window.closeProductBillsDrilldown = closeProductBillsDrilldown;
   window.exportCurrentProductWiseSalesExcel = exportCurrentProductWiseSalesExcel;
   window.shareProductWiseSalesWhatsApp = shareProductWiseSalesWhatsApp;
+  window.openProductSalesForHistory = openProductSalesForHistory;
 }
-

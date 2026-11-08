@@ -581,30 +581,75 @@ function buildProductWiseSalesWorkbook(filteredOrders, fromDate, toDate, isReadO
   const productAgg = {};
   let grandTotalUnits = 0;
   let grandTotalValue = 0;
-  const allProds = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+  let allProds = [];
+  try {
+    if (typeof window !== 'undefined' && Array.isArray(window.products) && window.products.length > 0) allProds = window.products;
+    else if (typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) allProds = products;
+    if (!allProds || allProds.length === 0) {
+      const rawP = localStorage.getItem('sg_products');
+      if (rawP) allProds = JSON.parse(rawP);
+    }
+  } catch (e) {}
+
   const prodMap = {};
-  allProds.forEach(p => { prodMap[p.sku] = p; });
+  (allProds || []).forEach(p => {
+    if (p) {
+      if (p.sku) {
+        prodMap[p.sku.trim()] = p;
+        prodMap[p.sku.trim().toLowerCase()] = p;
+      }
+      if (p.id) prodMap[String(p.id).trim()] = p;
+      if (p.name) prodMap[p.name.trim().toLowerCase()] = p;
+    }
+  });
 
   const sortedOrders = [...filteredOrders].sort((a,b) => {
-    const da = a.date || a.created_at || '';
-    const db = b.date || b.created_at || '';
+    const da = a.date || a.orderDate || (a.created_at ? a.created_at.slice(0, 10) : '');
+    const db = b.date || b.orderDate || (b.created_at ? b.created_at.slice(0, 10) : '');
     return da.localeCompare(db);
   });
 
   sortedOrders.forEach(o => {
-    (o.items || []).forEach(it => {
-      const sku = it.sku || 'GENERAL';
-      const masterProd = prodMap[sku] || {};
-      const qty = Number(it.qty) || 0;
-      const rate = Number(it.rate) || Number(masterProd.baseRate) || 0;
-      const total = Number(it.total) || (qty * rate);
+    let rawItems = o.items || o.cart || o.products || [];
+    if (typeof rawItems === 'string') {
+      try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+    }
+    const itemsList = Array.isArray(rawItems) ? rawItems : (typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+    itemsList.forEach(rawIt => {
+      let it = rawIt;
+      if (typeof it === 'string') {
+        try { it = JSON.parse(it); } catch(e) { return; }
+      }
+      if (!it || typeof it !== 'object') return;
+
+      const qty = Number(it.qty ?? it.quantity ?? it.units ?? it.count ?? 0) || 0;
+      if (qty <= 0) return;
+
+      const rawSku = (it.sku || '').trim();
+      const rawId = String(it.productId || it.product_id || it.id || '').trim();
+      const rawName = (it.name || it.productName || it.product_name || '').trim();
+
+      const masterProd = prodMap[rawSku] ||
+                         prodMap[rawSku.toLowerCase()] ||
+                         prodMap[rawId] ||
+                         prodMap[rawName.toLowerCase()] ||
+                         {};
+
+      const sku = (masterProd.sku || rawSku || masterProd.name || rawName || 'GENERAL').trim();
+      const name = masterProd.name || rawName || sku;
+      const category = masterProd.category || it.category || 'General';
+      const unitSize = masterProd.unitSize || it.unitSize || it.unit_size || 'pack';
+
+      const rate = Number(it.rate ?? it.unitRate ?? it.price ?? masterProd.baseRate ?? 0);
+      const total = Number(it.total ?? it.lineTotal ?? (qty * rate));
 
       if (!productAgg[sku]) {
         productAgg[sku] = {
           sku: sku,
-          name: it.name || masterProd.name || sku,
-          category: masterProd.category || 'General',
-          unitSize: it.unitSize || masterProd.unitSize || 'pack',
+          name: name,
+          category: category,
+          unitSize: unitSize,
           baseRate: rate,
           totalQty: 0,
           totalVal: 0,
@@ -740,12 +785,26 @@ function exportProductWiseSalesToExcel(fromDate, toDate, isReadOnly = true, repF
     alert('SheetJS (XLSX) is still loading. Please retry in 2 seconds.');
     return;
   }
-  const allOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
-  
-  const filtered = allOrders.filter(o => {
-    const d = (o.date || o.created_at || '').slice(0, 10);
-    if (fromDate && d < fromDate) return false;
-    if (toDate && d > toDate) return false;
+  let allOrders = [];
+  try {
+    if (typeof window !== 'undefined' && Array.isArray(window.orders) && window.orders.length > 0) allOrders = window.orders;
+    else if (typeof orders !== 'undefined' && Array.isArray(orders) && orders.length > 0) allOrders = orders;
+  } catch (e) {}
+  if (!allOrders || allOrders.length === 0) {
+    try {
+      const delOrderSet = new Set(JSON.parse(localStorage.getItem('sg_deleted_order_ids') || '[]').map(String));
+      const raw = localStorage.getItem('sg_orders');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) allOrders = parsed.filter(o => o && o.id && !delOrderSet.has(String(o.id)));
+      }
+    } catch (e) {}
+  }
+
+  const filtered = (allOrders || []).filter(o => {
+    const d = o.date || o.orderDate || (o.created_at ? o.created_at.slice(0, 10) : '');
+    if (fromDate && d && d < fromDate) return false;
+    if (toDate && d && d > toDate) return false;
     if (repFilter && repFilter !== 'all') {
       const r = (o.repName || o.salespersonName || o.repId || '').toLowerCase();
       if (!r.includes(repFilter.toLowerCase())) return false;
