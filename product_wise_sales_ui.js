@@ -483,3 +483,4 @@ if (typeof window !== 'undefined') {
   window.exportCurrentProductWiseSalesExcel = exportCurrentProductWiseSalesExcel;
   window.shareProductWiseSalesWhatsApp = shareProductWiseSalesWhatsApp;
 }
+

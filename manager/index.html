@@ -133,6 +133,10 @@
           <button type="button" onclick="manualRefreshData()" id="btn-manual-refresh" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition active:scale-95" title="Refresh Live Cloud Data">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           </button>
+          <button type="button" onclick="setTab('product-sales')" class="px-2 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black flex items-center gap-1 shadow-xs transition active:scale-95" title="Product-Wise Sales Record (Date-to-Date)">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+            <span class="text-[10px]">Sales</span>
+          </button>
           <button type="button" id="btn-install-app-header" onclick="triggerPwaInstallPopup(true)" class="hidden px-2.5 py-1 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 transition active:scale-95" title="Install App to Home Screen">
             <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
             <span class="text-[10px]">Install</span>
@@ -290,6 +294,9 @@
             <p class="text-xs text-slate-500">Live progress tracking, stock deductions, and executive order review</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="setTab('product-sales')" class="px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95" title="Product-Wise Sales Record (Date-to-Date)">
+              <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Product Sales
+            </button>
             <button onclick="setTab('inward')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5" title="View & Log Inward Stock">
               <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i> Inward Stock
             </button>
@@ -366,6 +373,25 @@
             </span>
             <div id="kpi-total-customers" class="font-mono font-black text-lg text-slate-900">0</div>
           </div>
+        </div>
+
+        <!-- Product-Wise Sales Record Banner (Mobile & Desktop Quick Access) -->
+        <div class="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/10 border-2 border-amber-300 rounded-2xl p-3 sm:p-4 shadow-xs flex items-center justify-between gap-3 cursor-pointer hover:border-amber-500 hover:shadow-md transition active:scale-[0.99]" onclick="setTab('product-sales')" title="Open Product-Wise Sales Record">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
+              <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-sm text-slate-900">Product-Wise Sales Record</span>
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300">Date-to-Date Filter</span>
+              </div>
+              <p class="text-xs text-slate-600 mt-0.5 font-medium">Filter SKU volume, billed revenue, average realization & drill down to individual customer bills.</p>
+            </div>
+          </div>
+          <span class="inline-flex items-center gap-1 text-xs font-black px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs shrink-0">
+            Open →
+          </span>
         </div>
 
         <!-- Quick Dual Stream: Recent Orders & Recent Samples -->
@@ -5429,28 +5455,32 @@
   <!-- ==============================================================================
        MOBILE PHONE BOTTOM APP NAVIGATION BAR (md:hidden)
        ============================================================================== -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950 border-t border-slate-800 px-2 py-1 flex items-center justify-around shadow-2xl safe-area-bottom">
-    <button type="button" onclick="setTab('dashboard')" id="m-nav-dashboard" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-indigo-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950 border-t border-slate-800 px-1.5 py-1 flex items-center justify-around shadow-2xl safe-area-bottom">
+    <button type="button" onclick="setTab('dashboard')" id="m-nav-dashboard" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-indigo-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
       <span>Home</span>
     </button>
-    <button type="button" onclick="setTab('order')" id="m-nav-order" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+    <button type="button" onclick="setTab('order')" id="m-nav-order" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="shopping-cart" class="w-4 h-4"></i>
       <span>Order</span>
     </button>
-    <button type="button" onclick="setTab('salespersonnel')" id="m-nav-salespersonnel" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+    <button type="button" onclick="setTab('salespersonnel')" id="m-nav-salespersonnel" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="badge-percent" class="w-4 h-4 text-emerald-400"></i>
       <span>Personnel</span>
     </button>
-    <button type="button" onclick="setTab('outstanding')" id="m-nav-outstanding" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+    <button type="button" onclick="setTab('outstanding')" id="m-nav-outstanding" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
       <span>Udhaar</span>
     </button>
-    <button type="button" onclick="setTab('orders')" id="m-nav-orders" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+    <button type="button" onclick="setTab('product-sales')" id="m-nav-product-sales" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95" title="Product-Wise Sales Record">
+      <i data-lucide="bar-chart-3" class="w-4 h-4 text-amber-400"></i>
+      <span class="text-amber-400">Sales</span>
+    </button>
+    <button type="button" onclick="setTab('orders')" id="m-nav-orders" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="clipboard-list" class="w-4 h-4"></i>
       <span>History</span>
     </button>
-    <button type="button" onclick="toggleMobileMoreMenu()" id="m-nav-more" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-2 rounded-xl transition cursor-pointer active:scale-95">
+    <button type="button" onclick="toggleMobileMoreMenu()" id="m-nav-more" class="flex flex-col items-center gap-0.5 text-[9px] font-bold text-slate-400 py-1 px-1.5 rounded-xl transition cursor-pointer active:scale-95">
       <i data-lucide="menu" class="w-4 h-4"></i>
       <span>More</span>
     </button>
@@ -5458,7 +5488,7 @@
 
   <!-- Mobile "More" Sheet Modal for Secondary Tabs -->
   <div id="modal-mobile-more-menu" class="md:hidden fixed inset-0 z-50 bg-slate-950/80 hidden flex items-end" onclick="if(event.target === this) toggleMobileMoreMenu();">
-    <div class="bg-white rounded-t-3xl w-full p-5 space-y-4 border-t border-slate-200 shadow-2xl animate-in slide-in-from-bottom duration-150" onclick="event.stopPropagation();">
+    <div class="bg-white rounded-t-3xl w-full p-5 space-y-4 border-t border-slate-200 shadow-2xl animate-in slide-in-from-bottom duration-150 max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation();">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2">
         <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
           <i data-lucide="grid" class="w-4 h-4 text-indigo-600"></i> All Navigation & Hubs
@@ -5466,6 +5496,20 @@
         <button type="button" onclick="toggleMobileMoreMenu()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">✕</button>
       </div>
       <div class="grid grid-cols-3 gap-2.5 text-xs font-bold text-center">
+        <!-- Highlighted Product Sales Feature Card in Mobile Drawer -->
+        <button type="button" onclick="setTab('product-sales'); toggleMobileMoreMenu();" class="p-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 rounded-2xl flex items-center justify-between col-span-3 text-slate-950 shadow-md transition cursor-pointer border border-amber-400">
+          <div class="flex items-center gap-2.5 text-left">
+            <div class="w-9 h-9 rounded-xl bg-slate-950/20 flex items-center justify-center shrink-0">
+              <i data-lucide="bar-chart-3" class="w-5 h-5 text-slate-950"></i>
+            </div>
+            <div>
+              <div class="font-black text-xs">Product-Wise Sales Record</div>
+              <div class="text-[10px] text-amber-950/80 font-medium">Date-to-Date Volume, Revenue & Line-item Bills</div>
+            </div>
+          </div>
+          <span class="text-xs font-black bg-slate-950 text-amber-400 px-2 py-1 rounded-lg">Open →</span>
+        </button>
+
         <button type="button" onclick="setTab('customers'); toggleMobileMoreMenu();" class="p-3 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl flex flex-col items-center gap-1.5 border border-slate-200 transition cursor-pointer">
           <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i>
           <span>Customers</span>
@@ -5490,9 +5534,9 @@
           <i data-lucide="map" class="w-5 h-5 text-emerald-600"></i>
           <span>Routes</span>
         </button>
-        <button type="button" onclick="openCompanySettingsModal(); toggleMobileMoreMenu();" class="p-3 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl flex flex-col items-center gap-1.5 border border-slate-200 transition cursor-pointer">
+        <button type="button" onclick="openCompanySettingsModal(); toggleMobileMoreMenu();" class="p-3 bg-slate-50 hover:bg-slate-100 active:scale-95 rounded-2xl flex flex-col items-center gap-1.5 border border-slate-200 transition cursor-pointer col-span-3">
           <i data-lucide="landmark" class="w-5 h-5 text-emerald-600"></i>
-          <span>Bank & QR</span>
+          <span>Bank & QR Settings</span>
         </button>
       </div>
     </div>
@@ -6479,6 +6523,7 @@
         renderRoutesGrid();
         renderSalesPersonnelHub();
         renderOutstandingDashboard();
+        if (typeof renderProductWiseSalesView === 'function') renderProductWiseSalesView();
       } else {
         if (currentTab !== 'dashboard') {
           renderActiveTabOnly(currentTab);
@@ -6534,7 +6579,7 @@
 
       // Mobile Bottom Navigation active state update
       document.querySelectorAll('[id^="m-nav-"]').forEach(btn => {
-        btn.classList.remove('text-indigo-400', 'text-emerald-400', 'text-rose-400');
+        btn.classList.remove('text-indigo-400', 'text-emerald-400', 'text-rose-400', 'text-amber-400');
         btn.classList.add('text-slate-400');
       });
       const mActive = document.getElementById(`m-nav-${tabId}`);
@@ -6544,6 +6589,8 @@
           mActive.classList.add('text-emerald-400');
         } else if (tabId === 'outstanding') {
           mActive.classList.add('text-rose-400');
+        } else if (tabId === 'product-sales') {
+          mActive.classList.add('text-amber-400');
         } else {
           mActive.classList.add('text-indigo-400');
         }
