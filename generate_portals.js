@@ -121,10 +121,23 @@ const managerManifestData = {
 fs.writeFileSync(path.join(managerDir, 'manifest.json'), JSON.stringify(managerManifestData, null, 2), 'utf8');
 fs.writeFileSync(path.join(ROOT_DIR, 'manifest.json'), JSON.stringify(managerManifestData, null, 2), 'utf8');
 
-// Copy index.html to /manager/index.html
-if (fs.existsSync(path.join(ROOT_DIR, 'index.html'))) {
-  fs.copyFileSync(path.join(ROOT_DIR, 'index.html'), path.join(managerDir, 'index.html'));
-  console.log('Synchronized /manager/index.html');
-}
+// Copy necessary assets to /manager/
+const managerAssets = [
+  'index.html',
+  'config.js',
+  'product_wise_sales_ui.js',
+  'monthly_accounts_export.js',
+  'sw.js',
+  'icon-192.png',
+  'icon-512.png'
+];
+
+managerAssets.forEach(file => {
+  const src = path.join(ROOT_DIR, file);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(managerDir, file));
+    console.log(`Synchronized /manager/${file}`);
+  }
+});
 
 console.log('All sales portals, isolated manifests, and manager portal successfully regenerated!');
