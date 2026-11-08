@@ -30,6 +30,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- QRCode.js for dynamic UPI payment QR codes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- SheetJS (xlsx) for Audit-Grade Excel Exports -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Sri Govinda Monthly Accounts Pack Client Export Engine -->
+  <script src="./monthly_accounts_export.js"></script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -761,6 +765,9 @@
           <p class="text-xs text-slate-500">Track total customer receivables, over-credit-limit breaches, and bills backlog beyond 2 months</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openMonthlyAccountsExportModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Debtors & Aging Pack in Excel (.xlsx)">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-indigo-200"></i> Monthly Pack (Excel)
+          </button>
           <button type="button" onclick="openQuickPaymentModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer">
             <i data-lucide="hand-coins" class="w-4 h-4"></i> + Collect Payment
           </button>
@@ -950,6 +957,9 @@
           <p class="text-xs text-slate-500">Track delivery fulfillment, modify orders, and send WhatsApp bills</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openMonthlyAccountsExportModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Official Monthly Accounts Pack in Excel (.xlsx)">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-200"></i> Monthly Pack (Excel)
+          </button>
           <button type="button" onclick="exportOrdersHistoryToCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer" title="Export Filtered Orders History to CSV / Excel spreadsheet">
             <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i> Export CSV
           </button>
@@ -1111,7 +1121,10 @@
             Live reconciliation formula: Initial Baseline + Inward Receipts − Commercial Orders − Free Samples = <b>Live Warehouse Stock</b>
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openMonthlyAccountsExportModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Export Audit-Grade Monthly Accounts Pack in Excel (.xlsx)">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-200"></i> Monthly Pack (Excel)
+          </button>
           <button onclick="scrollToInwardEntryCard()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition">
             <i data-lucide="plus-circle" class="w-4 h-4"></i> Inward New Stock
           </button>
@@ -2487,6 +2500,114 @@
           Deduct from Live Stock & Record Sample
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ==============================================================================
+       MODAL: EXPORT MONTHLY ACCOUNTS PACK (EXCEL .XLSX)
+       ============================================================================== -->
+  <div id="modal-monthly-accounts" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full flex flex-col border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="p-2 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+          </span>
+          <div>
+            <h3 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+              Export Monthly Accounts Pack
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 uppercase">Excel .xlsx</span>
+            </h3>
+            <p class="text-xs text-slate-300 mt-0.5">Audit-grade accounts, dual-custody stock flow, sales & aging ledgers</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeMonthlyAccountsExportModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 text-xs">
+        <!-- Month Selector -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i> Select Accounting Month
+          </label>
+          <select id="monthly-export-month-select" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 text-sm">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Copy Type / Protection -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-600"></i> Edition & Security Classification
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50 cursor-pointer">
+              <input type="radio" name="monthly-export-access" value="read_only" checked class="mt-0.5 text-indigo-600 focus:ring-indigo-500">
+              <div>
+                <span class="block font-black text-slate-800 text-xs">🔒 Read-Only Copy</span>
+                <span class="block text-[11px] text-slate-500 mt-0.5">Sheets protected against edits. Unlock Password: <code class="font-bold text-indigo-700">srigovinda2321</code></span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50 cursor-pointer">
+              <input type="radio" name="monthly-export-access" value="manager_editable" class="mt-0.5 text-indigo-600 focus:ring-indigo-500">
+              <div>
+                <span class="block font-black text-slate-800 text-xs">✏️ Manager Editable Copy</span>
+                <span class="block text-[11px] text-slate-500 mt-0.5">Unrestricted master edition for proprietor manual adjustments</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Report Feature Selector -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i> Select Report Register
+          </label>
+          <select id="monthly-export-feature-select" onchange="toggleRepSelectorInMonthlyExport()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 text-sm">
+            <option value="master">🌟 Executive Master Accounts Pack (Consolidated Multi-Tab Workbook)</option>
+            <option value="reconciliation">📦 Warehouse Stock Opening & Closing Reconciliation</option>
+            <option value="sales">💰 Total Sales & Billing Register</option>
+            <option value="inward">🏭 Total Factory Inward Stock Log</option>
+            <option value="outward">🚚 Outward Dispatches & Rep Custody Log</option>
+            <option value="debtors">👥 Debtors Outstanding & Aging Ledger</option>
+            <option value="rep">👤 Individual Salesperson Monthly Ledger</option>
+            <option value="samples">🎁 Free Samples & Promotional Tastings Register</option>
+            <option value="all">📥 Download All Monthly Workbooks (All Files)</option>
+          </select>
+        </div>
+
+        <!-- Optional Rep Dropdown (visible when 'rep' selected) -->
+        <div id="monthly-export-rep-container" class="hidden">
+          <label class="block font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i> Select Sales Representative
+          </label>
+          <select id="monthly-export-rep-select" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 text-sm">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Audit Note Box -->
+        <div class="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex items-start gap-2.5 text-slate-700">
+          <i data-lucide="info" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
+          <p class="text-[11px] leading-relaxed">
+            <b>Accountant Notice:</b> Workbooks are formatted to statutory accounting standards with metadata headers, GSTIN, INR (₹) formatting, auto-fitted columns, and totals rows. Read-only protected copies require password <span class="px-1 py-0.5 rounded bg-indigo-200/70 font-mono font-bold text-indigo-900">srigovinda2321</span> to unprotect in Excel.
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button type="button" onclick="closeMonthlyAccountsExportModal()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition cursor-pointer">
+          Cancel
+        </button>
+        <button type="button" onclick="executeMonthlyAccountsExport()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition cursor-pointer">
+          <i data-lucide="download" class="w-4 h-4"></i> Download Excel (.xlsx)
+        </button>
+      </div>
     </div>
   </div>
 

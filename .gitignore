@@ -9,4 +9,5 @@ Thumbs.db
 # Local Scratch
 scratch/
 *.log
+node_modules/
 
